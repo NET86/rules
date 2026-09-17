@@ -1,0 +1,40 @@
+name: Review secondary source gaps
+on:
+  schedule:
+    - cron: '41 3 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: secondary-source-radar
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: github.repository == 'NET86/rules'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: checkout
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        id: python
+        with:
+          python-version: '3.12'
+      - run: python scripts/check_git_identity.py
+      - run: python scripts/audit_sources.py
+      - name: Update one exception issue even on failure
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
+        run: python scripts/notify_review.py sources .work/source-audit.json ${{ job.status == 'failure' && '--failed' || '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: secondary-source-review
+          path: .work/source-audit.json
+          include-hidden-files: true
+          retention-days: 30

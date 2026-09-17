@@ -1,0 +1,115 @@
+# NET86/rules | ai-core
+# 海外主流 AI 合集：显式维护的应用级厂商核心域名，不含语音 IP 和共享依赖。
+# Generated; do not edit. Manifest: https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
+# SPDX-License-Identifier: AGPL-3.0-only
+# Notices: https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
+payload:
+
+  # OpenAI / ChatGPT / Sora / Prism
+  - "DOMAIN,cdn.openaimerge.com"
+  - "DOMAIN,openaiapi-site.azureedge.net"
+  - "DOMAIN,openaiassets.blob.core.windows.net"
+  - "DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net"
+  - "DOMAIN,openaicom.imgix.net"
+  - "DOMAIN,openaicomproductionae4b.blob.core.windows.net"
+  - "DOMAIN,production-openaicom-storage.azureedge.net"
+  - "DOMAIN-REGEX,^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$"
+  - "DOMAIN-SUFFIX,chat.com"
+  - "DOMAIN-SUFFIX,chatgpt.com"
+  - "DOMAIN-SUFFIX,chatgpt.livekit.cloud"
+  - "DOMAIN-SUFFIX,chatgpt.site"
+  - "DOMAIN-SUFFIX,crixet.com"
+  - "DOMAIN-SUFFIX,oaistatic.com"
+  - "DOMAIN-SUFFIX,oaistatsig.com"
+  - "DOMAIN-SUFFIX,oaiusercontent.com"
+  - "DOMAIN-SUFFIX,openai.com"
+  - "DOMAIN-SUFFIX,openai.com.cdn.cloudflare.net"
+  - "DOMAIN-SUFFIX,sora.com"
+
+  # Anthropic / Claude / Claude Code
+  - "DOMAIN,servd-anthropic-website.b-cdn.net"
+  - "DOMAIN-SUFFIX,anthropic.com"
+  - "DOMAIN-SUFFIX,clau.de"
+  - "DOMAIN-SUFFIX,claude.ai"
+  - "DOMAIN-SUFFIX,claude.com"
+  - "DOMAIN-SUFFIX,claudemcpclient.com"
+  - "DOMAIN-SUFFIX,claudemcpcontent.com"
+  - "DOMAIN-SUFFIX,claudeusercontent.com"
+
+  # xAI / Grok
+  - "DOMAIN-SUFFIX,grok.com"
+  - "DOMAIN-SUFFIX,grok.x.com"
+  - "DOMAIN-SUFFIX,grokipedia.com"
+  - "DOMAIN-SUFFIX,x.ai"
+
+  # Perplexity
+  - "DOMAIN,ppl-ai-file-upload.s3.amazonaws.com"
+  - "DOMAIN,pplx-res.cloudinary.com"
+  - "DOMAIN-SUFFIX,perplexity.ai"
+  - "DOMAIN-SUFFIX,perplexity.com"
+  - "DOMAIN-SUFFIX,pplx.ai"
+
+  # Gemini / AI Studio / NotebookLM / Google AI
+  - "DOMAIN,ai.google.dev"
+  - "DOMAIN,alkalicore-pa.clients6.google.com"
+  - "DOMAIN,alkalimakersuite-pa.clients6.google.com"
+  - "DOMAIN,generativelanguage.mtls.googleapis.com"
+  - "DOMAIN,notebooklm-pa.googleapis.com"
+  - "DOMAIN,notebooklm.googleapis.com"
+  - "DOMAIN,webchannel-alkalimakersuite-pa.clients6.google.com"
+  - "DOMAIN-SUFFIX,ai.studio"
+  - "DOMAIN-SUFFIX,aistudio.google.com"
+  - "DOMAIN-SUFFIX,bard.google.com"
+  - "DOMAIN-SUFFIX,geller-pa.googleapis.com"
+  - "DOMAIN-SUFFIX,gemini.google"
+  - "DOMAIN-SUFFIX,gemini.google.com"
+  - "DOMAIN-SUFFIX,gemini.gstatic.com"
+  - "DOMAIN-SUFFIX,generativeai.google"
+  - "DOMAIN-SUFFIX,generativelanguage.googleapis.com"
+  - "DOMAIN-SUFFIX,makersuite.google.com"
+  - "DOMAIN-SUFFIX,notebook.google.com"
+  - "DOMAIN-SUFFIX,notebooklm.google"
+  - "DOMAIN-SUFFIX,notebooklm.google.com"
+  - "DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com"
+  - "DOMAIN-SUFFIX,robinfrontend-pa.googleapis.com"
+
+  # Microsoft Copilot
+  - "DOMAIN-SUFFIX,copilot-stg.com"
+  - "DOMAIN-SUFFIX,copilot.cloud.microsoft"
+  - "DOMAIN-SUFFIX,copilot.com"
+  - "DOMAIN-SUFFIX,copilot.microsoft.com"
+
+  # GitHub Copilot
+  - "DOMAIN,copilot-proxy.githubusercontent.com"
+  - "DOMAIN,copilot-workspace.githubnext.com"
+  - "DOMAIN,copilotprodattachments.blob.core.windows.net"
+  - "DOMAIN-SUFFIX,githubcopilot.com"
+
+  # Cursor
+  - "DOMAIN-SUFFIX,cursor-cdn.com"
+  - "DOMAIN-SUFFIX,cursor.com"
+  - "DOMAIN-SUFFIX,cursor.sh"
+  - "DOMAIN-SUFFIX,cursorapi.com"
+  - "DOMAIN-SUFFIX,cursorvm.com"
+
+  # Poe
+  - "DOMAIN-SUFFIX,poe.com"
+  - "DOMAIN-SUFFIX,poecdn.net"
+
+  # Mistral AI
+  - "DOMAIN-SUFFIX,mistral.ai"
+
+  # ElevenLabs
+  - "DOMAIN-SUFFIX,elevenlabs.com"
+  - "DOMAIN-SUFFIX,elevenlabs.io"
+
+  # Midjourney
+  - "DOMAIN-SUFFIX,midjourney.com"
+
+  # Runway
+  - "DOMAIN-SUFFIX,runway.com"
+  - "DOMAIN-SUFFIX,runwayml.com"
+
+  # Suno
+  - "DOMAIN-SUFFIX,suno.ai"
+  - "DOMAIN-SUFFIX,suno.com"

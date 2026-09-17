@@ -1,0 +1,50 @@
+name: Validate rules
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: python scripts/check_git_identity.py
+      - run: python -m unittest discover -s tests -v
+      - run: python scripts/rules.py --check
+      - run: python scripts/verify_rules.py
+      - run: python scripts/download_mihomo.py
+      - run: python scripts/verify_mihomo.py
+      - run: python scripts/verify_mihomo.py --profile split
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: runner.os == 'Linux'
+        with:
+          go-version: '1.26.8'
+          cache-dependency-path: sources/engines.json
+      - run: python scripts/build_flclash_core.py
+        if: runner.os == 'Linux'
+      - run: python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core
+        if: runner.os == 'Linux'
+      - run: python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile split
+        if: runner.os == 'Linux'
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: validation-${{ matrix.os }}
+          path: |
+            .work/*validation*.json
+            .work/mihomo-*.log
+          include-hidden-files: true
+          retention-days: 14

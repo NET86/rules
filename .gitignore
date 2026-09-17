@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+.work/
+.ai-bridge/
+.DS_Store

@@ -1,0 +1,19 @@
+# Daily fragment for FlClash/Mihomo. Merge into an existing profile; not a node subscription.
+proxy-groups:
+  - name: AI
+    type: select
+    include-all: true
+    proxies: [REJECT]
+
+rule-providers:
+  net86-ai-daily:
+    type: http
+    behavior: classical
+    format: yaml
+    url: https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml
+    path: ./rule-providers/net86-ai-daily.yaml
+    interval: 21600
+
+rules:
+  - RULE-SET,net86-ai-daily,AI,no-resolve
+  # Keep your other rules and MATCH below. Replace REJECT by selecting a usable node.

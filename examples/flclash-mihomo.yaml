@@ -1,0 +1,40 @@
+# Merge into an existing FlClash/Mihomo profile; not a node subscription.
+# AI starts with REJECT deliberately. Select an actual usable node after importing.
+proxy-groups:
+  - name: AI
+    type: select
+    include-all: true
+    proxies: [REJECT]
+  - name: OpenAI
+    type: select
+    proxies: [AI]
+
+rule-providers:
+  net86-openai:
+    type: http
+    behavior: classical
+    format: yaml
+    url: https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/openai.yaml
+    path: ./rule-providers/net86-openai.yaml
+    interval: 21600
+  net86-ai-core:
+    type: http
+    behavior: classical
+    format: yaml
+    url: https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml
+    path: ./rule-providers/net86-ai-core.yaml
+    interval: 21600
+  net86-openai-voice:
+    type: http
+    behavior: classical
+    format: yaml
+    url: https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/openai-voice-ip.yaml
+    path: ./rule-providers/net86-openai-voice.yaml
+    interval: 21600
+
+rules:
+  # Insert before your existing Google/Microsoft/GitHub/Global/DIRECT/MATCH rules.
+  - RULE-SET,net86-openai,OpenAI
+  - RULE-SET,net86-ai-core,AI
+  - RULE-SET,net86-openai-voice,OpenAI,no-resolve
+  # Keep your other routing rules and final MATCH below these entries.

@@ -1,0 +1,1353 @@
+{
+  "automation": {
+    "quarantined": [],
+    "retained": [],
+    "selection_issues": []
+  },
+  "bundles": {
+    "ai-cn": {
+      "mihomo": {
+        "count": 33,
+        "path": "rules/mihomo/ai-cn.yaml",
+        "sha256": "6e085053f2948801f9541542861513f0401295bf6eff43a8435308245204927b"
+      },
+      "surge": {
+        "count": 33,
+        "path": "rules/surge/ai-cn.list",
+        "sha256": "e35721b0fe7296b66b90089fa1c0411ac0133a14d988123f48d6d6e2c5c66f62"
+      }
+    },
+    "ai-core": {
+      "mihomo": {
+        "count": 81,
+        "path": "rules/mihomo/ai-core.yaml",
+        "sha256": "e0196c39105080173360301cf744ce02b0365292108f6545bb6d833fea9fd973"
+      },
+      "surge": {
+        "count": 81,
+        "path": "rules/surge/ai-core.list",
+        "sha256": "e7775fcf68bc5212a9c04ba92119736d4a7439d78d6450006908ac53c83ea8e3"
+      }
+    },
+    "ai-daily": {
+      "mihomo": {
+        "count": 81,
+        "path": "rules/mihomo/ai-daily.yaml",
+        "sha256": "b93f1e44b4ace76bb4d26f9d8b4c6f94c17b6361d7abcb00278677b46bca22a5"
+      },
+      "surge": {
+        "count": 81,
+        "path": "rules/surge/ai-daily.list",
+        "sha256": "8ef961d44dbab155d84293fa9fe809d059c772a31992d4ecd7bccaf614f65083"
+      }
+    },
+    "baidu-wenxin": {
+      "mihomo": {
+        "count": 1,
+        "path": "rules/mihomo/baidu-wenxin.yaml",
+        "sha256": "d1ce9d6dba97d5a9c753cf522d3eadf24400f3ea76c142f1767b0cf477ebfab5"
+      },
+      "surge": {
+        "count": 1,
+        "path": "rules/surge/baidu-wenxin.list",
+        "sha256": "085c43c3453032acdecc7f0c3c337cf60bfe7cdf02e828f57e20d1234c916e81"
+      }
+    },
+    "claude": {
+      "mihomo": {
+        "count": 8,
+        "path": "rules/mihomo/claude.yaml",
+        "sha256": "d638331a706804bba04a3895bb09b440b304d8db3e564a4526b7f4091add46d3"
+      },
+      "surge": {
+        "count": 8,
+        "path": "rules/surge/claude.list",
+        "sha256": "3f8efc228ea76b90875285636c996d12ffe90ebb1aeb5ced743460ff165aebb1"
+      }
+    },
+    "cursor": {
+      "mihomo": {
+        "count": 5,
+        "path": "rules/mihomo/cursor.yaml",
+        "sha256": "7fe69ffbdcbf24d7f65e73f18e45ee34c0dbb499dfd399aa45c08d45c8170f9b"
+      },
+      "surge": {
+        "count": 5,
+        "path": "rules/surge/cursor.list",
+        "sha256": "394c77d1371ebda7e06d7921227b1ebbf8cc85c34f2dd9b7c57af8b5b00a20a5"
+      }
+    },
+    "deepseek": {
+      "mihomo": {
+        "count": 2,
+        "path": "rules/mihomo/deepseek.yaml",
+        "sha256": "4155d9a97465b6f89099cd5387fecc11d77e407c0c4162a5f7fd16061b34e204"
+      },
+      "surge": {
+        "count": 2,
+        "path": "rules/surge/deepseek.list",
+        "sha256": "0ca5a9a67064d214851a0c7d2ee56a83325bcdda24f37dacf5fb25ee39460f17"
+      }
+    },
+    "doubao": {
+      "mihomo": {
+        "count": 4,
+        "path": "rules/mihomo/doubao.yaml",
+        "sha256": "e5292412c71649f7698cf055bc817543e6d521b8a2b0318d9da7f958d3470a2a"
+      },
+      "surge": {
+        "count": 4,
+        "path": "rules/surge/doubao.list",
+        "sha256": "22c7faf79f0c1eac49dfd889f3ce7496d1219255f664f28cfa4a86af4c7e8e10"
+      }
+    },
+    "elevenlabs": {
+      "mihomo": {
+        "count": 2,
+        "path": "rules/mihomo/elevenlabs.yaml",
+        "sha256": "a87ecc16689ed1c346d774eeab73357b9ed4603f67bfe48d4b6bd9f6216291ef"
+      },
+      "surge": {
+        "count": 2,
+        "path": "rules/surge/elevenlabs.list",
+        "sha256": "7a2edc7233bc3db1b9798022ea84bef26ed4ef76adc8d3354fe4a6d039d8779f"
+      }
+    },
+    "github-copilot": {
+      "mihomo": {
+        "count": 4,
+        "path": "rules/mihomo/github-copilot.yaml",
+        "sha256": "4b7dde6caa7bbf1507d93725a2c43f46ff707a1a87afa6dc23c9cd02f25709e8"
+      },
+      "surge": {
+        "count": 4,
+        "path": "rules/surge/github-copilot.list",
+        "sha256": "5eb11f60a787ba47dea8bf7b13b9e8e4b97c5de556318eef0988a135bef2af5f"
+      }
+    },
+    "google-ai": {
+      "mihomo": {
+        "count": 22,
+        "path": "rules/mihomo/google-ai.yaml",
+        "sha256": "179aef68b6f13c134011231fa1f18f545622b412328f4b3dbea67d8f8de6a0ca"
+      },
+      "surge": {
+        "count": 22,
+        "path": "rules/surge/google-ai.list",
+        "sha256": "a5dc57ada9b2339ceba9b8050defc6b63767a855f68dd002817fe3cec154b17e"
+      }
+    },
+    "grok": {
+      "mihomo": {
+        "count": 4,
+        "path": "rules/mihomo/grok.yaml",
+        "sha256": "c10eec636f33f51ec19a71f940931dfd4ad98456d8b611c1695e8f4a73ef20bb"
+      },
+      "surge": {
+        "count": 4,
+        "path": "rules/surge/grok.list",
+        "sha256": "15fed5c1c4c2ead026761f58711eca006d2a36f6c71cfd85f28f162a10ce1949"
+      }
+    },
+    "iflytek-spark": {
+      "mihomo": {
+        "count": 1,
+        "path": "rules/mihomo/iflytek-spark.yaml",
+        "sha256": "d94ff4a0346345a592689a907f9ab83b9747327fcec08c41f87a35918c3af1cb"
+      },
+      "surge": {
+        "count": 1,
+        "path": "rules/surge/iflytek-spark.list",
+        "sha256": "f13edb4818f3fea61bab740ec2fc47ef330275b342449c1eccfb6bdd652ef2db"
+      }
+    },
+    "kimi": {
+      "mihomo": {
+        "count": 4,
+        "path": "rules/mihomo/kimi.yaml",
+        "sha256": "a63d37f3be4a90e7b63f72ee0e4497780f4999b3c5163bb4857532fe1eced8b9"
+      },
+      "surge": {
+        "count": 4,
+        "path": "rules/surge/kimi.list",
+        "sha256": "d68ea26a645d6f0b8fc1cf67c3c7974dc1ed3c8a9cb90e1ad637833322e556dc"
+      }
+    },
+    "kling": {
+      "mihomo": {
+        "count": 3,
+        "path": "rules/mihomo/kling.yaml",
+        "sha256": "45374a1bb0c360f584d0d7b6dd368904b9a0448ea877fd4ca2e912b2c6ed20ce"
+      },
+      "surge": {
+        "count": 3,
+        "path": "rules/surge/kling.list",
+        "sha256": "9cfc7a4bcad5f96a04bbb1abc000681952f3e53b119e9f3409b042fba364173e"
+      }
+    },
+    "microsoft-copilot": {
+      "mihomo": {
+        "count": 4,
+        "path": "rules/mihomo/microsoft-copilot.yaml",
+        "sha256": "823e0ea1f5cf986fc6d711f3cb30e4f41da29a870d2a6d20b1f80a49c3e4738c"
+      },
+      "surge": {
+        "count": 4,
+        "path": "rules/surge/microsoft-copilot.list",
+        "sha256": "d0c108eccfaa0984be4eb497b1dbf703317c4a33544b6105a5b27aa515b5555c"
+      }
+    },
+    "midjourney": {
+      "mihomo": {
+        "count": 1,
+        "path": "rules/mihomo/midjourney.yaml",
+        "sha256": "d8d28b61cbb6a943113cd79c8f419238ffb9e11b7ab6c5b26ff0fbd5b9fcab30"
+      },
+      "surge": {
+        "count": 1,
+        "path": "rules/surge/midjourney.list",
+        "sha256": "217405d4b8a84194ead67f9fe9ebc5de559636ad3f1012fd8c7576c4c643e827"
+      }
+    },
+    "minimax": {
+      "mihomo": {
+        "count": 4,
+        "path": "rules/mihomo/minimax.yaml",
+        "sha256": "25b134bcbb7524056b4e3d786cec8f6b931272788859e3334ab3ea6a1792219f"
+      },
+      "surge": {
+        "count": 4,
+        "path": "rules/surge/minimax.list",
+        "sha256": "8f065a7f5048b60e36e19bd80ad8f8f4978bc1a0cebb43e7186cc8a1d8bf2175"
+      }
+    },
+    "mistral": {
+      "mihomo": {
+        "count": 1,
+        "path": "rules/mihomo/mistral.yaml",
+        "sha256": "327b07d90075cca70bdc5537fe1fd37982561016d7edc630aeb1055ff37ebea9"
+      },
+      "surge": {
+        "count": 1,
+        "path": "rules/surge/mistral.list",
+        "sha256": "5579f064706bcfd2b837de1f00a7ef07e21edb3c1a885f0a7a52b45d91f82544"
+      }
+    },
+    "openai": {
+      "mihomo": {
+        "count": 19,
+        "path": "rules/mihomo/openai.yaml",
+        "sha256": "2b077d61c2dfff11ad8be29168275d7958dc79e65987dd09d77e9743a3512af7"
+      },
+      "surge": {
+        "count": 19,
+        "path": "rules/surge/openai.list",
+        "sha256": "667da6a46cd358570b12f76edda5fa93e40240139cef66628681a1e197e55f1a"
+      }
+    },
+    "openai-voice-ip": {
+      "mihomo": {
+        "count": 23,
+        "path": "rules/mihomo/openai-voice-ip.yaml",
+        "sha256": "a6d33f98e35757bcde2c6f99bc3a3366d4cbc8acf18bc985e3c69307eae7e45e"
+      },
+      "surge": {
+        "count": 23,
+        "path": "rules/surge/openai-voice-ip.list",
+        "sha256": "5d542e27e88f591cf570659067f55cff5d7733453fcdb3f26a358a8042e0c2ff"
+      }
+    },
+    "perplexity": {
+      "mihomo": {
+        "count": 5,
+        "path": "rules/mihomo/perplexity.yaml",
+        "sha256": "8f1650965934b8d25b2c55592a18789b6c297ae565833b5e88c1afc45839f2b6"
+      },
+      "surge": {
+        "count": 5,
+        "path": "rules/surge/perplexity.list",
+        "sha256": "5711c556508b7d9d6449e01feb98d98dc9d0e9d67c0f99c648a7a81117c99af4"
+      }
+    },
+    "poe": {
+      "mihomo": {
+        "count": 2,
+        "path": "rules/mihomo/poe.yaml",
+        "sha256": "76af672b7adc86b69512cd9d11f7d25605e23960caf4c1527298b8a599cfaa52"
+      },
+      "surge": {
+        "count": 2,
+        "path": "rules/surge/poe.list",
+        "sha256": "8add397606d2df5fd2eafb5c85acb47612a27b28fd05717c80e344bb00b8436b"
+      }
+    },
+    "qwen": {
+      "mihomo": {
+        "count": 7,
+        "path": "rules/mihomo/qwen.yaml",
+        "sha256": "14ed1e058c933ba2bee048f5c0b99d2c0a8767f1fa256e100a70b912c0ac44b0"
+      },
+      "surge": {
+        "count": 7,
+        "path": "rules/surge/qwen.list",
+        "sha256": "e5bdf611abc63212cbed55f5ebe94bf80d96e035312eac3300353988d5845e0e"
+      }
+    },
+    "runway": {
+      "mihomo": {
+        "count": 2,
+        "path": "rules/mihomo/runway.yaml",
+        "sha256": "17255cfa40760353dede6b8059e3f93a580a293f30c00d86180e66487fd9257f"
+      },
+      "surge": {
+        "count": 2,
+        "path": "rules/surge/runway.list",
+        "sha256": "72232b2935cfa25f8cfe0fe1618fe3946120786e57d13f0a9c6ac64dae55bea5"
+      }
+    },
+    "suno": {
+      "mihomo": {
+        "count": 2,
+        "path": "rules/mihomo/suno.yaml",
+        "sha256": "bed2ecbc79ce39b9965d11c6e132ca476e970d5bbf5004457797996f46cab1ce"
+      },
+      "surge": {
+        "count": 2,
+        "path": "rules/surge/suno.list",
+        "sha256": "6f4343b5f35f814120c290cc7142422875aabd460776ff4777822ce292875a9c"
+      }
+    },
+    "tencent-ai": {
+      "mihomo": {
+        "count": 2,
+        "path": "rules/mihomo/tencent-ai.yaml",
+        "sha256": "ab4ce7502eac5a66751b573b424907f8e8dd540fea1e0edaed599eaf714a20e2"
+      },
+      "surge": {
+        "count": 2,
+        "path": "rules/surge/tencent-ai.list",
+        "sha256": "2e31657ef0b7feb60e7009aa664bbf8564939216a0fd215cb05303ad472883c9"
+      }
+    },
+    "zhipu": {
+      "mihomo": {
+        "count": 5,
+        "path": "rules/mihomo/zhipu.yaml",
+        "sha256": "bda622b2b5087540b7a19a80d9c2c0149021124bbc3a3047f37a66c69460d697"
+      },
+      "surge": {
+        "count": 5,
+        "path": "rules/surge/zhipu.list",
+        "sha256": "4333ddf8e7fc8feabadb3646a13ace9f536f81289cd71630d659b0010e6ff678"
+      }
+    }
+  },
+  "client_validation": "See docs/VALIDATION.md; generation is not a connectivity test",
+  "conversion_warnings": [
+    {
+      "rule": "DOMAIN-REGEX,^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$",
+      "surge": {
+        "reason": "Surge has no DOMAIN-REGEX. Reviewed hostname wildcard is wider than the regex: it cannot enforce nonempty segments or a numeric final segment. Never broaden to all webpubsub.azure.com.",
+        "rule": "DOMAIN-WILDCARD,chatgpt-async-webps-prod-*-*.webpubsub.azure.com"
+      }
+    }
+  ],
+  "formats": {
+    "mihomo": "classical/yaml (FlClash)",
+    "surge": "rule-set"
+  },
+  "license": "AGPL-3.0-only (retained MIT notices; official facts keep source terms)",
+  "profile_features": {
+    "ai-daily": [
+      "openai-voice-ip"
+    ]
+  },
+  "profiles": {
+    "ai-cn": {
+      "budget": 10,
+      "members": [
+        "deepseek",
+        "qwen",
+        "kimi",
+        "doubao",
+        "zhipu",
+        "minimax",
+        "kling",
+        "baidu-wenxin",
+        "tencent-ai",
+        "iflytek-spark"
+      ]
+    },
+    "ai-core": {
+      "budget": 15,
+      "members": [
+        "openai",
+        "google-ai",
+        "claude",
+        "grok",
+        "perplexity",
+        "microsoft-copilot",
+        "github-copilot",
+        "cursor",
+        "mistral",
+        "poe",
+        "midjourney",
+        "runway",
+        "suno",
+        "elevenlabs"
+      ]
+    },
+    "ai-daily": {
+      "budget": 5,
+      "members": [
+        "openai",
+        "google-ai",
+        "claude",
+        "grok",
+        "perplexity"
+      ]
+    }
+  },
+  "provenance": [
+    {
+      "rule": "DOMAIN-SUFFIX,yiyan.baidu.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "baidu-wenxin"
+    },
+    {
+      "rule": "DOMAIN,servd-anthropic-website.b-cdn.net",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,anthropic.com",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,clau.de",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,claude.ai",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,claude.com",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,claudemcpclient.com",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,claudemcpcontent.com",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,claudeusercontent.com",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,cursor-cdn.com",
+      "sources": [
+        "v2fly:data/cursor"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,cursor.com",
+      "sources": [
+        "v2fly:data/cursor"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,cursor.sh",
+      "sources": [
+        "v2fly:data/cursor"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,cursorapi.com",
+      "sources": [
+        "v2fly:data/cursor"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,cursorvm.com",
+      "sources": [
+        "https://cursor.com/docs/enterprise/network-configuration Cursor virtual-machine hosts; not the entire cloud provider"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,deepseek.com",
+      "sources": [
+        "v2fly:data/deepseek"
+      ],
+      "tier": "core",
+      "vendor": "deepseek"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,deepseeksvc.com",
+      "sources": [
+        "v2fly:data/deepseek"
+      ],
+      "tier": "core",
+      "vendor": "deepseek"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,coze.cn",
+      "sources": [
+        "v2fly:data/doubao (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "doubao"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,cozecdn.com",
+      "sources": [
+        "v2fly:data/doubao (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "doubao"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,doubao.com",
+      "sources": [
+        "v2fly:data/doubao (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "doubao"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,doubaocdn.com",
+      "sources": [
+        "v2fly:data/doubao (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "doubao"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,elevenlabs.com",
+      "sources": [
+        "v2fly:data/elevenlabs"
+      ],
+      "tier": "core",
+      "vendor": "elevenlabs"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,elevenlabs.io",
+      "sources": [
+        "v2fly:data/elevenlabs"
+      ],
+      "tier": "core",
+      "vendor": "elevenlabs"
+    },
+    {
+      "rule": "DOMAIN,copilot-proxy.githubusercontent.com",
+      "sources": [
+        "v2fly:data/github-copilot"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,copilot-workspace.githubnext.com",
+      "sources": [
+        "v2fly:data/github-copilot"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,copilotprodattachments.blob.core.windows.net",
+      "sources": [
+        "v2fly:data/github-copilot"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,githubcopilot.com",
+      "sources": [
+        "v2fly:data/github-copilot"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,ai.google.dev",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN,alkalicore-pa.clients6.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN,alkalimakersuite-pa.clients6.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN,generativelanguage.mtls.googleapis.com",
+      "sources": [
+        "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta Official Generative Language discovery document exposes a dedicated mTLS endpoint; keep exact to avoid widening googleapis.com"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN,notebooklm-pa.googleapis.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN,notebooklm.googleapis.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN,webchannel-alkalimakersuite-pa.clients6.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,ai.studio",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,aistudio.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,bard.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,geller-pa.googleapis.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,gemini.google",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,gemini.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,gemini.gstatic.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,generativeai.google",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,generativelanguage.googleapis.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,makersuite.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,notebook.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,notebooklm.google",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,notebooklm.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,robinfrontend-pa.googleapis.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,grok.com",
+      "sources": [
+        "v2fly:data/xai"
+      ],
+      "tier": "core",
+      "vendor": "grok"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,grok.x.com",
+      "sources": [
+        "v2fly:data/xai"
+      ],
+      "tier": "core",
+      "vendor": "grok"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,grokipedia.com",
+      "sources": [
+        "v2fly:data/xai"
+      ],
+      "tier": "core",
+      "vendor": "grok"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,x.ai",
+      "sources": [
+        "v2fly:data/xai"
+      ],
+      "tier": "core",
+      "vendor": "grok"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,xinghuo.xfyun.cn",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "iflytek-spark"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,kimi.ai",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "kimi"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,kimi.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "kimi"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,moonshot.ai",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "kimi"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,moonshot.cn",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "kimi"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,kechuangai.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "kling"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,kling-ai.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "kling"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,klingai.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "kling"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,copilot-stg.com",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "microsoft-copilot"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,copilot.cloud.microsoft",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "microsoft-copilot"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,copilot.com",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "microsoft-copilot"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,copilot.microsoft.com",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "microsoft-copilot"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,midjourney.com",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "midjourney"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,hailuoai.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "minimax"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,minimax.io",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "minimax"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,minimaxi.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "minimax"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,xingyeai.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "minimax"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,mistral.ai",
+      "sources": [
+        "v2fly:data/category-ai-!cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "mistral"
+    },
+    {
+      "rule": "DOMAIN,cdn.openaimerge.com",
+      "sources": [
+        "https://help.openai.com/en/articles/9247338 Exact CDN hostname in the official OpenAI network allowlist, checked 2026-09-15; do not widen to all openaimerge.com"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN,openaiapi-site.azureedge.net",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN,openaiassets.blob.core.windows.net",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN,openaicom.imgix.net",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN,openaicomproductionae4b.blob.core.windows.net",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN,production-openaicom-storage.azureedge.net",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-REGEX,^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,chat.com",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,chatgpt.com",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,chatgpt.livekit.cloud",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,chatgpt.site",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,crixet.com",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,oaistatic.com",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,oaistatsig.com",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,oaiusercontent.com",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,openai.com",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,openai.com.cdn.cloudflare.net",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,sora.com",
+      "sources": [
+        "v2fly:data/openai"
+      ],
+      "tier": "core",
+      "vendor": "openai"
+    },
+    {
+      "rule": "DOMAIN,ppl-ai-file-upload.s3.amazonaws.com",
+      "sources": [
+        "v2fly:data/perplexity"
+      ],
+      "tier": "core",
+      "vendor": "perplexity"
+    },
+    {
+      "rule": "DOMAIN,pplx-res.cloudinary.com",
+      "sources": [
+        "v2fly:data/perplexity"
+      ],
+      "tier": "core",
+      "vendor": "perplexity"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,perplexity.ai",
+      "sources": [
+        "v2fly:data/perplexity"
+      ],
+      "tier": "core",
+      "vendor": "perplexity"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,perplexity.com",
+      "sources": [
+        "v2fly:data/perplexity"
+      ],
+      "tier": "core",
+      "vendor": "perplexity"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,pplx.ai",
+      "sources": [
+        "v2fly:data/perplexity"
+      ],
+      "tier": "core",
+      "vendor": "perplexity"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,poe.com",
+      "sources": [
+        "v2fly:data/poe"
+      ],
+      "tier": "core",
+      "vendor": "poe"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,poecdn.net",
+      "sources": [
+        "v2fly:data/poe"
+      ],
+      "tier": "core",
+      "vendor": "poe"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,qianwen.aliyun.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "qwen"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,qianwen.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "qwen"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,qianwenai.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "qwen"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,qwen.ai",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "qwen"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,qwenlm.ai",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "qwen"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,tongyi.aliyun.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "qwen"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,tongyi.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "qwen"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,runway.com",
+      "sources": [
+        "https://runway.com/ Current official homepage; runwayml.com redirects here, checked 2026-09-15"
+      ],
+      "tier": "core",
+      "vendor": "runway"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,runwayml.com",
+      "sources": [
+        "https://runwayml.com/ Official Runway service domain; baseline coverage, not a claim of all upload dependencies"
+      ],
+      "tier": "core",
+      "vendor": "runway"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,suno.ai",
+      "sources": [
+        "https://suno.ai/ Official legacy domain, redirects to suno.com"
+      ],
+      "tier": "core",
+      "vendor": "suno"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,suno.com",
+      "sources": [
+        "https://suno.com/ Official Suno service domain"
+      ],
+      "tier": "core",
+      "vendor": "suno"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,hunyuan.tencent.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,yuanbao.tencent.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,bigmodel.cn",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "zhipu"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,chatglm.cn",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "zhipu"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,z.ai",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "zhipu"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,zhipuai.cn",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "zhipu"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,zhipucn.com",
+      "sources": [
+        "v2fly:data/category-ai-cn (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "zhipu"
+    }
+  ],
+  "schema": 2,
+  "semantic_contract": {
+    "path": "sources/semantic-contracts.json",
+    "sha256": "e4d5c7013739334060dd80eadf52336bb971187a3eee94df6552ed3b2ac499c9"
+  },
+  "upstream": {
+    "sha256": {
+      "V2FLY-LICENSE": "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c84011479244bf7d2",
+      "openai-voice.json": "89e961ec1ad6b0f1d457002a48b1bd81df8cb2144754ad6e1811c934bb97686a",
+      "v2fly/anthropic": "3d0e231009271bad865131381da71b489b18ca699f38afe3a0ebef00011f1b88",
+      "v2fly/category-ai-!cn": "2c1ccd480d65221e5903f65250c02996a35afee21e19c74c0fbe95a7490921a6",
+      "v2fly/category-ai-cn": "974632a81e170c53052d8014e9fa150b8a87331b64482276389c4fc935ed806f",
+      "v2fly/cursor": "963a78363ff86e87ae10859baa5f2dc7e3184efce13ac6e158bb2e698228bf5d",
+      "v2fly/deepseek": "52822c92e87fadcfdc6711133f1270ee77ef030459603a46cf6fa80f75856530",
+      "v2fly/doubao": "b501f28fcaeca55a569c6193d12415ef6d62addbe6f8373799fc5c3005ad5db6",
+      "v2fly/elevenlabs": "4c284a7e5947f4a40d40c9dc8fedf3e9e3091db0c7680b913b2b19db36ebd561",
+      "v2fly/github-copilot": "069a626c3c23ee63f82e26ce11a83477d8dbe9e27f81968e4b073acf496260f3",
+      "v2fly/google-deepmind": "9cb1c1f964ba1fce934cebcf695bfb0dd58ed04782da05f5e6cc0124ee25c0a1",
+      "v2fly/openai": "19a100966b3c5b0dff2e7038ba66366ef10d6384781b3eda6de4d1e79712dcc6",
+      "v2fly/perplexity": "570581bad658566cb493207c14ebb55110750071071e089b4c40054b00af3db0",
+      "v2fly/poe": "e689a8d337b64bcf760e5d8dfe03e3d29d8558063db93acba2d1d6eb9c11003a",
+      "v2fly/xai": "1e15c6018174f58f6a2f3710c84566909eee45a8092247280d244cf8ea7cd928"
+    },
+    "v2fly_repository": "https://github.com/v2fly/domain-list-community",
+    "v2fly_revision": "6fe5416797ec88d29a3a1c69ce1431d73b955e88",
+    "voice_url": "https://openai.com/chatgpt-voice.json"
+  },
+  "vendor_count": 24
+}

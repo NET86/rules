@@ -1,0 +1,11 @@
+# NET86/rules | perplexity
+# 单厂商核心域名；不含共享依赖和语音 IP。
+# Generated; do not edit. Manifest: https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
+# SPDX-License-Identifier: AGPL-3.0-only
+# Notices: https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
+payload:
+  - "DOMAIN,ppl-ai-file-upload.s3.amazonaws.com"
+  - "DOMAIN,pplx-res.cloudinary.com"
+  - "DOMAIN-SUFFIX,perplexity.ai"
+  - "DOMAIN-SUFFIX,perplexity.com"
+  - "DOMAIN-SUFFIX,pplx.ai"

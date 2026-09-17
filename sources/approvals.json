@@ -1,0 +1,212 @@
+{
+  "claude": {
+    "core": [
+      "DOMAIN,servd-anthropic-website.b-cdn.net",
+      "DOMAIN-SUFFIX,anthropic.com",
+      "DOMAIN-SUFFIX,clau.de",
+      "DOMAIN-SUFFIX,claude.ai",
+      "DOMAIN-SUFFIX,claude.com",
+      "DOMAIN-SUFFIX,claudemcpclient.com",
+      "DOMAIN-SUFFIX,claudemcpcontent.com",
+      "DOMAIN-SUFFIX,claudeusercontent.com"
+    ]
+  },
+  "cursor": {
+    "core": [
+      "DOMAIN-SUFFIX,cursor-cdn.com",
+      "DOMAIN-SUFFIX,cursor.com",
+      "DOMAIN-SUFFIX,cursor.sh",
+      "DOMAIN-SUFFIX,cursorapi.com",
+      "DOMAIN-SUFFIX,cursorvm.com"
+    ]
+  },
+  "deepseek": {
+    "core": [
+      "DOMAIN-SUFFIX,deepseek.com",
+      "DOMAIN-SUFFIX,deepseeksvc.com"
+    ]
+  },
+  "doubao": {
+    "core": [
+      "DOMAIN-SUFFIX,coze.cn",
+      "DOMAIN-SUFFIX,cozecdn.com",
+      "DOMAIN-SUFFIX,doubao.com",
+      "DOMAIN-SUFFIX,doubaocdn.com"
+    ]
+  },
+  "elevenlabs": {
+    "core": [
+      "DOMAIN-SUFFIX,elevenlabs.com",
+      "DOMAIN-SUFFIX,elevenlabs.io"
+    ]
+  },
+  "github-copilot": {
+    "core": [
+      "DOMAIN,copilot-proxy.githubusercontent.com",
+      "DOMAIN,copilot-workspace.githubnext.com",
+      "DOMAIN,copilotprodattachments.blob.core.windows.net",
+      "DOMAIN-SUFFIX,githubcopilot.com"
+    ]
+  },
+  "google-ai": {
+    "core": [
+      "DOMAIN,ai.google.dev",
+      "DOMAIN,alkalicore-pa.clients6.google.com",
+      "DOMAIN,alkalimakersuite-pa.clients6.google.com",
+      "DOMAIN,notebooklm-pa.googleapis.com",
+      "DOMAIN,notebooklm.googleapis.com",
+      "DOMAIN,webchannel-alkalimakersuite-pa.clients6.google.com",
+      "DOMAIN,generativelanguage.mtls.googleapis.com",
+      "DOMAIN-SUFFIX,ai.studio",
+      "DOMAIN-SUFFIX,aistudio.google.com",
+      "DOMAIN-SUFFIX,bard.google.com",
+      "DOMAIN-SUFFIX,geller-pa.googleapis.com",
+      "DOMAIN-SUFFIX,gemini.google",
+      "DOMAIN-SUFFIX,gemini.google.com",
+      "DOMAIN-SUFFIX,gemini.gstatic.com",
+      "DOMAIN-SUFFIX,generativeai.google",
+      "DOMAIN-SUFFIX,generativelanguage.googleapis.com",
+      "DOMAIN-SUFFIX,makersuite.google.com",
+      "DOMAIN-SUFFIX,notebook.google.com",
+      "DOMAIN-SUFFIX,notebooklm.google",
+      "DOMAIN-SUFFIX,notebooklm.google.com",
+      "DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com",
+      "DOMAIN-SUFFIX,robinfrontend-pa.googleapis.com"
+    ]
+  },
+  "grok": {
+    "core": [
+      "DOMAIN-SUFFIX,grok.com",
+      "DOMAIN-SUFFIX,grok.x.com",
+      "DOMAIN-SUFFIX,grokipedia.com",
+      "DOMAIN-SUFFIX,x.ai"
+    ]
+  },
+  "kimi": {
+    "core": [
+      "DOMAIN-SUFFIX,kimi.ai",
+      "DOMAIN-SUFFIX,kimi.com",
+      "DOMAIN-SUFFIX,moonshot.ai",
+      "DOMAIN-SUFFIX,moonshot.cn"
+    ]
+  },
+  "kling": {
+    "core": [
+      "DOMAIN-SUFFIX,kechuangai.com",
+      "DOMAIN-SUFFIX,kling-ai.com",
+      "DOMAIN-SUFFIX,klingai.com"
+    ]
+  },
+  "microsoft-copilot": {
+    "core": [
+      "DOMAIN-SUFFIX,copilot-stg.com",
+      "DOMAIN-SUFFIX,copilot.cloud.microsoft",
+      "DOMAIN-SUFFIX,copilot.com",
+      "DOMAIN-SUFFIX,copilot.microsoft.com"
+    ]
+  },
+  "midjourney": {
+    "core": [
+      "DOMAIN-SUFFIX,midjourney.com"
+    ]
+  },
+  "minimax": {
+    "core": [
+      "DOMAIN-SUFFIX,hailuoai.com",
+      "DOMAIN-SUFFIX,minimax.io",
+      "DOMAIN-SUFFIX,minimaxi.com",
+      "DOMAIN-SUFFIX,xingyeai.com"
+    ]
+  },
+  "mistral": {
+    "core": [
+      "DOMAIN-SUFFIX,mistral.ai"
+    ]
+  },
+  "openai": {
+    "core": [
+      "DOMAIN,cdn.openaimerge.com",
+      "DOMAIN,openaiapi-site.azureedge.net",
+      "DOMAIN,openaiassets.blob.core.windows.net",
+      "DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net",
+      "DOMAIN,openaicom.imgix.net",
+      "DOMAIN,openaicomproductionae4b.blob.core.windows.net",
+      "DOMAIN,production-openaicom-storage.azureedge.net",
+      "DOMAIN-REGEX,^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$",
+      "DOMAIN-SUFFIX,chat.com",
+      "DOMAIN-SUFFIX,chatgpt.com",
+      "DOMAIN-SUFFIX,chatgpt.livekit.cloud",
+      "DOMAIN-SUFFIX,chatgpt.site",
+      "DOMAIN-SUFFIX,crixet.com",
+      "DOMAIN-SUFFIX,oaistatic.com",
+      "DOMAIN-SUFFIX,oaistatsig.com",
+      "DOMAIN-SUFFIX,oaiusercontent.com",
+      "DOMAIN-SUFFIX,openai.com",
+      "DOMAIN-SUFFIX,openai.com.cdn.cloudflare.net",
+      "DOMAIN-SUFFIX,sora.com"
+    ]
+  },
+  "perplexity": {
+    "core": [
+      "DOMAIN,ppl-ai-file-upload.s3.amazonaws.com",
+      "DOMAIN,pplx-res.cloudinary.com",
+      "DOMAIN-SUFFIX,perplexity.ai",
+      "DOMAIN-SUFFIX,perplexity.com",
+      "DOMAIN-SUFFIX,pplx.ai"
+    ]
+  },
+  "poe": {
+    "core": [
+      "DOMAIN-SUFFIX,poe.com",
+      "DOMAIN-SUFFIX,poecdn.net"
+    ]
+  },
+  "qwen": {
+    "core": [
+      "DOMAIN-SUFFIX,qianwen.aliyun.com",
+      "DOMAIN-SUFFIX,qianwen.com",
+      "DOMAIN-SUFFIX,qianwenai.com",
+      "DOMAIN-SUFFIX,qwen.ai",
+      "DOMAIN-SUFFIX,qwenlm.ai",
+      "DOMAIN-SUFFIX,tongyi.aliyun.com",
+      "DOMAIN-SUFFIX,tongyi.com"
+    ]
+  },
+  "runway": {
+    "core": [
+      "DOMAIN-SUFFIX,runway.com",
+      "DOMAIN-SUFFIX,runwayml.com"
+    ]
+  },
+  "suno": {
+    "core": [
+      "DOMAIN-SUFFIX,suno.ai",
+      "DOMAIN-SUFFIX,suno.com"
+    ]
+  },
+  "zhipu": {
+    "core": [
+      "DOMAIN-SUFFIX,bigmodel.cn",
+      "DOMAIN-SUFFIX,chatglm.cn",
+      "DOMAIN-SUFFIX,z.ai",
+      "DOMAIN-SUFFIX,zhipuai.cn",
+      "DOMAIN-SUFFIX,zhipucn.com"
+    ]
+  },
+  "baidu-wenxin": {
+    "core": [
+      "DOMAIN-SUFFIX,yiyan.baidu.com"
+    ]
+  },
+  "tencent-ai": {
+    "core": [
+      "DOMAIN-SUFFIX,hunyuan.tencent.com",
+      "DOMAIN-SUFFIX,yuanbao.tencent.com"
+    ]
+  },
+  "iflytek-spark": {
+    "core": [
+      "DOMAIN-SUFFIX,xinghuo.xfyun.cn"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+name: Sync reviewed upstreams
+on:
+  schedule:
+    - cron: '19 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: publish-reviewed-rules
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: github.repository == 'NET86/rules'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: checkout
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        id: python
+        with:
+          python-version: '3.12'
+      - run: python scripts/check_git_identity.py
+      - name: Recover or verify stable before any downloads, builds or source fetches
+        run: python scripts/release.py --recover-only
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Install pinned official-document HTTPS transport
+        run: 'python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt'
+      - run: python scripts/download_mihomo.py
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.8'
+          cache-dependency-path: sources/engines.json
+      - run: python scripts/build_flclash_core.py
+      - name: Refresh reviewed production inputs and diagnostic official radar
+        run: python scripts/sync.py
+      - run: python -m unittest discover -s tests -v
+      - run: python scripts/rules.py --check
+      - run: python scripts/verify_rules.py
+      - name: Validate both cores, publish, verify raw subscriptions and roll back stable on failure
+        run: python scripts/release.py --flclash-core .work/bin/flclash-core
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Update one exception issue only when needed
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
+        run: python scripts/notify_review.py sync .work/sync-report.json ${{ job.status == 'failure' && '--failed' || '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: sync-validation
+          path: |
+            .work/*report.json
+            .work/sync-error.txt
+            .work/*validation*.json
+            .work/mihomo-*.log
+          include-hidden-files: true
+          retention-days: 14

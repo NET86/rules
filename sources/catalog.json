@@ -1,0 +1,280 @@
+{
+  "schema": 1,
+  "profiles": {
+    "ai-daily": {
+      "budget": 5,
+      "members": ["openai", "google-ai", "claude", "grok", "perplexity"]
+    },
+    "ai-core": {
+      "budget": 15,
+      "members": ["openai", "google-ai", "claude", "grok", "perplexity", "microsoft-copilot", "github-copilot", "cursor", "mistral", "poe", "midjourney", "runway", "suno", "elevenlabs"]
+    },
+    "ai-cn": {
+      "budget": 10,
+      "members": ["deepseek", "qwen", "kimi", "doubao", "zhipu", "minimax", "kling", "baidu-wenxin", "tencent-ai", "iflytek-spark"]
+    }
+  },
+  "vendors": [
+    {
+      "id": "openai",
+      "name": "OpenAI / ChatGPT / Sora / Prism",
+      "group": "global",
+      "sources": [
+        "openai"
+      ]
+    },
+    {
+      "id": "claude",
+      "name": "Anthropic / Claude / Claude Code",
+      "group": "global",
+      "sources": [
+        "anthropic"
+      ]
+    },
+    {
+      "id": "grok",
+      "name": "xAI / Grok",
+      "group": "global",
+      "sources": [
+        "xai"
+      ]
+    },
+    {
+      "id": "perplexity",
+      "name": "Perplexity",
+      "group": "global",
+      "sources": [
+        "perplexity"
+      ]
+    },
+    {
+      "id": "google-ai",
+      "name": "Gemini / AI Studio / NotebookLM / Google AI",
+      "group": "global",
+      "select": {
+        "google-deepmind": [
+          "geller-pa.googleapis.com",
+          "generativelanguage.googleapis.com",
+          "proactivebackend-pa.googleapis.com",
+          "robinfrontend-pa.googleapis.com",
+          "ai.google.dev",
+          "alkalicore-pa.clients6.google.com",
+          "alkalimakersuite-pa.clients6.google.com",
+          "webchannel-alkalimakersuite-pa.clients6.google.com",
+          "generativeai.google",
+          "makersuite.google.com",
+          "ai.studio",
+          "aistudio.google.com",
+          "bard.google.com",
+          "gemini.google",
+          "gemini.google.com",
+          "gemini.gstatic.com",
+          "notebooklm-pa.googleapis.com",
+          "notebooklm.googleapis.com",
+          "notebook.google.com",
+          "notebooklm.google",
+          "notebooklm.google.com"
+        ]
+      }
+    },
+    {
+      "id": "microsoft-copilot",
+      "name": "Microsoft Copilot",
+      "group": "global",
+      "select": {
+        "category-ai-!cn": [
+          "copilot-stg.com",
+          "copilot.cloud.microsoft",
+          "copilot.com",
+          "copilot.microsoft.com"
+        ]
+      }
+    },
+    {
+      "id": "github-copilot",
+      "name": "GitHub Copilot",
+      "group": "global",
+      "sources": [
+        "github-copilot"
+      ]
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "group": "global",
+      "sources": [
+        "cursor"
+      ]
+    },
+    {
+      "id": "poe",
+      "name": "Poe",
+      "group": "global",
+      "sources": [
+        "poe"
+      ]
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral AI",
+      "group": "global",
+      "select": {
+        "category-ai-!cn": [
+          "mistral.ai"
+        ]
+      }
+    },
+    {
+      "id": "elevenlabs",
+      "name": "ElevenLabs",
+      "group": "global",
+      "sources": [
+        "elevenlabs"
+      ]
+    },
+    {
+      "id": "midjourney",
+      "name": "Midjourney",
+      "group": "global",
+      "select": {
+        "category-ai-!cn": [
+          "midjourney.com"
+        ]
+      }
+    },
+    {
+      "id": "runway",
+      "name": "Runway",
+      "group": "global"
+    },
+    {
+      "id": "suno",
+      "name": "Suno",
+      "group": "global"
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "group": "cn",
+      "sources": [
+        "deepseek"
+      ]
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen / Tongyi",
+      "group": "cn",
+      "select": {
+        "category-ai-cn": [
+          "qianwen.aliyun.com",
+          "qianwen.com",
+          "qianwenai.com",
+          "qwen.ai",
+          "qwenlm.ai",
+          "tongyi.aliyun.com",
+          "tongyi.com"
+        ]
+      }
+    },
+    {
+      "id": "kimi",
+      "name": "Kimi / Moonshot",
+      "group": "cn",
+      "select": {
+        "category-ai-cn": [
+          "kimi.com",
+          "moonshot.cn"
+        ],
+        "category-ai-!cn": [
+          "kimi.ai",
+          "moonshot.ai"
+        ]
+      }
+    },
+    {
+      "id": "doubao",
+      "name": "Doubao / Coze China",
+      "group": "cn",
+      "select": {
+        "doubao": [
+          "doubao.com",
+          "doubaocdn.com",
+          "coze.cn",
+          "cozecdn.com"
+        ]
+      }
+    },
+    {
+      "id": "zhipu",
+      "name": "Zhipu / GLM",
+      "group": "cn",
+      "select": {
+        "category-ai-cn": [
+          "bigmodel.cn",
+          "chatglm.cn",
+          "z.ai",
+          "zhipuai.cn",
+          "zhipucn.com"
+        ]
+      }
+    },
+    {
+      "id": "minimax",
+      "name": "MiniMax / Hailuo",
+      "group": "cn",
+      "select": {
+        "category-ai-cn": [
+          "hailuoai.com",
+          "minimaxi.com",
+          "xingyeai.com"
+        ],
+        "category-ai-!cn": [
+          "minimax.io"
+        ]
+      }
+    },
+    {
+      "id": "kling",
+      "name": "Kling AI",
+      "group": "cn",
+      "select": {
+        "category-ai-cn": [
+          "kechuangai.com",
+          "kling-ai.com",
+          "klingai.com"
+        ]
+      }
+    },
+    {
+      "id": "baidu-wenxin",
+      "name": "Baidu Wenxin / Wenxiaoyan",
+      "group": "cn",
+      "select": {
+        "category-ai-cn": [
+          "yiyan.baidu.com"
+        ]
+      }
+    },
+    {
+      "id": "tencent-ai",
+      "name": "Tencent Yuanbao / Hunyuan",
+      "group": "cn",
+      "select": {
+        "category-ai-cn": [
+          "hunyuan.tencent.com",
+          "yuanbao.tencent.com"
+        ]
+      }
+    },
+    {
+      "id": "iflytek-spark",
+      "name": "iFlytek Spark",
+      "group": "cn",
+      "select": {
+        "category-ai-cn": [
+          "xinghuo.xfyun.cn"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "sources": [
+    {"id":"openai-network","vendor":"openai","url":"https://help.openai.com/en/articles/9247338","format":"html","sections":["OpenAI/ChatGPT domains to allowlist","WebSocket requirements for ChatGPT and Codex"],"required_hosts":["chatgpt.com","openai.com"],"min_hosts":10},
+    {"id":"anthropic-network","vendor":"claude","url":"https://code.claude.com/docs/en/corporate-proxy","format":"html","sections":["Network access requirements"],"required_hosts":["api.anthropic.com"],"min_hosts":3},
+    {"id":"cursor-network","vendor":"cursor","url":"https://cursor.com/docs/enterprise/network-configuration","format":"html","sections":["IP allowlisting","SSL inspection and DLP"],"required_hosts":["cursor.sh","cursorvm.com"],"min_hosts":5},
+    {"id":"cursor-cloud-agent","vendor":"cursor","url":"https://cursor.com/docs/cloud-agent/self-hosted/pool","format":"html","sections":["Networking"],"required_hosts":["cloud-agent-artifacts.s3.us-east-1.amazonaws.com"],"min_hosts":1},
+    {"id":"google-codeassist","vendor":"google-ai","url":"https://docs.cloud.google.com/gemini/docs/codeassist/set-up-gemini?hl=en","format":"html","sections":["Configure the firewall for API traffic between your IDE and Google"],"required_hosts":["cloudaicompanion.googleapis.com"],"min_hosts":2},
+    {"id":"google-generative-api","vendor":"google-ai","url":"https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta","format":"discovery","required_hosts":["generativelanguage.googleapis.com"],"min_hosts":1}
+  ]
+}

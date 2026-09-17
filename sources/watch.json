@@ -1,0 +1,35 @@
+{
+  "schema": 2,
+  "sources": [
+    {
+      "id": "sukka-source-ai",
+      "url": "https://raw.githubusercontent.com/SukkaW/Surge/master/Source/non_ip/ai.conf",
+      "role": "Secondary gap radar only; never changes production candidates",
+      "sections": [
+        "OpenAI / ChatGPT",
+        "Perplexity",
+        "Claude",
+        "Google",
+        "POE",
+        "GitHub Copilot",
+        "Grok",
+        "Cursor"
+      ],
+      "ignore_rules": [
+        "DOMAIN-KEYWORD,openai",
+        "DOMAIN-SUFFIX,ai.com",
+        "DOMAIN-SUFFIX,g.ai",
+        "URL-REGEX,https://www\\.google\\.com/.*continue=https://gemini\\.google\\.com.+",
+        "DOMAIN,aisandbox-pa.googleapis.com",
+        "DOMAIN-SUFFIX,deepmind.com",
+        "DOMAIN-SUFFIX,deepmind.google",
+        "DOMAIN-SUFFIX,cloudcode-pa.googleapis.com",
+        "DOMAIN,jules.google.com",
+        "DOMAIN,aida.googleapis.com",
+        "DOMAIN,antigravity.google",
+        "DOMAIN,antigravity-unleash.goog",
+        "DOMAIN,daily-cloudcode-pa.googleapis.com"
+      ]
+    }
+  ]
+}

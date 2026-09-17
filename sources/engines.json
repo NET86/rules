@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "flclash": {
+    "app_repository": "https://github.com/chen08209/FlClash",
+    "app_revision": "7c61c90ac20493b474d19c75ec96262b478b4b88",
+    "app_version": "0.8.98",
+    "core_repository": "https://github.com/chen08209/Clash.Meta",
+    "core_revision": "70f0570405c3c2c47bb113b88db95006d239b346",
+    "license": "GPL-3.0",
+    "scope": "Standalone CLI built from the exact embedded submodule; no FlClash UI/IPC claim"
+  }
+}

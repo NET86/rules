@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "add": [
+    {"vendor":"openai","rule":"DOMAIN,cdn.openaimerge.com","tier":"core","source":"https://help.openai.com/en/articles/9247338","reason":"Exact CDN hostname in the official OpenAI network allowlist, checked 2026-09-15; do not widen to all openaimerge.com"},
+    {"vendor":"cursor","rule":"DOMAIN-SUFFIX,cursorvm.com","tier":"core","source":"https://cursor.com/docs/enterprise/network-configuration","reason":"Cursor virtual-machine hosts; not the entire cloud provider"},
+    {"vendor":"google-ai","rule":"DOMAIN,generativelanguage.mtls.googleapis.com","tier":"core","source":"https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta","reason":"Official Generative Language discovery document exposes a dedicated mTLS endpoint; keep exact to avoid widening googleapis.com"},
+    {"vendor":"runway","rule":"DOMAIN-SUFFIX,runwayml.com","tier":"core","source":"https://runwayml.com/","reason":"Official Runway service domain; baseline coverage, not a claim of all upload dependencies"},
+    {"vendor":"runway","rule":"DOMAIN-SUFFIX,runway.com","tier":"core","source":"https://runway.com/","reason":"Current official homepage; runwayml.com redirects here, checked 2026-09-15"},
+    {"vendor":"suno","rule":"DOMAIN-SUFFIX,suno.com","tier":"core","source":"https://suno.com/","reason":"Official Suno service domain"},
+    {"vendor":"suno","rule":"DOMAIN-SUFFIX,suno.ai","tier":"core","source":"https://suno.ai/","reason":"Official legacy domain, redirects to suno.com"}
+  ],
+  "drop": {
+    "openai": {
+      "DOMAIN-SUFFIX,host.livekit.cloud": "Shared LiveKit namespace; ChatGPT-specific LiveKit remains covered separately",
+      "DOMAIN-SUFFIX,turn.livekit.cloud": "Shared TURN namespace; do not route unrelated LiveKit tenants through the AI profile"
+    }
+  },
+  "surge_regex": {
+    "^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$": {
+      "rule":"DOMAIN-WILDCARD,chatgpt-async-webps-prod-*-*.webpubsub.azure.com",
+      "reason":"Surge has no DOMAIN-REGEX. Reviewed hostname wildcard is wider than the regex: it cannot enforce nonempty segments or a numeric final segment. Never broaden to all webpubsub.azure.com."
+    }
+  }
+}
