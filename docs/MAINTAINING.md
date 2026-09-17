@@ -60,7 +60,7 @@
 - `intake-policy.json`：官方共享依赖/placeholder 排除策略。
 - `automation.json` / `automation-state.json`：删除观察参数与运行状态。
 - `watch.json`：只读 Sukka secondary radar 配置；不保存自动 ack baseline。
-- `engines.json`：双核心验证固定版本。
+- `engines.json`：FlClash 应用与内嵌核心的固定版本；Mihomo 版本及下载摘要固定在 `scripts/download_mihomo.py`。
 
 ## 本地验证
 
@@ -81,9 +81,11 @@ python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label f
 python scripts/audit_sources.py
 ~~~
 
+身份检查扫描已获取的全部 refs，Git 读取失败即失败。main CI、sync 和每周 radar 均执行检查；stable/LKG 独立快进提交不保证立即触发检查。这是误用检测，不是写权限或签名验证。
+
 ## Issue 与调度噪声
 
-保留 sync / secondary-radar 两类异常通知；状态不变时不重复制造评论。Production sync 每 6 小时运行一次；Secondary radar 每周运行且只读，不提交 baseline、不占用 production publication concurrency。
+保留 sync / secondary-radar 两类异常通知；状态不变时不重复制造评论。通知在证据上传后执行，上传失败不会先被当成恢复；通知自身或 runner 收尾失败仍以 Actions 状态为准。Production sync 每 6 小时运行一次；Secondary radar 每周运行且只读，不提交 baseline、不占用 production publication concurrency。
 
 GitHub Actions cron 可能延迟；公共仓库长期无活动时计划任务也可能被停用。仓库内部无法在“调度完全没有启动”时自证健康，因此不要把历史绿色状态当永久 freshness 证明。无规则变化时不制造空 stable 提交。
 

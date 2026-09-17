@@ -252,15 +252,14 @@ class RepositoryTests(unittest.TestCase):
         rule = rules.Rule("DOMAIN", "shared.example.com")
         members = {("one", "core", rule): {"https://one.example.com/"}, ("two", "core", rule): {"https://two.example.com/"}}
         catalog = {"vendors": [{"id": "one", "name": "One"}, {"id": "two", "name": "Two"}]}
-        body, count = rules.render_members(members, "surge", {}, catalog, {})
+        body, count = rules.render_members(members, "surge", {}, catalog)
         self.assertEqual(count, 1)
         self.assertEqual(body.count(rule.text), 1)
         self.assertNotIn("Source:", body)
 
-    def test_retained_state_and_multiline_evidence_do_not_leak_into_subscription(self):
+    def test_multiline_evidence_does_not_leak_into_subscription(self):
         key = ("one", "core", rules.Rule("DOMAIN", "old.example.com"))
-        body, count = rules.render_members({key: {"https://source.example.com/\nDOMAIN,evil.example.com"}}, "surge", {}, {"vendors": [{"id": "one", "name": "One"}]}, {}, {key})
-        self.assertNotIn("RETAINED", body)
+        body, count = rules.render_members({key: {"https://source.example.com/\nDOMAIN,evil.example.com"}}, "surge", {}, {"vendors": [{"id": "one", "name": "One"}]})
         self.assertNotIn("evil.example.com", body)
         self.assertEqual(count, 1)
 

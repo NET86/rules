@@ -254,6 +254,12 @@ class NotificationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             notify_review.notify("sync", self.report, Mock())
 
+    def test_notification_follows_evidence_upload(self):
+        for workflow in ("sync", "audit"):
+            text = (rules.ROOT / f".github/workflows/{workflow}.yml").read_text(encoding="utf-8")
+            with self.subTest(workflow=workflow):
+                self.assertLess(text.index("actions/upload-artifact@"), text.index("scripts/notify_review.py"))
+
 
 class EngineHarnessTests(unittest.TestCase):
     def socket_context(self):

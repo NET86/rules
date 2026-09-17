@@ -225,36 +225,17 @@ def main():
                 for name, target in manifest["bundles"].items():
                     if loaded[name]["ruleCount"] != target["mihomo"]["count"]:
                         raise RuntimeError(f"Provider count mismatch: {name}")
-                positive = [
-                    "api.openai.com", "chatgpt.com", "files.oaiusercontent.com", "cdn.oaistatic.com", "cdn.openaimerge.com",
-                    "openaiassets.blob.core.windows.net", "chatgpt-async-webps-prod-eastus-123.webpubsub.azure.com",
-                    "claude.ai", "platform.claude.com", "bridge.claudeusercontent.com", "api.anthropic.com",
-                    "grok.x.com", "api.x.ai", "perplexity.com", "ppl-ai-file-upload.s3.amazonaws.com",
-                    "aistudio.google.com", "notebooklm-pa.googleapis.com", "antigravity.google.com",
-                    "a.b.cursorvm.com", "cloud-agent-artifacts.s3.us-east-1.amazonaws.com",
-                    "api.githubcopilot.com", "copilot.microsoft.com", "runway.com", "suno.com"
-                ]
-                negative = [
-                    "api.stripe.com", "tenant.auth0.com", "unrelated.ingest.sentry.io", "storage.googleapis.com",
-                    "other-bucket.s3.amazonaws.com", "api.github.com", "www.google.com", "www.microsoft.com",
-                    "example.livekit.cloud", "host.livekit.cloud", "x.com", "deepseek.com", "unrelated.openaimerge.com",
-                    "openai.com.attacker.test", "chatgpt-async-webps-prod-eastus-abc.webpubsub.azure.com"
-                ]
-                if "profiles" in manifest:
-                    profile_name = "ai-daily" if args.profile == "ai-daily" else "ai-core"
-                    contract_spec = manifest.get("semantic_contract")
-                    if not contract_spec or contract_spec.get("path") != "sources/semantic-contracts.json":
-                        raise RuntimeError("Schema-2 manifest missing semantic contract")
-                    contracts = read_json(root / contract_spec["path"])
-                    contract = contracts.get("profiles", {}).get(profile_name)
-                    if not contract:
-                        raise RuntimeError(f"Missing semantic contract profile: {profile_name}")
-                    positive = list(contract.get("must_match", []))
-                    negative = list(contract.get("must_not_match", []))
-                    selected_vendors = set(manifest["profiles"][profile_name]["members"])
-                else:
-                    # Backward-compatible healthcheck for legacy stable/LKG during migration.
-                    selected_vendors = set(manifest["daily_profile"]["vendors"])
+                profile_name = "ai-daily" if args.profile == "ai-daily" else "ai-core"
+                contract_spec = manifest.get("semantic_contract")
+                if not contract_spec or contract_spec.get("path") != "sources/semantic-contracts.json":
+                    raise RuntimeError("Manifest missing semantic contract")
+                contracts = read_json(root / contract_spec["path"])
+                contract = contracts.get("profiles", {}).get(profile_name)
+                if not contract:
+                    raise RuntimeError(f"Missing semantic contract profile: {profile_name}")
+                positive = list(contract.get("must_match", []))
+                negative = list(contract.get("must_not_match", []))
+                selected_vendors = set(manifest["profiles"][profile_name]["members"])
                 positive += [r.split(",")[1].split("/")[0] for r in (root / "rules/surge/openai-voice-ip.list").read_text(encoding="utf-8").splitlines() if r.startswith("IP-CIDR,")][:1]
                 core = [Rule.from_text(row["rule"]) for row in manifest["provenance"]
                         if row["tier"] == "core" and row["vendor"] in selected_vendors]
