@@ -159,6 +159,18 @@ class IntakeTests(unittest.TestCase):
             with self.assertRaises((ValueError, json.JSONDecodeError)):
                 verify_rules.parse_artifact(data, "mihomo")
 
+    def test_missing_release_gates_cannot_pass_as_legacy(self):
+        for field in ("semantic_contract", "profiles"):
+            for missing in (True, False):
+                manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
+                if missing:
+                    manifest.pop(field)
+                else:
+                    manifest[field] = {}
+                with self.subTest(field=field, missing=missing), patch.object(verify_rules, "read_json", return_value=manifest):
+                    with self.assertRaisesRegex(ValueError, "Missing required"):
+                        verify_rules.verify(rules.ROOT)
+
 
 class ReleaseTests(unittest.TestCase):
     def setUp(self):

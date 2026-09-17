@@ -289,12 +289,11 @@ def render_rule(rule, target, patches):
             raise ValueError("Unsafe Surge adapter")
         return translated.text
     if rule.kind in {"IP-CIDR", "IP-CIDR6"}:
-        kind = "IP-CIDR6" if target == "surge" and rule.kind == "IP-CIDR6" else rule.kind
-        return f"{kind},{rule.value},no-resolve"
+        return f"{rule.kind},{rule.value},no-resolve"
     return rule.text
 
 
-def render_members(members, target, patches, catalog, lock, retained=()):
+def render_members(members, target, patches, catalog):
     """Group by vendor and keep subscription files compact.
 
     Detailed provenance and retained-state evidence live in manifest/report data.
@@ -331,7 +330,7 @@ def render_members(members, target, patches, catalog, lock, retained=()):
     return "\n".join(lines) + "\n", len(records)
 
 
-def subscription_index(catalog, bundles):
+def subscription_index(catalog):
     lines = ["# 订阅目录", "", "本页自动生成。日常使用只需选 ai-daily；合集与单厂商分层展示。", "",
              "下列链接是规则文件，不是节点订阅。stable 是支持的订阅入口；main 仅用于开发与候选。", "",
              "## 合集", "", "| 版本 | 功能与选择建议 | Surge | Mihomo |", "| --- | --- | --- | --- |"]
@@ -416,14 +415,13 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
         },
         "client_validation": "See docs/VALIDATION.md; generation is not a connectivity test"
     }
-    retained = {(row["vendor"], row["tier"], Rule.from_text(row["rule"])) for row in state.get("retained", [])}
     for name, members in sorted(bundles.items()):
         active_rules = {rule for _, _, rule in members}
         if not active_rules:
             raise ValueError(f"Refusing empty bundle: {name}")
         paths = {}
         for target, ext in (("surge", "list"), ("mihomo", "yaml")):
-            body, count = render_members(members, target, patches, catalog, lock, retained)
+            body, count = render_members(members, target, patches, catalog)
             description = BUNDLE_DESCRIPTIONS.get(name, "单厂商核心域名；不含共享依赖和语音 IP。")
             header = (
                 f"# NET86/rules | {name}\n"
@@ -444,7 +442,7 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
         for (v, t, r), origins in sorted(entries.items())
     ]
     files["rules/manifest.json"] = json_text(manifest)
-    files["rules/README.md"] = subscription_index(catalog, bundles)
+    files["rules/README.md"] = subscription_index(catalog)
     return files
 
 

@@ -36,12 +36,7 @@ def check_current_identity() -> list[str]:
 
 
 def check_history() -> list[str]:
-    try:
-        raw = git("log", "--all", "--format=%H%x09%an%x09%ae%x09%cn%x09%ce")
-    except subprocess.CalledProcessError:
-        return []
-    if not raw:
-        return []
+    raw = git("log", "--all", "--format=%H%x09%an%x09%ae%x09%cn%x09%ce")
     problems = []
     for line in raw.splitlines():
         sha, an, ae, cn, ce = line.split("\t", 4)

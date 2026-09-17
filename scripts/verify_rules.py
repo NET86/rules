@@ -78,7 +78,7 @@ def check_cases(label, rules, contract):
 def semantic_contract(root, manifest, parsed_bundles):
     spec = manifest.get("semantic_contract")
     if not spec:
-        return "NOT_PRESENT_LEGACY"
+        raise ValueError("Missing required manifest profile/semantic contract")
     if spec.get("path") != "sources/semantic-contracts.json":
         raise ValueError("Unexpected semantic contract path")
     path = root / spec["path"]
@@ -108,7 +108,7 @@ def profile_equivalence(manifest, parsed_bundles):
     """Independently prove each aggregate is exactly its declared members/features."""
     profiles = manifest.get("profiles")
     if not profiles:
-        return "NOT_PRESENT_LEGACY"
+        raise ValueError("Missing required manifest profile/semantic contract")
     if set(profiles) != {"ai-daily", "ai-core", "ai-cn"}:
         raise ValueError("Unexpected profile set")
     features = manifest.get("profile_features", {})

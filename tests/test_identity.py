@@ -1,6 +1,7 @@
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import check_git_identity as identity
@@ -30,6 +31,17 @@ class IdentityPolicyTests(unittest.TestCase):
             "example[bot]",
             "person@example.com",
         ))
+
+    def test_unreadable_history_is_not_success(self):
+        error = identity.subprocess.CalledProcessError(128, ["git", "log"])
+        with patch.object(identity, "git", side_effect=error), self.assertRaises(type(error)):
+            identity.check_history()
+
+    def test_history_scan_includes_non_main_refs(self):
+        row = f"{'a' * 40}\tOther User\tperson@example.invalid\t{identity.NET86_NAME}\t{identity.NET86_EMAIL}"
+        with patch.object(identity, "git", return_value=row) as git:
+            self.assertEqual(len(identity.check_history()), 1)
+        self.assertIn("--all", git.call_args.args)
 
 
 if __name__ == "__main__":
