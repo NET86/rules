@@ -83,7 +83,7 @@ python scripts/audit_sources.py
 
 ## Issue 与调度噪声
 
-保留 sync / secondary-radar 两类异常通知；状态不变时不重复制造评论。Secondary radar 每周运行且只读，不提交 baseline、不占用 production publication concurrency。
+保留 sync / secondary-radar 两类异常通知；状态不变时不重复制造评论。Production sync 每 6 小时运行一次；Secondary radar 每周运行且只读，不提交 baseline、不占用 production publication concurrency。
 
 GitHub Actions cron 可能延迟；公共仓库长期无活动时计划任务也可能被停用。仓库内部无法在“调度完全没有启动”时自证健康，因此不要把历史绿色状态当永久 freshness 证明。无规则变化时不制造空 stable 提交。
 
