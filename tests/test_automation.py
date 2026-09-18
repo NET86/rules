@@ -165,6 +165,84 @@ class AuditTests(unittest.TestCase):
     def test_exact_host_does_not_cover_suffix_widening(self):
         self.assertFalse(audit_sources.covered(rules.Rule("DOMAIN-SUFFIX", "example.com"), {rules.Rule("DOMAIN", "example.com")}))
 
+    def test_enrichment_adds_cross_source_evidence_vendor_impact_and_gate(self):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "anthropic").write_text("full:new.example.com\n", encoding="utf-8")
+            catalog = {
+                "profiles": {
+                    "ai-daily": {"members": ["claude"]},
+                    "ai-core": {"members": ["claude"]},
+                    "ai-cn": {"members": []},
+                },
+                "vendors": [{"id": "claude", "sources": ["anthropic"]}],
+            }
+            pending = [{
+                "source_id": "sukka-source-ai", "source": "https://example.test/ai.conf",
+                "section": "Claude", "rule": "DOMAIN,new.example.com",
+                "reason": "uncovered-secondary-domain",
+            }]
+            official_state = {"documents": {"claude-network": {
+                "vendor": "claude", "url": "https://example.test/official",
+                "rules": ["DOMAIN,new.example.com"],
+            }}}
+            rows = audit_sources.enrich_pending(
+                pending, catalog, {"claude": {"core": ["DOMAIN-SUFFIX,claude.ai"]}},
+                {"surge_regex": {}}, official_state, data,
+            )
+        row = rows[0]
+        self.assertEqual(row["vendor"], "claude")
+        self.assertEqual(row["impact"], ["claude", "ai-daily", "ai-core"])
+        self.assertTrue(row["evidence"]["v2fly"]["present"])
+        self.assertEqual(row["evidence"]["v2fly"]["level"], "confirmed")
+        self.assertEqual(row["evidence"]["official"]["level"], "confirmed")
+        self.assertEqual(row["evidence"]["product_scope"]["status"], "in-scope")
+        self.assertEqual(row["block_reason"], "new-or-widened-scope")
+        summary = audit_sources.format_review_item(row)
+        self.assertIn("厂商：`claude`", summary)
+        self.assertIn("V2Fly ✓ confirmed · anthropic", summary)
+        self.assertIn("官方 confirmed · claude-network", summary)
+        self.assertIn("若批准影响：claude / ai-daily / ai-core", summary)
+        self.assertIn("会扩大现有批准边界，需要人工确认", summary)
+
+    def test_google_unselected_upstream_rule_is_explained_not_auto_accepted(self):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "google-deepmind").write_text("full:jules.google.com\n", encoding="utf-8")
+            catalog = {
+                "profiles": {
+                    "ai-daily": {"members": ["google-ai"]},
+                    "ai-core": {"members": ["google-ai"]},
+                    "ai-cn": {"members": []},
+                },
+                "vendors": [{"id": "google-ai", "select": {"google-deepmind": ["gemini.google.com"]}}],
+            }
+            pending = [{
+                "source_id": "sukka-source-ai", "source": "https://example.test/ai.conf",
+                "section": "Google", "rule": "DOMAIN,jules.google.com",
+                "reason": "uncovered-secondary-domain",
+            }]
+            rows = audit_sources.enrich_pending(
+                pending, catalog, {"google-ai": {"core": ["DOMAIN-SUFFIX,gemini.google.com"]}},
+                {"surge_regex": {}}, {"documents": {}}, data,
+            )
+        row = rows[0]
+        self.assertTrue(row["evidence"]["v2fly"]["present"])
+        self.assertEqual(row["evidence"]["product_scope"]["status"], "outside-explicit-select")
+        self.assertEqual(row["block_reason"], "outside-explicit-product-select")
+
+    def test_wider_sukka_scope_is_only_related_v2fly_evidence(self):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "anthropic").write_text("full:new.example.com\n", encoding="utf-8")
+            catalog = {"profiles": {}, "vendors": [{"id": "claude", "sources": ["anthropic"]}]}
+            evidence = audit_sources.v2fly_evidence(
+                rules.Rule("DOMAIN-SUFFIX", "new.example.com"), "claude", catalog, data,
+            )
+        self.assertTrue(evidence["present"])
+        self.assertEqual(evidence["level"], "related")
+        self.assertEqual(evidence["matches"][0]["relation"], "same-domain-different-scope")
+
     def test_actions_summary_lists_scan_counts_and_gap_details(self):
         report = {
             "review_required": [{
@@ -188,7 +266,7 @@ class AuditTests(unittest.TestCase):
         self.assertIn("策略排除：**15**", text)
         self.assertIn("待核验缺口：**1**", text)
         self.assertIn("`Claude` · `DOMAIN-SUFFIX,newclaude.example`", text)
-        self.assertIn("需要 V2Fly / 官方证据 / 人工 patch 确认", text)
+        self.assertIn("证据仅辅助复核，不会自动扩大生产边界", text)
 
     def test_actions_summary_caps_review_details(self):
         report = {
@@ -268,17 +346,29 @@ class NotificationTests(unittest.TestCase):
         self.assertEqual(report["review_required"], [{"reason": "workflow-failed"}])
         self.assertIn("本次工作流失败", notify_review.issue_body("sync", report))
 
-    def test_sources_issue_preserves_section(self):
+    def test_sources_issue_preserves_section_and_evidence(self):
         report = {"review_required": [{
             "source_id": "sukka-source-ai",
             "section": "Claude",
+            "vendor": "claude",
             "rule": "DOMAIN,new.example",
             "reason": "uncovered-secondary-domain",
+            "impact": ["claude", "ai-daily", "ai-core"],
+            "evidence": {
+                "v2fly": {"status": "available", "present": True, "level": "confirmed", "matches": []},
+                "official": {"level": "none", "matches": []},
+                "product_scope": {"status": "in-scope", "basis": "vendor-dedicated-v2fly-source"},
+            },
+            "block_reason": "new-or-widened-scope",
+            "block_reason_label": "会扩大现有批准边界，需要人工确认",
         }]}
         body = notify_review.issue_body("sources", report)
         self.assertIn("Sukka 二级雷达只读运行", body)
         self.assertIn('"section": "Claude"', body)
         self.assertIn('"rule": "DOMAIN,new.example"', body)
+        self.assertIn('"impact": [', body)
+        self.assertIn('"v2fly": {', body)
+        self.assertIn('"block_reason": "new-or-widened-scope"', body)
 
     def test_failed_workflow_preserves_pending_findings(self):
         with tempfile.TemporaryDirectory() as td:
