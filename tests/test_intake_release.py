@@ -197,7 +197,16 @@ class ReleaseSummaryTests(unittest.TestCase):
         text = release.render_actions_summary(
             {"provenance": before_rows},
             {"provenance": after_rows},
-            {"review_required": [{"reason": "demo"}], "quarantined_count": 2, "retained_count": 3},
+            {
+                "review_required": [{
+                    "vendor": "openai",
+                    "tier": "core",
+                    "rule": "DOMAIN-SUFFIX,new.example",
+                    "reason": "new-or-widened-scope",
+                }],
+                "quarantined_count": 2,
+                "retained_count": 3,
+            },
             {"result": "PASS", "candidate": "a" * 40},
         )
 
@@ -213,7 +222,31 @@ class ReleaseSummaryTests(unittest.TestCase):
         self.assertIn("待审核 / 异常：**1**", text)
         self.assertIn("隔离：**2**", text)
         self.assertIn("保留观察：**3**", text)
+        self.assertIn("### 待审核 / 异常明细（1）", text)
+        self.assertIn("`openai` · `DOMAIN-SUFFIX,new.example` · core — 新根域或匹配范围扩大，已隔离", text)
         self.assertIn("stable：已更新并通过远端验证", text)
+
+    def test_summary_caps_review_details(self):
+        manifest = {"provenance": [self.row("demo", "DOMAIN,example.com")]}
+        review_required = [
+            {
+                "vendor": f"vendor-{index:02d}",
+                "rule": f"DOMAIN-SUFFIX,review-{index:02d}.example",
+                "reason": "new-or-widened-scope",
+            }
+            for index in range(12)
+        ]
+        text = release.render_actions_summary(
+            manifest,
+            manifest,
+            {"review_required": review_required, "quarantined_count": 12, "retained_count": 0},
+            {"result": "PASS", "stable_noop": "UNCHANGED_GENERATED_MANIFEST"},
+        )
+
+        self.assertIn("### 待审核 / 异常明细（12）", text)
+        self.assertIn("review-09.example", text)
+        self.assertNotIn("review-10.example", text)
+        self.assertIn("另有 **2** 条，详见 exception Issue / sync-report.json。", text)
 
     def test_summary_marks_no_production_change(self):
         manifest = {"provenance": [self.row("demo", "DOMAIN,example.com")]}
