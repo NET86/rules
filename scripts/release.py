@@ -18,6 +18,116 @@ from sync import fetch
 from verify_rules import verify
 
 AUTO_PATHS = ["sources/snapshot", "sources/official-state.json", "sources/automation-state.json", "rules"]
+SUMMARY_LIMIT = 10
+
+
+def manifest_changes(before, after):
+    def rows(manifest):
+        return {
+            (row["vendor"], row["rule"]): {
+                "tier": row["tier"],
+                "sources": tuple(row.get("sources", [])),
+            }
+            for row in manifest.get("provenance", [])
+        }
+
+    old, new = rows(before), rows(after)
+    added = [
+        {"vendor": vendor, "rule": rule, **new[(vendor, rule)]}
+        for vendor, rule in sorted(new.keys() - old.keys())
+    ]
+    removed = [
+        {"vendor": vendor, "rule": rule, **old[(vendor, rule)]}
+        for vendor, rule in sorted(old.keys() - new.keys())
+    ]
+    changed = []
+    for vendor, rule in sorted(old.keys() & new.keys()):
+        if old[(vendor, rule)] != new[(vendor, rule)]:
+            changed.append({
+                "vendor": vendor,
+                "rule": rule,
+                "before": old[(vendor, rule)],
+                "after": new[(vendor, rule)],
+            })
+    return added, changed, removed
+
+
+def render_actions_summary(before, after, sync_report, release_report, limit=SUMMARY_LIMIT):
+    added, changed, removed = manifest_changes(before, after)
+    lines = ["## Rules 同步摘要", "", "### 生产规则"]
+
+    if not (added or changed or removed):
+        lines.append("- 无变化")
+    else:
+        def append_group(title, rows, formatter):
+            if not rows:
+                return
+            lines.extend(["", f"#### {title}（{len(rows)}）"])
+            for row in rows[:limit]:
+                lines.append("- " + formatter(row))
+            extra = len(rows) - limit
+            if extra > 0:
+                lines.append(f"- 另有 **{extra}** 条，详见完整提交 diff。")
+
+        append_group(
+            "新增", added,
+            lambda row: f"`{row['vendor']}` · `{row['rule']}` · {row['tier']}",
+        )
+
+        def changed_text(row):
+            details = []
+            if row["before"]["tier"] != row["after"]["tier"]:
+                details.append(f"层级 {row['before']['tier']} → {row['after']['tier']}")
+            if row["before"]["sources"] != row["after"]["sources"]:
+                details.append("来源变化")
+            return f"`{row['vendor']}` · `{row['rule']}` · " + "；".join(details)
+
+        append_group("变化", changed, changed_text)
+        append_group(
+            "删除", removed,
+            lambda row: f"`{row['vendor']}` · `{row['rule']}` · {row['tier']}",
+        )
+
+    review_required = sync_report.get("review_required", [])
+    lines.extend([
+        "",
+        "### 同步状态",
+        f"- 待审核 / 异常：**{len(review_required)}**",
+        f"- 隔离：**{sync_report.get('quarantined_count', 0)}**",
+        f"- 保留观察：**{sync_report.get('retained_count', 0)}**",
+        "",
+        "### 发布结果",
+        f"- 结果：**{release_report.get('result', 'UNKNOWN')}**",
+    ])
+    if release_report.get("stable_noop") == "UNCHANGED_GENERATED_MANIFEST":
+        lines.append("- stable：生产 manifest 无变化，未轮换")
+    elif release_report.get("result") == "PASS":
+        lines.append("- stable：已更新并通过远端验证")
+
+    candidate = release_report.get("candidate")
+    if candidate:
+        lines.append(f"- candidate：`{candidate[:12]}`")
+        server = os.environ.get("GITHUB_SERVER_URL")
+        repository = os.environ.get("GITHUB_REPOSITORY")
+        if server and repository:
+            lines.append(f"- [查看完整提交 diff]({server}/{repository}/commit/{candidate})")
+    return "\n".join(lines) + "\n"
+
+
+def append_actions_summary(before, after, sync_report, release_report):
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        text = render_actions_summary(before, after, sync_report, release_report)
+    except Exception as exc:
+        text = (
+            "## Rules 同步摘要\n\n"
+            f"- 摘要生成失败：`{type(exc).__name__}`\n"
+            f"- 发布结果：**{release_report.get('result', 'UNKNOWN')}**\n"
+        )
+    with Path(path).open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
 
 
 class Publisher:
@@ -209,6 +319,7 @@ def main():
     work.mkdir(exist_ok=True)
     report = {"result": "RECOVERY_PREFLIGHT" if args.recover_only else "PREVALIDATING"}
     publisher = Publisher(ROOT)
+    before_manifest = None
     try:
         publisher.git("config", "user.name", "github-actions[bot]")
         publisher.git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
@@ -225,6 +336,7 @@ def main():
             report["result"] = "PASS"
             return
 
+        before_manifest = json.loads(publisher.git("show", "HEAD:rules/manifest.json"))
         if args.flclash_core is None:
             raise ValueError("--flclash-core is required for full publication validation")
         binaries = [("mihomo", args.mihomo.resolve()), ("flclash-core", args.flclash_core.resolve())]
@@ -268,6 +380,11 @@ def main():
         raise
     finally:
         (work / "release-report.json").write_text(json_text(report), encoding="utf-8")
+        if not args.recover_only:
+            current_manifest = json.loads((ROOT / "rules/manifest.json").read_text(encoding="utf-8"))
+            sync_report_path = work / "sync-report.json"
+            sync_report = json.loads(sync_report_path.read_text(encoding="utf-8")) if sync_report_path.exists() else {}
+            append_actions_summary(before_manifest or {}, current_manifest, sync_report, report)
         print(json_text(report))
 
 

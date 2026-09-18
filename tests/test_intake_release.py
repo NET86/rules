@@ -172,6 +172,63 @@ class IntakeTests(unittest.TestCase):
                         verify_rules.verify(rules.ROOT)
 
 
+class ReleaseSummaryTests(unittest.TestCase):
+    @staticmethod
+    def row(vendor, rule, tier="core", sources=None):
+        return {
+            "vendor": vendor,
+            "rule": rule,
+            "tier": tier,
+            "sources": sources or [f"source:{vendor}"],
+        }
+
+    def test_summary_lists_changes_and_caps_each_group(self):
+        before_rows = [
+            self.row("changed", "DOMAIN,changed.example", sources=["old-source"]),
+            self.row("removed", "DOMAIN,removed.example"),
+        ]
+        after_rows = [
+            self.row("changed", "DOMAIN,changed.example", tier="extended", sources=["new-source"]),
+            *[
+                self.row(f"vendor-{index:02d}", f"DOMAIN,added-{index:02d}.example")
+                for index in range(12)
+            ],
+        ]
+        text = release.render_actions_summary(
+            {"provenance": before_rows},
+            {"provenance": after_rows},
+            {"review_required": [{"reason": "demo"}], "quarantined_count": 2, "retained_count": 3},
+            {"result": "PASS", "candidate": "a" * 40},
+        )
+
+        self.assertIn("#### 新增（12）", text)
+        self.assertIn("vendor-09", text)
+        self.assertIn("DOMAIN,added-09.example", text)
+        self.assertNotIn("DOMAIN,added-10.example", text)
+        self.assertIn("另有 **2** 条", text)
+        self.assertIn("#### 变化（1）", text)
+        self.assertIn("层级 core → extended；来源变化", text)
+        self.assertIn("#### 删除（1）", text)
+        self.assertIn("removed.example", text)
+        self.assertIn("待审核 / 异常：**1**", text)
+        self.assertIn("隔离：**2**", text)
+        self.assertIn("保留观察：**3**", text)
+        self.assertIn("stable：已更新并通过远端验证", text)
+
+    def test_summary_marks_no_production_change(self):
+        manifest = {"provenance": [self.row("demo", "DOMAIN,example.com")]}
+        text = release.render_actions_summary(
+            manifest,
+            manifest,
+            {"review_required": [], "quarantined_count": 0, "retained_count": 0},
+            {"result": "PASS", "stable_noop": "UNCHANGED_GENERATED_MANIFEST"},
+        )
+        self.assertIn("### 生产规则\n- 无变化", text)
+        self.assertNotIn("#### 新增", text)
+        self.assertNotIn("#### 删除", text)
+        self.assertIn("stable：生产 manifest 无变化，未轮换", text)
+
+
 class ReleaseTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
