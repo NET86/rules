@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
 """Read-only secondary radar: report uncovered narrow domains, never mutate production."""
 
+import os
+from pathlib import Path
+
 from rules import ROOT, FORBIDDEN_CORE, Rule, json_text, read_json
 from sync import fetch
+
+
+SUMMARY_LIMIT = 10
+REVIEW_REASON_LABELS = {
+    "uncovered-secondary-domain": "Sukka 有、当前生产未覆盖，需要 V2Fly / 官方证据 / 人工 patch 确认",
+    "secondary-radar-unavailable": "二级雷达来源不可用或结构变化",
+}
 
 
 def covered(candidate, existing):
@@ -66,6 +76,61 @@ def analyze(source, content, existing):
     return pending, summary
 
 
+def format_review_item(row):
+    subject = row.get("section") or row.get("source_id") or "secondary-radar"
+    parts = [f"`{subject}`"]
+    if row.get("rule"):
+        parts.append(f"`{row['rule']}`")
+    reason = row.get("reason", "unknown")
+    text = " · ".join(parts) + " — " + REVIEW_REASON_LABELS.get(reason, reason)
+    if row.get("error_type"):
+        text += f"（{row['error_type']}）"
+    return text
+
+
+def render_actions_summary(report, limit=SUMMARY_LIMIT):
+    summaries = list(report.get("sources", {}).values())
+    active = sum(row.get("active_line_count", 0) for row in summaries)
+    covered_count = sum(row.get("covered_count", 0) for row in summaries)
+    excluded = sum(row.get("excluded_by_policy_count", 0) for row in summaries)
+    gaps = sum(row.get("gap_count", 0) for row in summaries)
+    review_required = report.get("review_required", [])
+
+    lines = [
+        "## Sukka 二级雷达",
+        "",
+        "### 扫描结果",
+        f"- 有效规则：**{active}**",
+        f"- 已覆盖：**{covered_count}**",
+        f"- 策略排除：**{excluded}**",
+        f"- 待核验缺口：**{gaps}**",
+        f"- 待审核 / 异常：**{len(review_required)}**",
+    ]
+    if review_required:
+        lines.extend(["", f"### 待审核 / 异常明细（{len(review_required)}）"])
+        for row in review_required[:limit]:
+            lines.append("- " + format_review_item(row))
+        extra = len(review_required) - limit
+        if extra > 0:
+            lines.append(f"- 另有 **{extra}** 条，详见 sources exception Issue / source-audit.json。")
+    return "\n".join(lines) + "\n"
+
+
+def append_actions_summary(report):
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        text = render_actions_summary(report)
+    except Exception as exc:
+        text = (
+            "## Sukka 二级雷达\n\n"
+            f"- 摘要生成失败：`{type(exc).__name__}`\n"
+        )
+    with Path(path).open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
+
+
 def main():
     config = read_json(ROOT / "sources/watch.json")
     manifest = read_json(ROOT / "rules/manifest.json")
@@ -88,6 +153,7 @@ def main():
     work = ROOT / ".work"
     work.mkdir(exist_ok=True)
     (work / "source-audit.json").write_text(json_text(report), encoding="utf-8", newline="\n")
+    append_actions_summary(report)
     print(f"OK: checked {len(config['sources'])} read-only radar source(s); {len(report['review_required'])} exception(s)")
     return 0
 
