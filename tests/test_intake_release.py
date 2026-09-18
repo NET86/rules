@@ -202,7 +202,7 @@ class ReleaseSummaryTests(unittest.TestCase):
                     "vendor": "openai",
                     "tier": "core",
                     "rule": "DOMAIN-SUFFIX,new.example",
-                    "reason": "new-or-widened-scope",
+                    "reason": "source-not-authorized-by-catalog",
                 }],
                 "quarantined_count": 2,
                 "retained_count": 3,
@@ -223,7 +223,7 @@ class ReleaseSummaryTests(unittest.TestCase):
         self.assertIn("隔离：**2**", text)
         self.assertIn("保留观察：**3**", text)
         self.assertIn("### 待审核 / 异常明细（1）", text)
-        self.assertIn("`openai` · `DOMAIN-SUFFIX,new.example` · core — 新根域或匹配范围扩大，已隔离", text)
+        self.assertIn("`openai` · `DOMAIN-SUFFIX,new.example` · core — 来源未被 catalog 授权，已隔离", text)
         self.assertIn("stable：已更新并通过远端验证", text)
 
     def test_summary_caps_review_details(self):
@@ -232,7 +232,7 @@ class ReleaseSummaryTests(unittest.TestCase):
             {
                 "vendor": f"vendor-{index:02d}",
                 "rule": f"DOMAIN-SUFFIX,review-{index:02d}.example",
-                "reason": "new-or-widened-scope",
+                "reason": "source-not-authorized-by-catalog",
             }
             for index in range(12)
         ]

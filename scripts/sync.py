@@ -19,7 +19,6 @@ from automation import effective_entries, reconcile
 from intake import analyze_official, refresh_official
 from rules import (
     ROOT,
-    approvals_for,
     collect,
     compile_outputs,
     json_text,
@@ -148,7 +147,6 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-repo", type=Path, help="Use an existing v2fly git repository")
     parser.add_argument("--voice-file", type=Path, help="Use a previously fetched OFFICIAL voice JSON")
-    parser.add_argument("--bootstrap-reviewed", action="store_true", help="Initial reviewed scope approval; only when no approvals exist")
     parser.add_argument("--allow-reviewed-removals", action="store_true", help="Skip time buffer after a healthy observation; semantic protection remains")
     args = parser.parse_args()
     work = ROOT / ".work"
@@ -190,21 +188,13 @@ def main():
                 })
             stabilize_lock(ROOT, snapshot)
 
-            approvals_path = ROOT / "sources/approvals.json"
-            if args.bootstrap_reviewed:
-                if approvals_path.exists():
-                    raise ValueError("Bootstrap cannot replace existing approvals")
-                bootstrap_entries = collect(catalog, patches, snapshot / "v2fly")
-                approvals_path.write_text(json_text(approvals_for(bootstrap_entries)), encoding="utf-8", newline="\n")
-
             selection_issues = []
             entries = collect(catalog, patches, snapshot / "v2fly", review_mode=True, selection_issues=selection_issues)
             unhealthy_vendors = {row["vendor"] for row in selection_issues}
             previous = read_json(ROOT / "rules/manifest.json") if (ROOT / "rules/manifest.json").exists() else {}
-            approvals = read_json(approvals_path)
             previous_state = read_json(ROOT / "sources/automation-state.json")
             state, report = reconcile(
-                entries, previous, approvals, patches, previous_state,
+                entries, previous, catalog, patches, previous_state,
                 read_json(ROOT / "sources/automation.json"),
                 today=datetime.now(timezone.utc).date(),
                 allow_removals=args.allow_reviewed_removals,
@@ -213,7 +203,7 @@ def main():
                 unhealthy_vendors=unhealthy_vendors,
             )
 
-            effective = effective_entries(entries, approvals, patches, state)
+            effective = effective_entries(entries, catalog, patches, state)
             official_radar = analyze_official(ROOT, official_state, effective)
             report["source_health"] = {
                 "v2fly": "fresh" if v2fly_fresh else "retained-last-good",

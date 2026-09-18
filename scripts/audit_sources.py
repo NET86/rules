@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from automation import scope_problem
-from rules import ROOT, FORBIDDEN_CORE, Rule, json_text, load_source, read_json
+from rules import ROOT, FORBIDDEN_CORE, Rule, json_text, load_explicit_source, load_source, read_json
 from sync import fetch
 
 
@@ -27,12 +27,15 @@ SECTION_VENDOR = {
 BLOCK_REASON_LABELS = {
     "outside-explicit-product-select": "上游有该规则，但不在当前显式产品范围",
     "secondary-source-only": "目前仅 Sukka 证据命中，主上游尚未确认",
+    "primary-source-scope-mismatch": "主上游只有相关规则，匹配范围并不等价",
     "evidence-unavailable": "本地主上游证据暂不可用，需要复核",
-    "new-or-widened-scope": "会扩大现有批准边界，需要人工确认",
-    "shared-platform-forbidden-in-core": "属于共享基础设施，不能自动进入 core",
+    "source-not-authorized-by-catalog": "来源没有被当前 catalog 授权",
+    "locally-dropped-rule": "本地策略已明确排除该规则",
+    "shared-platform-forbidden-in-core": "整个共享基础设施根域不能进入 core",
     "unreviewed-surge-regex-adapter": "新正则缺少已审核的 Surge 适配",
     "unsupported-or-broad-matching": "匹配类型不支持自动进入生产",
-    "radar-read-only": "已落在现有批准边界；Sukka 雷达仍只读，等待主同步收敛",
+    "unsupported-tier": "规则层级不受当前生产模型支持",
+    "radar-read-only": "主上游已授权；Sukka 雷达仍只读，等待主同步收敛",
     "unmapped-sukka-section": "Sukka section 尚未映射到本地厂商",
 }
 
@@ -128,11 +131,15 @@ def v2fly_evidence(candidate, vendor, catalog, data):
     spec = vendor_spec(catalog, vendor)
     if spec is None:
         return {"status": "unavailable", "present": False, "level": "unknown", "matches": [], "error_type": "UnknownVendor"}
-    entrypoints = sorted(set(spec.get("sources", [])) | set(spec.get("select", {})))
     matches = []
     try:
-        for entrypoint in entrypoints:
+        for entrypoint in sorted(spec.get("sources", [])):
             for rule, _attrs, origin in load_source(data, entrypoint):
+                relation = rule_relation(candidate, rule)
+                if relation:
+                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation})
+        for entrypoint in sorted(spec.get("select", {})):
+            for rule, _attrs, origin in load_explicit_source(data, entrypoint):
                 relation = rule_relation(candidate, rule)
                 if relation:
                     matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation})
@@ -179,7 +186,24 @@ def product_scope(candidate, vendor, catalog, v2fly):
     return {"status": "unconfirmed", "basis": "vendor-section"}
 
 
-def enrich_pending(pending, catalog, approvals, patches, official_state, data):
+def evidence_origins(candidate, vendor, catalog, v2fly):
+    """Translate exact V2Fly evidence into the same provenance strings used by production."""
+    spec = vendor_spec(catalog, vendor)
+    if spec is None:
+        return set()
+    origins = set()
+    for match in v2fly.get("matches", []):
+        if match.get("relation") != "exact":
+            continue
+        entrypoint, origin = match["entrypoint"], match["source"]
+        if entrypoint in spec.get("sources", []) and origin == entrypoint:
+            origins.add(f"v2fly:data/{origin}")
+        elif entrypoint in spec.get("select", {}) and origin == entrypoint and candidate.value in spec["select"][entrypoint]:
+            origins.add(f"v2fly:data/{origin} (selected explicit rule)")
+    return origins
+
+
+def enrich_pending(pending, catalog, patches, official_state, data):
     """Add read-only evidence; never changes which Sukka findings require review."""
     enriched = []
     for original in pending:
@@ -206,8 +230,11 @@ def enrich_pending(pending, catalog, approvals, patches, official_state, data):
                 block = "secondary-source-only"
             elif scope["status"] == "outside-explicit-select":
                 block = "outside-explicit-product-select"
+            elif not any(match.get("relation") == "exact" for match in upstream.get("matches", [])):
+                block = "primary-source-scope-mismatch"
             else:
-                block = scope_problem((vendor, "core", candidate), approvals, patches) or "radar-read-only"
+                origins = evidence_origins(candidate, vendor, catalog, upstream)
+                block = scope_problem((vendor, "core", candidate), origins, catalog, patches) or "radar-read-only"
             row["block_reason"] = block
         row["block_reason_label"] = BLOCK_REASON_LABELS.get(row["block_reason"], row["block_reason"])
         enriched.append(row)
@@ -291,7 +318,6 @@ def main():
     config = read_json(ROOT / "sources/watch.json")
     manifest = read_json(ROOT / "rules/manifest.json")
     catalog = read_json(ROOT / "sources/catalog.json")
-    approvals = read_json(ROOT / "sources/approvals.json")
     patches = read_json(ROOT / "sources/patches.json")
     official_state = read_json(ROOT / "sources/official-state.json")
     v2fly_data = ROOT / "sources/snapshot/v2fly"
@@ -305,7 +331,7 @@ def main():
             content = fetch(source["url"]).decode("utf-8-sig")
             pending, summary = analyze(source, content, existing)
             report["review_required"].extend(
-                enrich_pending(pending, catalog, approvals, patches, official_state, v2fly_data)
+                enrich_pending(pending, catalog, patches, official_state, v2fly_data)
             )
             report["sources"][source["id"]] = summary
         except (OSError, ValueError) as exc:

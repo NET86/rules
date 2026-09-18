@@ -22,42 +22,52 @@ class ReconciliationTests(unittest.TestCase):
     def setUp(self):
         self.stable = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "example.com"))
         self.old = ("demo", "core", rules.Rule("DOMAIN", "legacy.service.test"))
-        self.approvals = {"demo": {"core": ["DOMAIN-SUFFIX,example.com", "DOMAIN,legacy.service.test"]}}
-        self.patches = {"surge_regex": {}}
+        self.direct = {"v2fly:data/demo"}
+        self.catalog = {"vendors": [{"id": "demo", "group": "global", "sources": ["demo"]}]}
+        self.patches = {"add": [], "drop": {}, "surge_regex": {}}
         self.policy = {"removal_grace_days": 14, "removal_min_observation_days": 3}
         self.contracts = {"vendors": {}}
-        self.before = {"provenance": [automation.row_of(key, {"source"}) for key in [self.stable, self.old]]}
-        self.candidates = {self.stable: {"source"}}
+        self.before = {"provenance": [automation.row_of(key, self.direct) for key in [self.stable, self.old]]}
+        self.candidates = {self.stable: set(self.direct)}
         self.empty = {"schema": 1, "pending": [], "retained": []}
 
     def reconcile(self, day, state=None, **kwargs):
         return automation.reconcile(
-            self.candidates, self.before, self.approvals, self.patches,
+            self.candidates, self.before, self.catalog, self.patches,
             state or self.empty, self.policy,
             today=date(2026, 1, day), contracts=self.contracts, **kwargs
         )
 
-    def test_unknown_root_quarantined_while_safe_update_continues(self):
-        unknown = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "unknown.test"))
+    def test_dedicated_source_new_root_is_accepted_automatically(self):
+        new_root = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "unknown.test"))
         child = ("demo", "core", rules.Rule("DOMAIN", "new.example.com"))
-        self.candidates.update({unknown: {"source"}, child: {"source"}})
+        self.candidates.update({new_root: set(self.direct), child: set(self.direct)})
         state, report = self.reconcile(1)
-        effective = automation.effective_entries(self.candidates, self.approvals, self.patches, state)
+        effective = automation.effective_entries(self.candidates, self.catalog, self.patches, state)
+        self.assertIn(new_root, effective)
         self.assertIn(child, effective)
-        self.assertNotIn(unknown, effective)
-        self.assertEqual(report["quarantined_count"], 1)
+        self.assertEqual(report["quarantined_count"], 0)
+
+    def test_transitive_include_does_not_inherit_dedicated_source_authority(self):
+        key = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "included.example"))
+        self.candidates[key] = {"v2fly:data/category-ai"}
+        state, report = self.reconcile(1)
+        self.assertEqual(report["review_required"][0]["reason"], "source-not-authorized-by-catalog")
+        self.assertNotIn(key, automation.effective_entries(self.candidates, self.catalog, self.patches, state))
 
     def test_unknown_regex_quarantined_without_breaking_domains(self):
         key = ("demo", "core", rules.Rule("DOMAIN-REGEX", "^new.*$"))
-        self.candidates[key] = {"source"}
+        self.candidates[key] = set(self.direct)
         state, report = self.reconcile(1)
         self.assertEqual(report["review_required"][0]["reason"], "unreviewed-surge-regex-adapter")
-        self.assertNotIn(key, automation.effective_entries(self.candidates, self.approvals, self.patches, state))
+        self.assertNotIn(key, automation.effective_entries(self.candidates, self.catalog, self.patches, state))
 
-    def test_shared_root_cannot_be_approved_into_core(self):
+    def test_shared_root_cannot_enter_core_even_from_dedicated_source(self):
         key = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "amazonaws.com"))
-        self.approvals["demo"]["core"].append(key[2].text)
-        self.assertEqual(automation.scope_problem(key, self.approvals, self.patches), "shared-platform-forbidden-in-core")
+        self.assertEqual(
+            automation.scope_problem(key, self.direct, self.catalog, self.patches),
+            "shared-platform-forbidden-in-core",
+        )
 
     def test_removal_requires_grace_and_three_distinct_days(self):
         state, report = self.reconcile(1)
@@ -101,21 +111,24 @@ class ReconciliationTests(unittest.TestCase):
 
     def test_reappearing_rule_resets_missing_state(self):
         state, _ = self.reconcile(1)
-        self.candidates[self.old] = {"source"}
+        self.candidates[self.old] = set(self.direct)
         state, _ = self.reconcile(2, state)
         self.assertEqual(state["retained"], [])
 
     def test_lossless_redundant_rule_removal_needs_no_delay(self):
         redundant = ("demo", "core", rules.Rule("DOMAIN", "old.example.com"))
-        self.before["provenance"] = [automation.row_of(key, {"source"}) for key in [self.stable, redundant]]
+        self.before["provenance"] = [automation.row_of(key, self.direct) for key in [self.stable, redundant]]
         state, report = self.reconcile(1)
         self.assertFalse(state["retained"])
         self.assertEqual(report["automatically_removed"][0]["reason"], "covered-by-current-rule")
 
-    def test_withdrawn_approval_cannot_be_resurrected(self):
-        self.approvals["demo"]["core"].remove(self.old[2].text)
-        state, _ = self.reconcile(1)
+    def test_local_drop_cannot_be_resurrected_by_retention(self):
+        self.patches["drop"] = {"demo": {self.old[2].text: "local policy"}}
+        state, report = self.reconcile(1)
         self.assertFalse(state["retained"])
+        removed = next(row for row in report["automatically_removed"] if row["rule"] == self.old[2].text)
+        self.assertEqual(removed["reason"], "local-policy-withdrawn")
+        self.assertEqual(removed["policy_reason"], "locally-dropped-rule")
 
 
 class AuditTests(unittest.TestCase):
@@ -187,8 +200,7 @@ class AuditTests(unittest.TestCase):
                 "rules": ["DOMAIN,new.example.com"],
             }}}
             rows = audit_sources.enrich_pending(
-                pending, catalog, {"claude": {"core": ["DOMAIN-SUFFIX,claude.ai"]}},
-                {"surge_regex": {}}, official_state, data,
+                pending, catalog, {"add": [], "drop": {}, "surge_regex": {}}, official_state, data,
             )
         row = rows[0]
         self.assertEqual(row["vendor"], "claude")
@@ -197,13 +209,13 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(row["evidence"]["v2fly"]["level"], "confirmed")
         self.assertEqual(row["evidence"]["official"]["level"], "confirmed")
         self.assertEqual(row["evidence"]["product_scope"]["status"], "in-scope")
-        self.assertEqual(row["block_reason"], "new-or-widened-scope")
+        self.assertEqual(row["block_reason"], "radar-read-only")
         summary = audit_sources.format_review_item(row)
         self.assertIn("厂商：`claude`", summary)
         self.assertIn("V2Fly ✓ confirmed · anthropic", summary)
         self.assertIn("官方 confirmed · claude-network", summary)
         self.assertIn("若批准影响：claude / ai-daily / ai-core", summary)
-        self.assertIn("会扩大现有批准边界，需要人工确认", summary)
+        self.assertIn("主上游已授权", summary)
 
     def test_google_unselected_upstream_rule_is_explained_not_auto_accepted(self):
         with tempfile.TemporaryDirectory() as td:
@@ -223,8 +235,7 @@ class AuditTests(unittest.TestCase):
                 "reason": "uncovered-secondary-domain",
             }]
             rows = audit_sources.enrich_pending(
-                pending, catalog, {"google-ai": {"core": ["DOMAIN-SUFFIX,gemini.google.com"]}},
-                {"surge_regex": {}}, {"documents": {}}, data,
+                pending, catalog, {"add": [], "drop": {}, "surge_regex": {}}, {"documents": {}}, data,
             )
         row = rows[0]
         self.assertTrue(row["evidence"]["v2fly"]["present"])
@@ -359,8 +370,8 @@ class NotificationTests(unittest.TestCase):
                 "official": {"level": "none", "matches": []},
                 "product_scope": {"status": "in-scope", "basis": "vendor-dedicated-v2fly-source"},
             },
-            "block_reason": "new-or-widened-scope",
-            "block_reason_label": "会扩大现有批准边界，需要人工确认",
+            "block_reason": "source-not-authorized-by-catalog",
+            "block_reason_label": "来源没有被当前 catalog 授权",
         }]}
         body = notify_review.issue_body("sources", report)
         self.assertIn("Sukka 二级雷达只读运行", body)
@@ -368,7 +379,7 @@ class NotificationTests(unittest.TestCase):
         self.assertIn('"rule": "DOMAIN,new.example"', body)
         self.assertIn('"impact": [', body)
         self.assertIn('"v2fly": {', body)
-        self.assertIn('"block_reason": "new-or-widened-scope"', body)
+        self.assertIn('"block_reason": "source-not-authorized-by-catalog"', body)
 
     def test_failed_workflow_preserves_pending_findings(self):
         with tempfile.TemporaryDirectory() as td:
