@@ -19,6 +19,19 @@ from verify_rules import verify
 
 AUTO_PATHS = ["sources/snapshot", "sources/official-state.json", "sources/automation-state.json", "rules"]
 SUMMARY_LIMIT = 10
+REVIEW_REASON_LABELS = {
+    "new-or-widened-scope": "新根域或匹配范围扩大，已隔离",
+    "unsupported-or-broad-matching": "不支持或过宽的匹配，已隔离",
+    "shared-platform-forbidden-in-core": "共享基础设施不允许进入 core，已隔离",
+    "unreviewed-surge-regex-adapter": "新正则 / Surge 适配尚未审核，已隔离",
+    "protected-upstream-removal": "关键规则疑似被上游删除，当前继续保留",
+    "selected-upstream-domain-disappeared-or-moved": "选定上游目标消失或结构漂移，需要复核",
+    "official-uncovered-domain": "官方资料发现未覆盖域名，需要复核",
+    "official-source-unavailable-or-parser-drift": "官方来源不可用或解析结构变化",
+    "official-voice-fetch-unavailable": "OpenAI Voice 官方源不可用，沿用上一有效版本",
+    "v2fly-unavailable-or-license-changed": "V2Fly 不可用或许可证变化，沿用上一有效快照",
+    "workflow-failed": "工作流失败",
+}
 
 
 def manifest_changes(before, after):
@@ -50,6 +63,20 @@ def manifest_changes(before, after):
                 "after": new[(vendor, rule)],
             })
     return added, changed, removed
+
+
+def format_review_item(row):
+    subject = row.get("vendor") or row.get("source_id") or "system"
+    parts = [f"`{subject}`"]
+    if row.get("rule"):
+        parts.append(f"`{row['rule']}`")
+    if row.get("tier"):
+        parts.append(str(row["tier"]))
+    reason = row.get("reason", "unknown")
+    text = " · ".join(parts) + " — " + REVIEW_REASON_LABELS.get(reason, reason)
+    if row.get("error_type"):
+        text += f"（{row['error_type']}）"
+    return text
 
 
 def render_actions_summary(before, after, sync_report, release_report, limit=SUMMARY_LIMIT):
@@ -95,6 +122,16 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
         f"- 待审核 / 异常：**{len(review_required)}**",
         f"- 隔离：**{sync_report.get('quarantined_count', 0)}**",
         f"- 保留观察：**{sync_report.get('retained_count', 0)}**",
+    ])
+    if review_required:
+        lines.extend(["", f"### 待审核 / 异常明细（{len(review_required)}）"])
+        for row in review_required[:limit]:
+            lines.append("- " + format_review_item(row))
+        extra = len(review_required) - limit
+        if extra > 0:
+            lines.append(f"- 另有 **{extra}** 条，详见 exception Issue / sync-report.json。")
+
+    lines.extend([
         "",
         "### 发布结果",
         f"- 结果：**{release_report.get('result', 'UNKNOWN')}**",
