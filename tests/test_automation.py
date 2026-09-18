@@ -165,6 +165,57 @@ class AuditTests(unittest.TestCase):
     def test_exact_host_does_not_cover_suffix_widening(self):
         self.assertFalse(audit_sources.covered(rules.Rule("DOMAIN-SUFFIX", "example.com"), {rules.Rule("DOMAIN", "example.com")}))
 
+    def test_actions_summary_lists_scan_counts_and_gap_details(self):
+        report = {
+            "review_required": [{
+                "source_id": "sukka-source-ai",
+                "section": "Claude",
+                "rule": "DOMAIN-SUFFIX,newclaude.example",
+                "reason": "uncovered-secondary-domain",
+            }],
+            "sources": {
+                "sukka-source-ai": {
+                    "active_line_count": 52,
+                    "covered_count": 36,
+                    "excluded_by_policy_count": 15,
+                    "gap_count": 1,
+                }
+            },
+        }
+        text = audit_sources.render_actions_summary(report)
+        self.assertIn("有效规则：**52**", text)
+        self.assertIn("已覆盖：**36**", text)
+        self.assertIn("策略排除：**15**", text)
+        self.assertIn("待核验缺口：**1**", text)
+        self.assertIn("`Claude` · `DOMAIN-SUFFIX,newclaude.example`", text)
+        self.assertIn("需要 V2Fly / 官方证据 / 人工 patch 确认", text)
+
+    def test_actions_summary_caps_review_details(self):
+        report = {
+            "review_required": [
+                {
+                    "source_id": "sukka-source-ai",
+                    "section": "OpenAI / ChatGPT",
+                    "rule": f"DOMAIN,review-{index:02d}.example",
+                    "reason": "uncovered-secondary-domain",
+                }
+                for index in range(12)
+            ],
+            "sources": {
+                "sukka-source-ai": {
+                    "active_line_count": 52,
+                    "covered_count": 30,
+                    "excluded_by_policy_count": 10,
+                    "gap_count": 12,
+                }
+            },
+        }
+        text = audit_sources.render_actions_summary(report)
+        self.assertIn("待审核 / 异常明细（12）", text)
+        self.assertIn("review-09.example", text)
+        self.assertNotIn("review-10.example", text)
+        self.assertIn("另有 **2** 条，详见 sources exception Issue / source-audit.json。", text)
+
 
 class ResilienceTests(unittest.TestCase):
     def test_voice_failure_retains_verified_last_good(self):
@@ -216,6 +267,18 @@ class NotificationTests(unittest.TestCase):
             report = notify_review.load_report(Path(td) / "missing.json", failed=True)
         self.assertEqual(report["review_required"], [{"reason": "workflow-failed"}])
         self.assertIn("本次工作流失败", notify_review.issue_body("sync", report))
+
+    def test_sources_issue_preserves_section(self):
+        report = {"review_required": [{
+            "source_id": "sukka-source-ai",
+            "section": "Claude",
+            "rule": "DOMAIN,new.example",
+            "reason": "uncovered-secondary-domain",
+        }]}
+        body = notify_review.issue_body("sources", report)
+        self.assertIn("Sukka 二级雷达只读运行", body)
+        self.assertIn('"section": "Claude"', body)
+        self.assertIn('"rule": "DOMAIN,new.example"', body)
 
     def test_failed_workflow_preserves_pending_findings(self):
         with tempfile.TemporaryDirectory() as td:
