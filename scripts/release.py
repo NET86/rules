@@ -20,7 +20,8 @@ from verify_rules import verify
 AUTO_PATHS = ["sources/snapshot", "sources/official-state.json", "sources/automation-state.json", "rules"]
 SUMMARY_LIMIT = 10
 REVIEW_REASON_LABELS = {
-    "new-or-widened-scope": "新根域或匹配范围扩大，已隔离",
+    "source-not-authorized-by-catalog": "来源未被 catalog 授权，已隔离",
+    "unsupported-tier": "规则层级不受当前生产模型支持，已隔离",
     "unsupported-or-broad-matching": "不支持或过宽的匹配，已隔离",
     "shared-platform-forbidden-in-core": "共享基础设施不允许进入 core，已隔离",
     "unreviewed-surge-regex-adapter": "新正则 / Surge 适配尚未审核，已隔离",

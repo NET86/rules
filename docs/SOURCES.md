@@ -6,17 +6,19 @@
 
 | 来源 | 角色 | 自动改变 production |
 | --- | --- | --- |
-| [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community) | 唯一通用域名生产流；固定 commit，MIT | 仅在 catalog + approvals 已审范围内可以 |
+| [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community) | 唯一通用域名生产流；固定 commit，MIT | `sources` 专属文件的直接规则可自动；`select` 只允许显式选择项 |
 | [OpenAI Voice JSON](https://openai.com/chatgpt-voice.json) | 独立、结构化、用途明确的语音目的 IP | 通过公网 IP / 前缀 / 数量异常检查后可以 |
-| `sources/patches.json` | 少量明确纠错与补缺 | patch 本身需人工审查；之后由确定性构建自动发布 |
+| `sources/patches.json` | 少量明确纠错、排除与补缺 | patch 本身需人工审查；之后由确定性构建自动发布 |
 
-v2fly 的目标是 geosite 域名分类，不负责决定某域名应代理、直连或阻断。本项目只消费明确产品范围内的规则，并通过 `approvals.json` 限制自动变化边界。
+v2fly 的目标是 geosite 域名分类，不负责决定某域名应代理、直连或阻断。本项目把 `catalog.json` 本身作为生产授权边界：专属 `sources` 的直接规则持续自动维护；混合分类只通过 `select` 明确选择；本地例外只通过 `patches` 表达。
 
 ### `sources` 与 `select`
 
-- `sources`：厂商明确对应一个上游文件时，允许按 v2fly 文件语义递归 include。
-- `select`：只读取指定分类文件**本层显式规则**，不递归 include。
+- `sources`：厂商明确对应一个专属上游文件时，**该文件直接写出的** DOMAIN / DOMAIN-SUFFIX 可自动吸收；已有审核过的 regex 适配也可继续使用。
+- `sources` 仍会递归读取 include 以保留上游语义，但 include 进来的规则不继承专属文件的自动生产权限；它们会被隔离，避免一个新增 include 扩大整个厂商边界。
+- `select`：混合分类只读取指定文件**本层显式规则**，且只生成 catalog 明确列出的值，不递归 include。
 - 如果 `select` 目标从本层移动进 include，视为结构变化并隔离该厂商的删除观察；不自动扩大隐式依赖，也不把它当普通退役。
+- 整个共享平台根域（例如 `amazonaws.com`、`googleapis.com`、`livekit.cloud`）继续硬禁止；厂商专属的精确子域/主机不因此被一刀切排除。
 
 ## 官方事实 radar
 
@@ -30,7 +32,7 @@ v2fly 的目标是 geosite 域名分类，不负责决定某域名应代理、�
 - 某个固定 S3 / Azure Blob / WebPubSub 主机；
 - 真正值得精确补入的厂商专用缺口。
 
-官方文档可以证明“某功能需要访问某端点”，但不能自动证明“该端点的全部流量都应该进入 AI 专用出口”。因此新根域、共享云主机或产品范围变化必须显式判断后才能形成 patch / approval。
+官方文档可以证明“某功能需要访问某端点”，但不能自动证明“该端点的全部流量都应该进入 AI 专用出口”。因此官方 radar 发现的新缺口仍需显式判断后才能形成 patch；只有 V2Fly 专属 `sources` 的直接规则享有持续自动生产权限。
 
 官方抓取或解析失败时保留已知事实基线用于诊断，但不会改变 production candidates，也不会因为网页失败把规则解释成空清单。
 

@@ -6,27 +6,28 @@
 
 | 变化 | 默认处理 |
 | --- | --- |
-| 已审批后缀内新增更窄主机 | 自动吸收或被现有 suffix 覆盖，不制造冗余 |
+| `sources` 专属文件直接新增普通 DOMAIN / DOMAIN-SUFFIX | 自动吸收；新根域本身不再触发人工审批 |
+| `sources` 新增 transitive include 规则 | 不继承专属来源权限，隔离并要求复核 |
 | 上游 commit 变化但消费内容不变 | 自动 no-op |
-| 新根域、匹配放宽、新 regex、共享基础设施 | 隔离该变化；其他安全更新继续 |
+| 新 keyword / 未审核 regex / 整个共享平台根域 | 隔离该变化；其他安全更新继续 |
 | `select` 目标从本层消失/移入 include | 视为结构漂移；冻结该厂商删除观察并要求复核 |
 | v2fly 临时失败 | 使用验证过的旧 snapshot；删除观察不计时 |
 | 官方网页失败/结构漂移 | 官方 radar 降级；production 主链继续 |
 | OpenAI Voice 抓取失败 | 使用验证过的旧 Voice IP；运行报告标记 retained |
 | 普通上游删除 | 仅健康观察推进；至少 14 天且 3 个不同 UTC 日期后才可自动退役 |
 | semantic contract 关键能力最后覆盖消失 | 保留旧规则并报告，不自动删除 |
-| 明确撤销 approval | 立即按本地策略撤销，不允许 retention 复活 |
+| 从 `select` 移除、加入 `patches.drop` 或删除本地 patch | 立即按本地策略撤销，不允许 retention 复活 |
 | 构建/独立验证/双核心失败 | 不推进 stable |
 | 发布后远端回读或核心验证失败 | 只对 stable 做前滚式回滚并再次验证 |
 
-人工应主要处理：产品成员变化、新根域或新共享云端点、匹配语义放宽、许可证变化、客户端规则语义变化、长期来源降级，以及 semantic contract 的产品定义变化。
+人工应主要处理：产品成员变化、transitive include、宽匹配/regex、整个共享平台根域、许可证变化、客户端规则语义变化、长期来源降级，以及 semantic contract 的产品定义变化。专属主上游的普通新域名不再逐条人工确认。
 
 ## 发布与恢复
 
 1. 在任何新下载、构建或来源抓取之前执行 `release.py --recover-only`：仅用 portable/hash/semantic gate 验证当前 `stable`；若上一轮异常中断，则验证 `last-known-good` 后以普通提交恢复 `stable`。
 2. 准备固定版本的 Mihomo 与 FlClash 内嵌核心。
 3. 同步 v2fly 与 OpenAI Voice；官方网络文档只做诊断 radar，并保存最近一次成功解析的事实基线。
-4. `catalog + approvals + patches` 产生候选；未知/放宽范围隔离。
+4. `catalog + patches` 决定生产授权：专属 `sources` 直接规则自动，混合 `select` 与本地 patch 显式；未授权 provenance 隔离。
 5. 删除观察只在健康 v2fly/厂商观察下推进；select 结构异常单独冻结相关厂商。
 6. 确定性生成 Surge/Mihomo 规则和 manifest。
 7. 运行 portable/cross-format/profile/semantic 验证，以及真实 Mihomo 与 FlClash core 验证。
@@ -52,9 +53,8 @@
 
 ## 文件职责
 
-- `catalog.json`：厂商与三个显式 profile 成员/预算。
-- `approvals.json`：自动变化允许范围；自动化不能自己扩大。
-- `patches.json`：少量人工审查过的精确补丁/排除/Surge 适配。
+- `catalog.json`：厂商、三个显式 profile，以及生产授权边界；`sources` 表示信任专属文件的直接规则持续自动维护，`select` 表示只维护混合分类中的显式选择项。
+- `patches.json`：少量人工审查过的精确补丁、明确排除和 Surge regex 适配；也是本地撤销/例外的唯一入口。
 - `semantic-contracts.json`：少量关键正例、关键反例及关键能力保护；不是完整规则数据库。
 - `official.json` / `official-state.json`：官方事实 radar 配置与最近解析基线；不直接生成 production rules。
 - `intake-policy.json`：官方共享依赖/placeholder 排除策略。
