@@ -15,6 +15,12 @@ DOMAIN_TOKEN = re.compile(r"(?<![\w@.-])(?:\*\.)*(?:\.)?(?:[a-zA-Z0-9](?:[a-zA-Z
 FILE_SUFFIXES = {"json", "yaml", "yml", "toml", "md", "txt", "py", "js", "ts", "pem", "crt", "key", "log", "conf", "sh"}
 
 
+def error_detail(exc, limit=300):
+    """Stable, bounded single-line diagnostic for automation reports."""
+    text = " ".join(str(exc).split())
+    return (text or "(no detail)")[:limit]
+
+
 class VisibleDocument(HTMLParser):
     """Drop executable/navigation markup; retain heading boundaries and visible text."""
     def __init__(self):
@@ -130,7 +136,7 @@ def fetch_official(source, fetch):
             raise ValueError("Unexpected official response")
         return b"".join(chunks), "browser-compatible-https"
     except Exception as exc:
-        raise OSError(f"Official HTTPS fallback failed: {type(exc).__name__}") from exc
+        raise OSError(f"Official HTTPS fallback failed: {type(exc).__name__}: {error_detail(exc)}") from exc
 
 
 def refresh_official(root, fetch):
@@ -164,15 +170,18 @@ def refresh_official(root, fetch):
                     "transport": transport,
                 }
             except (OSError, ValueError, KeyError) as exc:
+                detail = error_detail(exc)
                 report["sources"][source["id"]] = {
                     "status": "retained-last-good" if source["id"] in updated["documents"] else "unavailable-no-baseline",
                     "error_type": type(exc).__name__,
+                    "error_detail": detail,
                 }
                 report["review_required"].append({
                     "source_id": source["id"],
                     "source": source["url"],
                     "reason": "official-source-unavailable-or-parser-drift",
                     "error_type": type(exc).__name__,
+                    "error_detail": detail,
                 })
     return updated, report
 

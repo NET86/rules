@@ -82,6 +82,7 @@ class IntakeTests(unittest.TestCase):
         after, report = intake.refresh_official(rules.ROOT, fail)
         self.assertEqual(before, after)
         self.assertEqual(len(report["review_required"]), 6)
+        self.assertTrue(all(row["error_detail"] == "offline" for row in report["review_required"]))
 
     def test_official_wording_only_change_does_not_mutate_fact_baseline(self):
         with tempfile.TemporaryDirectory() as td:
@@ -132,7 +133,9 @@ class IntakeTests(unittest.TestCase):
         def denied(url):
             raise urllib.error.HTTPError(url, 403, "Forbidden", {}, None)
         module = types.SimpleNamespace(requests=types.SimpleNamespace(get=compatible))
-        with patch.dict(sys.modules, {"curl_cffi": module}), self.assertRaises(OSError):
+        with patch.dict(sys.modules, {"curl_cffi": module}), self.assertRaisesRegex(
+            OSError, "ValueError: Oversized official document"
+        ):
             intake.fetch_official({"url": "https://help.openai.com/en/articles/9247338"}, denied)
 
     def test_shared_official_dependency_is_excluded_from_gap_report(self):

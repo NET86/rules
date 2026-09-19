@@ -351,6 +351,16 @@ class NotificationTests(unittest.TestCase):
         self.report["review_required"][0]["first_seen"] = "2026-01-10"
         self.assertEqual(first, notify_review.issue_body("sync", self.report))
 
+    def test_error_detail_is_visible_in_issue_body(self):
+        report = {"review_required": [{
+            "source_id": "openai-network",
+            "reason": "official-source-unavailable-or-parser-drift",
+            "error_type": "OSError",
+            "error_detail": "Official HTTPS fallback failed: TimeoutError: handshake timed out",
+        }]}
+        body = notify_review.issue_body("sync", report)
+        self.assertIn('"error_detail": "Official HTTPS fallback failed: TimeoutError: handshake timed out"', body)
+
     def test_failed_workflow_without_report_is_actionable(self):
         with tempfile.TemporaryDirectory() as td:
             report = notify_review.load_report(Path(td) / "missing.json", failed=True)
