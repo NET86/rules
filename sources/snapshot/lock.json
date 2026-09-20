@@ -10,13 +10,13 @@
     "v2fly/doubao": "b501f28fcaeca55a569c6193d12415ef6d62addbe6f8373799fc5c3005ad5db6",
     "v2fly/elevenlabs": "4c284a7e5947f4a40d40c9dc8fedf3e9e3091db0c7680b913b2b19db36ebd561",
     "v2fly/github-copilot": "069a626c3c23ee63f82e26ce11a83477d8dbe9e27f81968e4b073acf496260f3",
-    "v2fly/google-deepmind": "9cb1c1f964ba1fce934cebcf695bfb0dd58ed04782da05f5e6cc0124ee25c0a1",
+    "v2fly/google-deepmind": "c5a4c9e415cf2bae6a4b0d99e2f97dfa528b649e4aae37ed0c31c51824cf8c3c",
     "v2fly/openai": "19a100966b3c5b0dff2e7038ba66366ef10d6384781b3eda6de4d1e79712dcc6",
     "v2fly/perplexity": "570581bad658566cb493207c14ebb55110750071071e089b4c40054b00af3db0",
     "v2fly/poe": "e689a8d337b64bcf760e5d8dfe03e3d29d8558063db93acba2d1d6eb9c11003a",
     "v2fly/xai": "1e15c6018174f58f6a2f3710c84566909eee45a8092247280d244cf8ea7cd928"
   },
   "v2fly_repository": "https://github.com/v2fly/domain-list-community",
-  "v2fly_revision": "6fe5416797ec88d29a3a1c69ce1431d73b955e88",
+  "v2fly_revision": "61f5b1e44f796361fd9153b113070820725f3135",
   "voice_url": "https://openai.com/chatgpt-voice.json"
 }
