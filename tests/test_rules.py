@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+import automation
 import rules
 import sync
 
@@ -76,30 +77,40 @@ class ParserTests(unittest.TestCase):
                 rules.Rule.from_text(value)
 
 
-class ApprovalTests(unittest.TestCase):
-    def setUp(self):
-        self.approvals = {"openai": {"core": ["DOMAIN-SUFFIX,openai.com", "DOMAIN,openai.example.net"], "compat": []}}
+class PolicyTests(unittest.TestCase):
+    def test_direct_source_authority_does_not_flow_through_include(self):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "dedicated").write_text("direct.example\ninclude:child\n", encoding="utf-8")
+            (data / "child").write_text("transitive.example\n", encoding="utf-8")
+            catalog = {"vendors": [{"id": "demo", "group": "global", "sources": ["dedicated"]}]}
+            patches = {"add": [], "drop": {}, "surge_regex": {}}
+            entries = rules.collect(catalog, patches, data, review_mode=True)
+        direct = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "direct.example"))
+        transitive = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "transitive.example"))
+        self.assertIsNone(automation.scope_problem(direct, entries[direct], catalog, patches))
+        self.assertEqual(
+            automation.scope_problem(transitive, entries[transitive], catalog, patches),
+            "source-not-authorized-by-catalog",
+        )
 
-    def test_known_suffix_child_allowed(self):
-        entries = {("openai", "core", rules.Rule("DOMAIN", "new.openai.com")): set()}
-        rules.check_approvals(entries, self.approvals)
+    def test_select_authorizes_only_explicit_selected_value(self):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "mixed").write_text("selected.example\nother.example\n", encoding="utf-8")
+            catalog = {
+                "vendors": [{
+                    "id": "demo", "group": "global",
+                    "select": {"mixed": ["selected.example"]},
+                }]
+            }
+            patches = {"add": [], "drop": {}, "surge_regex": {}}
+            entries = rules.collect(catalog, patches, data, review_mode=True)
+        selected = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "selected.example"))
+        self.assertEqual(set(entries), {selected})
+        self.assertIsNone(automation.scope_problem(selected, entries[selected], catalog, patches))
 
-    def test_unknown_root_requires_review(self):
-        entries = {("openai", "core", rules.Rule("DOMAIN-SUFFIX", "newopenai.com")): set()}
-        with self.assertRaises(ValueError):
-            rules.check_approvals(entries, self.approvals)
-
-    def test_exact_to_suffix_widening_requires_review(self):
-        entries = {("openai", "core", rules.Rule("DOMAIN-SUFFIX", "openai.example.net")): set()}
-        with self.assertRaises(ValueError):
-            rules.check_approvals(entries, self.approvals)
-
-    def test_compat_cannot_be_promoted(self):
-        entries = {("openai", "compat", rules.Rule("DOMAIN", "api.openai.com")): set()}
-        with self.assertRaises(ValueError):
-            rules.check_approvals(entries, self.approvals)
-
-    def test_whole_cloud_blocked_even_before_approval(self):
+    def test_whole_cloud_blocked_even_for_explicit_patch(self):
         catalog = {"vendors": [{"id": "test", "group": "global"}]}
         patch = {"add": [{"vendor": "test", "tier": "core", "rule": "DOMAIN-SUFFIX,amazonaws.com", "source": "https://example.com", "reason": "bad"}]}
         with self.assertRaises(ValueError):
@@ -252,15 +263,14 @@ class RepositoryTests(unittest.TestCase):
         rule = rules.Rule("DOMAIN", "shared.example.com")
         members = {("one", "core", rule): {"https://one.example.com/"}, ("two", "core", rule): {"https://two.example.com/"}}
         catalog = {"vendors": [{"id": "one", "name": "One"}, {"id": "two", "name": "Two"}]}
-        body, count = rules.render_members(members, "surge", {}, catalog, {})
+        body, count = rules.render_members(members, "surge", {}, catalog)
         self.assertEqual(count, 1)
         self.assertEqual(body.count(rule.text), 1)
         self.assertNotIn("Source:", body)
 
-    def test_retained_state_and_multiline_evidence_do_not_leak_into_subscription(self):
+    def test_multiline_evidence_does_not_leak_into_subscription(self):
         key = ("one", "core", rules.Rule("DOMAIN", "old.example.com"))
-        body, count = rules.render_members({key: {"https://source.example.com/\nDOMAIN,evil.example.com"}}, "surge", {}, {"vendors": [{"id": "one", "name": "One"}]}, {}, {key})
-        self.assertNotIn("RETAINED", body)
+        body, count = rules.render_members({key: {"https://source.example.com/\nDOMAIN,evil.example.com"}}, "surge", {}, {"vendors": [{"id": "one", "name": "One"}]})
         self.assertNotIn("evil.example.com", body)
         self.assertEqual(count, 1)
 

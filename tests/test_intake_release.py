@@ -82,6 +82,7 @@ class IntakeTests(unittest.TestCase):
         after, report = intake.refresh_official(rules.ROOT, fail)
         self.assertEqual(before, after)
         self.assertEqual(len(report["review_required"]), 6)
+        self.assertTrue(all(row["error_detail"] == "offline" for row in report["review_required"]))
 
     def test_official_wording_only_change_does_not_mutate_fact_baseline(self):
         with tempfile.TemporaryDirectory() as td:
@@ -132,7 +133,9 @@ class IntakeTests(unittest.TestCase):
         def denied(url):
             raise urllib.error.HTTPError(url, 403, "Forbidden", {}, None)
         module = types.SimpleNamespace(requests=types.SimpleNamespace(get=compatible))
-        with patch.dict(sys.modules, {"curl_cffi": module}), self.assertRaises(OSError):
+        with patch.dict(sys.modules, {"curl_cffi": module}), self.assertRaisesRegex(
+            OSError, "ValueError: Oversized official document"
+        ):
             intake.fetch_official({"url": "https://help.openai.com/en/articles/9247338"}, denied)
 
     def test_shared_official_dependency_is_excluded_from_gap_report(self):
@@ -158,6 +161,108 @@ class IntakeTests(unittest.TestCase):
         for data in (b"payload: [unterminated\n", b"payload:\n  - bad\n", b"payload:\n"):
             with self.assertRaises((ValueError, json.JSONDecodeError)):
                 verify_rules.parse_artifact(data, "mihomo")
+
+    def test_missing_release_gates_cannot_pass_as_legacy(self):
+        for field in ("semantic_contract", "profiles"):
+            for missing in (True, False):
+                manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
+                if missing:
+                    manifest.pop(field)
+                else:
+                    manifest[field] = {}
+                with self.subTest(field=field, missing=missing), patch.object(verify_rules, "read_json", return_value=manifest):
+                    with self.assertRaisesRegex(ValueError, "Missing required"):
+                        verify_rules.verify(rules.ROOT)
+
+
+class ReleaseSummaryTests(unittest.TestCase):
+    @staticmethod
+    def row(vendor, rule, tier="core", sources=None):
+        return {
+            "vendor": vendor,
+            "rule": rule,
+            "tier": tier,
+            "sources": sources or [f"source:{vendor}"],
+        }
+
+    def test_summary_lists_changes_and_caps_each_group(self):
+        before_rows = [
+            self.row("changed", "DOMAIN,changed.example", sources=["old-source"]),
+            self.row("removed", "DOMAIN,removed.example"),
+        ]
+        after_rows = [
+            self.row("changed", "DOMAIN,changed.example", tier="extended", sources=["new-source"]),
+            *[
+                self.row(f"vendor-{index:02d}", f"DOMAIN,added-{index:02d}.example")
+                for index in range(12)
+            ],
+        ]
+        text = release.render_actions_summary(
+            {"provenance": before_rows},
+            {"provenance": after_rows},
+            {
+                "review_required": [{
+                    "vendor": "openai",
+                    "tier": "core",
+                    "rule": "DOMAIN-SUFFIX,new.example",
+                    "reason": "source-not-authorized-by-catalog",
+                }],
+                "quarantined_count": 2,
+                "retained_count": 3,
+            },
+            {"result": "PASS", "candidate": "a" * 40},
+        )
+
+        self.assertIn("#### 新增（12）", text)
+        self.assertIn("vendor-09", text)
+        self.assertIn("DOMAIN,added-09.example", text)
+        self.assertNotIn("DOMAIN,added-10.example", text)
+        self.assertIn("另有 **2** 条", text)
+        self.assertIn("#### 变化（1）", text)
+        self.assertIn("层级 core → extended；来源变化", text)
+        self.assertIn("#### 删除（1）", text)
+        self.assertIn("removed.example", text)
+        self.assertIn("待审核 / 异常：**1**", text)
+        self.assertIn("隔离：**2**", text)
+        self.assertIn("保留观察：**3**", text)
+        self.assertIn("### 待审核 / 异常明细（1）", text)
+        self.assertIn("`openai` · `DOMAIN-SUFFIX,new.example` · core — 来源未被 catalog 授权，已隔离", text)
+        self.assertIn("stable：已更新并通过远端验证", text)
+
+    def test_summary_caps_review_details(self):
+        manifest = {"provenance": [self.row("demo", "DOMAIN,example.com")]}
+        review_required = [
+            {
+                "vendor": f"vendor-{index:02d}",
+                "rule": f"DOMAIN-SUFFIX,review-{index:02d}.example",
+                "reason": "source-not-authorized-by-catalog",
+            }
+            for index in range(12)
+        ]
+        text = release.render_actions_summary(
+            manifest,
+            manifest,
+            {"review_required": review_required, "quarantined_count": 12, "retained_count": 0},
+            {"result": "PASS", "stable_noop": "UNCHANGED_GENERATED_MANIFEST"},
+        )
+
+        self.assertIn("### 待审核 / 异常明细（12）", text)
+        self.assertIn("review-09.example", text)
+        self.assertNotIn("review-10.example", text)
+        self.assertIn("另有 **2** 条，详见 exception Issue / sync-report.json。", text)
+
+    def test_summary_marks_no_production_change(self):
+        manifest = {"provenance": [self.row("demo", "DOMAIN,example.com")]}
+        text = release.render_actions_summary(
+            manifest,
+            manifest,
+            {"review_required": [], "quarantined_count": 0, "retained_count": 0},
+            {"result": "PASS", "stable_noop": "UNCHANGED_GENERATED_MANIFEST"},
+        )
+        self.assertIn("### 生产规则\n- 无变化", text)
+        self.assertNotIn("#### 新增", text)
+        self.assertNotIn("#### 删除", text)
+        self.assertIn("stable：生产 manifest 无变化，未轮换", text)
 
 
 class ReleaseTests(unittest.TestCase):

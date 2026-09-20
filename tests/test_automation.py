@@ -22,42 +22,52 @@ class ReconciliationTests(unittest.TestCase):
     def setUp(self):
         self.stable = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "example.com"))
         self.old = ("demo", "core", rules.Rule("DOMAIN", "legacy.service.test"))
-        self.approvals = {"demo": {"core": ["DOMAIN-SUFFIX,example.com", "DOMAIN,legacy.service.test"]}}
-        self.patches = {"surge_regex": {}}
+        self.direct = {"v2fly:data/demo"}
+        self.catalog = {"vendors": [{"id": "demo", "group": "global", "sources": ["demo"]}]}
+        self.patches = {"add": [], "drop": {}, "surge_regex": {}}
         self.policy = {"removal_grace_days": 14, "removal_min_observation_days": 3}
         self.contracts = {"vendors": {}}
-        self.before = {"provenance": [automation.row_of(key, {"source"}) for key in [self.stable, self.old]]}
-        self.candidates = {self.stable: {"source"}}
+        self.before = {"provenance": [automation.row_of(key, self.direct) for key in [self.stable, self.old]]}
+        self.candidates = {self.stable: set(self.direct)}
         self.empty = {"schema": 1, "pending": [], "retained": []}
 
     def reconcile(self, day, state=None, **kwargs):
         return automation.reconcile(
-            self.candidates, self.before, self.approvals, self.patches,
+            self.candidates, self.before, self.catalog, self.patches,
             state or self.empty, self.policy,
             today=date(2026, 1, day), contracts=self.contracts, **kwargs
         )
 
-    def test_unknown_root_quarantined_while_safe_update_continues(self):
-        unknown = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "unknown.test"))
+    def test_dedicated_source_new_root_is_accepted_automatically(self):
+        new_root = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "unknown.test"))
         child = ("demo", "core", rules.Rule("DOMAIN", "new.example.com"))
-        self.candidates.update({unknown: {"source"}, child: {"source"}})
+        self.candidates.update({new_root: set(self.direct), child: set(self.direct)})
         state, report = self.reconcile(1)
-        effective = automation.effective_entries(self.candidates, self.approvals, self.patches, state)
+        effective = automation.effective_entries(self.candidates, self.catalog, self.patches, state)
+        self.assertIn(new_root, effective)
         self.assertIn(child, effective)
-        self.assertNotIn(unknown, effective)
-        self.assertEqual(report["quarantined_count"], 1)
+        self.assertEqual(report["quarantined_count"], 0)
+
+    def test_transitive_include_does_not_inherit_dedicated_source_authority(self):
+        key = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "included.example"))
+        self.candidates[key] = {"v2fly:data/category-ai"}
+        state, report = self.reconcile(1)
+        self.assertEqual(report["review_required"][0]["reason"], "source-not-authorized-by-catalog")
+        self.assertNotIn(key, automation.effective_entries(self.candidates, self.catalog, self.patches, state))
 
     def test_unknown_regex_quarantined_without_breaking_domains(self):
         key = ("demo", "core", rules.Rule("DOMAIN-REGEX", "^new.*$"))
-        self.candidates[key] = {"source"}
+        self.candidates[key] = set(self.direct)
         state, report = self.reconcile(1)
         self.assertEqual(report["review_required"][0]["reason"], "unreviewed-surge-regex-adapter")
-        self.assertNotIn(key, automation.effective_entries(self.candidates, self.approvals, self.patches, state))
+        self.assertNotIn(key, automation.effective_entries(self.candidates, self.catalog, self.patches, state))
 
-    def test_shared_root_cannot_be_approved_into_core(self):
+    def test_shared_root_cannot_enter_core_even_from_dedicated_source(self):
         key = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "amazonaws.com"))
-        self.approvals["demo"]["core"].append(key[2].text)
-        self.assertEqual(automation.scope_problem(key, self.approvals, self.patches), "shared-platform-forbidden-in-core")
+        self.assertEqual(
+            automation.scope_problem(key, self.direct, self.catalog, self.patches),
+            "shared-platform-forbidden-in-core",
+        )
 
     def test_removal_requires_grace_and_three_distinct_days(self):
         state, report = self.reconcile(1)
@@ -101,21 +111,24 @@ class ReconciliationTests(unittest.TestCase):
 
     def test_reappearing_rule_resets_missing_state(self):
         state, _ = self.reconcile(1)
-        self.candidates[self.old] = {"source"}
+        self.candidates[self.old] = set(self.direct)
         state, _ = self.reconcile(2, state)
         self.assertEqual(state["retained"], [])
 
     def test_lossless_redundant_rule_removal_needs_no_delay(self):
         redundant = ("demo", "core", rules.Rule("DOMAIN", "old.example.com"))
-        self.before["provenance"] = [automation.row_of(key, {"source"}) for key in [self.stable, redundant]]
+        self.before["provenance"] = [automation.row_of(key, self.direct) for key in [self.stable, redundant]]
         state, report = self.reconcile(1)
         self.assertFalse(state["retained"])
         self.assertEqual(report["automatically_removed"][0]["reason"], "covered-by-current-rule")
 
-    def test_withdrawn_approval_cannot_be_resurrected(self):
-        self.approvals["demo"]["core"].remove(self.old[2].text)
-        state, _ = self.reconcile(1)
+    def test_local_drop_cannot_be_resurrected_by_retention(self):
+        self.patches["drop"] = {"demo": {self.old[2].text: "local policy"}}
+        state, report = self.reconcile(1)
         self.assertFalse(state["retained"])
+        removed = next(row for row in report["automatically_removed"] if row["rule"] == self.old[2].text)
+        self.assertEqual(removed["reason"], "local-policy-withdrawn")
+        self.assertEqual(removed["policy_reason"], "locally-dropped-rule")
 
 
 class AuditTests(unittest.TestCase):
@@ -165,6 +178,133 @@ class AuditTests(unittest.TestCase):
     def test_exact_host_does_not_cover_suffix_widening(self):
         self.assertFalse(audit_sources.covered(rules.Rule("DOMAIN-SUFFIX", "example.com"), {rules.Rule("DOMAIN", "example.com")}))
 
+    def test_enrichment_adds_cross_source_evidence_vendor_impact_and_gate(self):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "anthropic").write_text("full:new.example.com\n", encoding="utf-8")
+            catalog = {
+                "profiles": {
+                    "ai-daily": {"members": ["claude"]},
+                    "ai-core": {"members": ["claude"]},
+                    "ai-cn": {"members": []},
+                },
+                "vendors": [{"id": "claude", "sources": ["anthropic"]}],
+            }
+            pending = [{
+                "source_id": "sukka-source-ai", "source": "https://example.test/ai.conf",
+                "section": "Claude", "rule": "DOMAIN,new.example.com",
+                "reason": "uncovered-secondary-domain",
+            }]
+            official_state = {"documents": {"claude-network": {
+                "vendor": "claude", "url": "https://example.test/official",
+                "rules": ["DOMAIN,new.example.com"],
+            }}}
+            rows = audit_sources.enrich_pending(
+                pending, catalog, {"add": [], "drop": {}, "surge_regex": {}}, official_state, data,
+            )
+        row = rows[0]
+        self.assertEqual(row["vendor"], "claude")
+        self.assertEqual(row["impact"], ["claude", "ai-daily", "ai-core"])
+        self.assertTrue(row["evidence"]["v2fly"]["present"])
+        self.assertEqual(row["evidence"]["v2fly"]["level"], "confirmed")
+        self.assertEqual(row["evidence"]["official"]["level"], "confirmed")
+        self.assertEqual(row["evidence"]["product_scope"]["status"], "in-scope")
+        self.assertEqual(row["block_reason"], "radar-read-only")
+        summary = audit_sources.format_review_item(row)
+        self.assertIn("厂商：`claude`", summary)
+        self.assertIn("V2Fly ✓ confirmed · anthropic", summary)
+        self.assertIn("官方 confirmed · claude-network", summary)
+        self.assertIn("若批准影响：claude / ai-daily / ai-core", summary)
+        self.assertIn("主上游已授权", summary)
+
+    def test_google_unselected_upstream_rule_is_explained_not_auto_accepted(self):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "google-deepmind").write_text("full:jules.google.com\n", encoding="utf-8")
+            catalog = {
+                "profiles": {
+                    "ai-daily": {"members": ["google-ai"]},
+                    "ai-core": {"members": ["google-ai"]},
+                    "ai-cn": {"members": []},
+                },
+                "vendors": [{"id": "google-ai", "select": {"google-deepmind": ["gemini.google.com"]}}],
+            }
+            pending = [{
+                "source_id": "sukka-source-ai", "source": "https://example.test/ai.conf",
+                "section": "Google", "rule": "DOMAIN,jules.google.com",
+                "reason": "uncovered-secondary-domain",
+            }]
+            rows = audit_sources.enrich_pending(
+                pending, catalog, {"add": [], "drop": {}, "surge_regex": {}}, {"documents": {}}, data,
+            )
+        row = rows[0]
+        self.assertTrue(row["evidence"]["v2fly"]["present"])
+        self.assertEqual(row["evidence"]["product_scope"]["status"], "outside-explicit-select")
+        self.assertEqual(row["block_reason"], "outside-explicit-product-select")
+
+    def test_wider_sukka_scope_is_only_related_v2fly_evidence(self):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "anthropic").write_text("full:new.example.com\n", encoding="utf-8")
+            catalog = {"profiles": {}, "vendors": [{"id": "claude", "sources": ["anthropic"]}]}
+            evidence = audit_sources.v2fly_evidence(
+                rules.Rule("DOMAIN-SUFFIX", "new.example.com"), "claude", catalog, data,
+            )
+        self.assertTrue(evidence["present"])
+        self.assertEqual(evidence["level"], "related")
+        self.assertEqual(evidence["matches"][0]["relation"], "same-domain-different-scope")
+
+    def test_actions_summary_lists_scan_counts_and_gap_details(self):
+        report = {
+            "review_required": [{
+                "source_id": "sukka-source-ai",
+                "section": "Claude",
+                "rule": "DOMAIN-SUFFIX,newclaude.example",
+                "reason": "uncovered-secondary-domain",
+            }],
+            "sources": {
+                "sukka-source-ai": {
+                    "active_line_count": 52,
+                    "covered_count": 36,
+                    "excluded_by_policy_count": 15,
+                    "gap_count": 1,
+                }
+            },
+        }
+        text = audit_sources.render_actions_summary(report)
+        self.assertIn("有效规则：**52**", text)
+        self.assertIn("已覆盖：**36**", text)
+        self.assertIn("策略排除：**15**", text)
+        self.assertIn("待核验缺口：**1**", text)
+        self.assertIn("`Claude` · `DOMAIN-SUFFIX,newclaude.example`", text)
+        self.assertIn("证据仅辅助复核，不会自动扩大生产边界", text)
+
+    def test_actions_summary_caps_review_details(self):
+        report = {
+            "review_required": [
+                {
+                    "source_id": "sukka-source-ai",
+                    "section": "OpenAI / ChatGPT",
+                    "rule": f"DOMAIN,review-{index:02d}.example",
+                    "reason": "uncovered-secondary-domain",
+                }
+                for index in range(12)
+            ],
+            "sources": {
+                "sukka-source-ai": {
+                    "active_line_count": 52,
+                    "covered_count": 30,
+                    "excluded_by_policy_count": 10,
+                    "gap_count": 12,
+                }
+            },
+        }
+        text = audit_sources.render_actions_summary(report)
+        self.assertIn("待审核 / 异常明细（12）", text)
+        self.assertIn("review-09.example", text)
+        self.assertNotIn("review-10.example", text)
+        self.assertIn("另有 **2** 条，详见 sources exception Issue / source-audit.json。", text)
+
 
 class ResilienceTests(unittest.TestCase):
     def test_voice_failure_retains_verified_last_good(self):
@@ -211,11 +351,45 @@ class NotificationTests(unittest.TestCase):
         self.report["review_required"][0]["first_seen"] = "2026-01-10"
         self.assertEqual(first, notify_review.issue_body("sync", self.report))
 
+    def test_error_detail_is_visible_in_issue_body(self):
+        report = {"review_required": [{
+            "source_id": "openai-network",
+            "reason": "official-source-unavailable-or-parser-drift",
+            "error_type": "OSError",
+            "error_detail": "Official HTTPS fallback failed: TimeoutError: handshake timed out",
+        }]}
+        body = notify_review.issue_body("sync", report)
+        self.assertIn('"error_detail": "Official HTTPS fallback failed: TimeoutError: handshake timed out"', body)
+
     def test_failed_workflow_without_report_is_actionable(self):
         with tempfile.TemporaryDirectory() as td:
             report = notify_review.load_report(Path(td) / "missing.json", failed=True)
         self.assertEqual(report["review_required"], [{"reason": "workflow-failed"}])
         self.assertIn("本次工作流失败", notify_review.issue_body("sync", report))
+
+    def test_sources_issue_preserves_section_and_evidence(self):
+        report = {"review_required": [{
+            "source_id": "sukka-source-ai",
+            "section": "Claude",
+            "vendor": "claude",
+            "rule": "DOMAIN,new.example",
+            "reason": "uncovered-secondary-domain",
+            "impact": ["claude", "ai-daily", "ai-core"],
+            "evidence": {
+                "v2fly": {"status": "available", "present": True, "level": "confirmed", "matches": []},
+                "official": {"level": "none", "matches": []},
+                "product_scope": {"status": "in-scope", "basis": "vendor-dedicated-v2fly-source"},
+            },
+            "block_reason": "source-not-authorized-by-catalog",
+            "block_reason_label": "来源没有被当前 catalog 授权",
+        }]}
+        body = notify_review.issue_body("sources", report)
+        self.assertIn("Sukka 二级雷达只读运行", body)
+        self.assertIn('"section": "Claude"', body)
+        self.assertIn('"rule": "DOMAIN,new.example"', body)
+        self.assertIn('"impact": [', body)
+        self.assertIn('"v2fly": {', body)
+        self.assertIn('"block_reason": "source-not-authorized-by-catalog"', body)
 
     def test_failed_workflow_preserves_pending_findings(self):
         with tempfile.TemporaryDirectory() as td:
@@ -253,6 +427,12 @@ class NotificationTests(unittest.TestCase):
     def test_wrong_owner_refused(self):
         with self.assertRaises(ValueError):
             notify_review.notify("sync", self.report, Mock())
+
+    def test_notification_follows_evidence_upload(self):
+        for workflow in ("sync", "audit"):
+            text = (rules.ROOT / f".github/workflows/{workflow}.yml").read_text(encoding="utf-8")
+            with self.subTest(workflow=workflow):
+                self.assertLess(text.index("actions/upload-artifact@"), text.index("scripts/notify_review.py"))
 
 
 class EngineHarnessTests(unittest.TestCase):

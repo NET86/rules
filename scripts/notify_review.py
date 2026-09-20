@@ -14,9 +14,15 @@ REPOSITORY = "NET86/rules"
 def issue_body(channel, report):
     marker = f"<!-- rules-automation:{channel} -->"
     # Omit clock/observation counters: identical exceptions produce identical bodies.
-    rows = sorted({json.dumps({k: v for k, v in row.items() if k in {"vendor", "tier", "rule", "reason", "source", "source_id", "error_type"}}, ensure_ascii=False, sort_keys=True) for row in report.get("review_required", [])})
+    visible = {"vendor", "tier", "section", "rule", "reason", "source", "source_id", "error_type", "error_detail", "impact", "evidence", "block_reason", "block_reason_label"}
+    rows = sorted({json.dumps({k: v for k, v in row.items() if k in visible}, ensure_ascii=False, sort_keys=True) for row in report.get("review_required", [])})
     failed = any(row.get("reason") == "workflow-failed" for row in report.get("review_required", []))
-    status = "本次工作流失败，请查看 Actions 日志；不要把上一份成功报告当成本次成功。未通过校验的规则不会发布。" if failed else "自动更新继续运行；以下例外已隔离或保留上一可用版本，不会直接扩大核心规则。"
+    if failed:
+        status = "本次工作流失败，请查看 Actions 日志；不要把上一份成功报告当成本次成功。未通过校验的规则不会发布。"
+    elif channel == "sources":
+        status = "Sukka 二级雷达只读运行；以下缺口仅供复核，不会自动进入生产规则。"
+    else:
+        status = "自动更新继续运行；以下例外已隔离或保留上一可用版本，不会直接扩大核心规则。"
     return marker + "\n\n" + status + "\n\n```json\n" + json.dumps([json.loads(row) for row in rows], ensure_ascii=False, indent=2) + "\n```\n\n[Actions](https://github.com/NET86/rules/actions) · [维护说明](https://github.com/NET86/rules/blob/main/docs/MAINTAINING.md)。状态不变不重复评论；例外消失后自动关闭。\n"
 
 

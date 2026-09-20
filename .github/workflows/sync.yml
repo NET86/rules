@@ -1,7 +1,7 @@
 name: Sync reviewed upstreams
 on:
   schedule:
-    - cron: '19 * * * *'
+    - cron: '19 */6 * * *'
   workflow_dispatch:
 permissions:
   contents: write
@@ -46,11 +46,6 @@ jobs:
         run: python scripts/release.py --flclash-core .work/bin/flclash-core
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Update one exception issue only when needed
-        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
-        run: python scripts/notify_review.py sync .work/sync-report.json ${{ job.status == 'failure' && '--failed' || '' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
@@ -62,3 +57,8 @@ jobs:
             .work/mihomo-*.log
           include-hidden-files: true
           retention-days: 14
+      - name: Update one exception issue after evidence upload
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
+        run: python scripts/notify_review.py sync .work/sync-report.json ${{ job.status == 'failure' && '--failed' || '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -194,29 +194,6 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
     return entries
 
 
-def check_approvals(entries, approvals):
-    pending = []
-    for vendor, tier, rule in entries:
-        scopes = [Rule.from_text(s) for s in approvals.get(vendor, {}).get(tier, [])]
-        approved = any(
-            rule == scope or (
-                scope.kind == "DOMAIN-SUFFIX" and rule.kind in {"DOMAIN", "DOMAIN-SUFFIX"}
-                and scope.matches(rule.value)
-            ) for scope in scopes
-        )
-        if not approved:
-            pending.append(f"{vendor}/{tier}: {rule.text}")
-    if pending:
-        raise ValueError("New rule scopes require review in sources/approvals.json:\n" + "\n".join(sorted(pending)))
-
-
-def approvals_for(entries):
-    result = {}
-    for vendor, tier, rule in sorted(entries):
-        result.setdefault(vendor, {}).setdefault(tier, []).append(rule.text)
-    return result
-
-
 def validate_profiles(catalog):
     profiles = catalog.get("profiles", {})
     expected = {"ai-daily": "global", "ai-core": "global", "ai-cn": "cn"}
@@ -289,12 +266,11 @@ def render_rule(rule, target, patches):
             raise ValueError("Unsafe Surge adapter")
         return translated.text
     if rule.kind in {"IP-CIDR", "IP-CIDR6"}:
-        kind = "IP-CIDR6" if target == "surge" and rule.kind == "IP-CIDR6" else rule.kind
-        return f"{kind},{rule.value},no-resolve"
+        return f"{rule.kind},{rule.value},no-resolve"
     return rule.text
 
 
-def render_members(members, target, patches, catalog, lock, retained=()):
+def render_members(members, target, patches, catalog):
     """Group by vendor and keep subscription files compact.
 
     Detailed provenance and retained-state evidence live in manifest/report data.
@@ -331,7 +307,7 @@ def render_members(members, target, patches, catalog, lock, retained=()):
     return "\n".join(lines) + "\n", len(records)
 
 
-def subscription_index(catalog, bundles):
+def subscription_index(catalog):
     lines = ["# 订阅目录", "", "本页自动生成。日常使用只需选 ai-daily；合集与单厂商分层展示。", "",
              "下列链接是规则文件，不是节点订阅。stable 是支持的订阅入口；main 仅用于开发与候选。", "",
              "## 合集", "", "| 版本 | 功能与选择建议 | Surge | Mihomo |", "| --- | --- | --- | --- |"]
@@ -365,9 +341,8 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
     patches = read_json(root / "sources/patches.json")
     selection_issues = []
     candidates = collect(catalog, patches, snapshot / "v2fly", review_mode=True, selection_issues=selection_issues)
-    approvals = read_json(root / "sources/approvals.json")
     state = automation_state if automation_state is not None else read_json(root / "sources/automation-state.json")
-    entries = effective_entries(candidates, approvals, patches, state)
+    entries = effective_entries(candidates, catalog, patches, state)
     for issue in selection_issues:
         if not any(
             vendor == issue["vendor"] and tier == "core" and rule.matches(issue["value"])
@@ -376,7 +351,6 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
             raise ValueError(
                 f"Selected upstream domain lost effective coverage: {issue['vendor']} {issue['value']}"
             )
-    check_approvals(entries, approvals)
     bundles = {v["id"]: {} for v in catalog["vendors"]}
     bundles.update({"ai-core": {}, "ai-cn": {}, "ai-daily": {}})
     for key, origins in entries.items():
@@ -409,21 +383,23 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
             "sha256": sha256((root / "sources/semantic-contracts.json").read_bytes())
         },
         "automation": {
-            "quarantined": [dict(vendor=v, tier=t, rule=r.text, reason=scope_problem((v,t,r), approvals, patches))
-                            for v,t,r in sorted(candidates) if scope_problem((v,t,r), approvals, patches)],
+            "quarantined": [
+                dict(vendor=v, tier=t, rule=r.text, reason=scope_problem((v, t, r), candidates[(v, t, r)], catalog, patches))
+                for v, t, r in sorted(candidates)
+                if scope_problem((v, t, r), candidates[(v, t, r)], catalog, patches)
+            ],
             "selection_issues": selection_issues,
             "retained": state.get("retained", [])
         },
         "client_validation": "See docs/VALIDATION.md; generation is not a connectivity test"
     }
-    retained = {(row["vendor"], row["tier"], Rule.from_text(row["rule"])) for row in state.get("retained", [])}
     for name, members in sorted(bundles.items()):
         active_rules = {rule for _, _, rule in members}
         if not active_rules:
             raise ValueError(f"Refusing empty bundle: {name}")
         paths = {}
         for target, ext in (("surge", "list"), ("mihomo", "yaml")):
-            body, count = render_members(members, target, patches, catalog, lock, retained)
+            body, count = render_members(members, target, patches, catalog)
             description = BUNDLE_DESCRIPTIONS.get(name, "单厂商核心域名；不含共享依赖和语音 IP。")
             header = (
                 f"# NET86/rules | {name}\n"
@@ -444,7 +420,7 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
         for (v, t, r), origins in sorted(entries.items())
     ]
     files["rules/manifest.json"] = json_text(manifest)
-    files["rules/README.md"] = subscription_index(catalog, bundles)
+    files["rules/README.md"] = subscription_index(catalog)
     return files
 
 

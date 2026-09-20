@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-18 — Dedicated-source automation
+
+- Removed the duplicate `approvals.json` layer: `catalog.sources`, `catalog.select` and `patches` are now the production authority model.
+- Direct ordinary rules from a vendor-dedicated V2Fly source can absorb new domains automatically; transitive includes do not inherit that authority.
+- Whole shared-platform roots, unsupported broad matches and unreviewed regex adapters remain fail-closed; local drops/select removals cannot be resurrected by retention.
+- Existing generated rule bytes remain unchanged; this changes how future upstream additions are admitted, not the current profiles.
+
 ## 2026-09-16 — Small, high-confidence architecture
 
 - Reduced the maintained products to explicit profiles: ai-daily 5 overseas vendors + OpenAI Voice, ai-core 14 overseas vendors, and ai-cn 10 domestic vendors.
