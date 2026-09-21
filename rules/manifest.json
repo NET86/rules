@@ -33,12 +33,12 @@
       "mihomo": {
         "count": 82,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "a00faa74b462696fae66c8f3b39b706d95ae85cbc2d1860f46f4a12a769a9c36"
+        "sha256": "1ed0b06a7cad8053877f43370c961ef8929761fd1bfa9677d5f40d26528146ea"
       },
       "surge": {
         "count": 82,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "c8b10a6df0d5c527de7c2503992be3500db46779b687f1706914f9475b43f994"
+        "sha256": "e4e5759fcf296519c2294e3a5209aae6831c106180d1cba9278a9fbf6f6f42d6"
       }
     },
     "baidu-wenxin": {
