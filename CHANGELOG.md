@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-21 — Permanent IPv6 runtime regression coverage
+
+- Exercise a fixed test-only IPv6 CIDR through the existing HTTP provider and real daily routing probes in both cores, with four independent boundary expectations and separate report counts.
+- Require HTTP provider recovery to restore both original routing and cache bytes; a disappeared canary alone can no longer produce a false recovery PASS for an empty provider.
+
 ## 2026-09-21 — Isolate regression fixtures from changing upstream data
 
 - Give selection-radar tests fixed source/catalog fixtures so real pending candidates or upstream section renames remain diagnostic and cannot block unrelated production updates through test assumptions.
