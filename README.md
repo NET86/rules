@@ -21,7 +21,7 @@
 
 1. 将规则加入已有客户端配置，并选择可用代理节点。
 2. 放在宽泛的 Google、Microsoft、GitHub 规则及最终匹配规则之前。
-3. `ai-cn` 只负责分类，直连或代理由你的网络环境决定。
+3. 需要独立出口的单厂商规则放在合集前。
 
 示例：[Surge 日常](examples/surge-daily.conf) · [FlClash 日常](examples/flclash-daily.yaml) · [Surge 分包](examples/surge.conf) · [FlClash 分包](examples/flclash-mihomo.yaml)
 

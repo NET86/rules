@@ -11,7 +11,7 @@ Cloudflare Worker 按时调用 GitHub API，触发 `NET86/rules` 的 `sync.yml` 
 
 `workflow_dispatch` 包括 Cloudflare API 触发和人工点击“Run workflow”。GitHub 兜底记录不抑制主调度，两者共用发布锁。Cloudflare 对应 UTC 时刻为 `04:01 / 10:01 / 16:01 / 22:01`。
 
-触发成功只表示 GitHub 接受请求，执行进度与结果以 Actions 为准。Worker 不重复发送失败的触发请求，避免产生重复运行；仍依赖 GitHub API 和执行器可用。
+触发成功仅表示 GitHub 接受请求，执行结果以 Actions 为准。失败请求不重试，避免重复运行。
 
 工作流因长期无活动自动停用时会恢复启用；维护者手动停用则保持停用，未知状态不触发。
 

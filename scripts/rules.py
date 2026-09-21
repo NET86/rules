@@ -320,16 +320,16 @@ def render_members(members, target, patches, catalog):
 
 def subscription_index(catalog):
     lines = ["# 订阅目录", "", "日常使用推荐 `ai-daily`。以下为 `stable` 规则文件，不包含代理节点。", "",
-             "本页由产品配置自动生成。", "",
+             "<!-- 本页由 scripts/rules.py 自动生成，请勿手改。 -->", "",
              "## 合集", "", "| 规则集 | 用途 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |"]
     def row(name, description):
-        return f"| {name} | {description} | [{name}.list]({RAW_URL}/rules/surge/{name}.list) | [{name}.yaml]({RAW_URL}/rules/mihomo/{name}.yaml) |"
+        return f"| {name} | {description} | [订阅]({RAW_URL}/rules/surge/{name}.list) | [订阅]({RAW_URL}/rules/mihomo/{name}.yaml) |"
     for name in ("ai-daily", "ai-core", "ai-cn"):
         lines.append(row(name, f"{len(catalog['profiles'][name]['members'])} 家厂商。{BUNDLE_DESCRIPTIONS[name]}"))
     daily = catalog["profiles"]["ai-daily"]["members"]
-    lines += ["", "使用 ai-core 且需要 OpenAI 语音时，另加 openai-voice-ip 并设置相同策略。", "",
+    lines += ["", "使用 `ai-core` 或单厂商 `openai` 且需要语音时，另加 `openai-voice-ip` 并设置相同策略。", "",
               "日常厂商：" + "、".join(daily) + "。", "",
-              "## 单厂商", "", "需要独立出口时选择单厂商，并放在合集前。单厂商仅含核心域名；OpenAI 语音需另加语音 IP 包。", ""]
+              "## 单厂商", "", "仅含核心域名。需要独立出口时选用，并放在合集前。", ""]
     for group, title in (("global", "海外服务"), ("cn", "国内服务")):
         lines += [f"### {title}", "", "| 文件 | 服务 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |"]
         for vendor in catalog["vendors"]:
