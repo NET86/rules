@@ -1,4 +1,4 @@
-name: Validate rules
+name: 规则校验
 on:
   push:
     branches: [main]
@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python scripts/check_git_identity.py
-      - name: Validate pinned transport wheels and hashes
+      - name: 校验锁定的 HTTPS 依赖及摘要
         run: 'python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt'
       - run: python -m unittest discover -s tests -v
       - run: python scripts/rules.py --check

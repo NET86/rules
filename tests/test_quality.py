@@ -113,8 +113,8 @@ class LocalInputHealthTests(unittest.TestCase):
             self.assertEqual(report["source_health"]["openai_voice"], "reviewed-local-input")
             self.assertFalse(any(row["reason"].startswith("official-voice") for row in report["review_required"]))
             summary = release.render_actions_summary({}, {}, report, {"result": "PASS"})
-            self.assertIn("OpenAI Voice：采用维护者指定的本地输入", summary)
-            self.assertNotIn("本轮抓取成功", summary)
+            self.assertIn("OpenAI 语音：采用维护者指定的本地输入", summary)
+            self.assertNotIn("抓取成功", summary)
 
 
 class ScopeBoundaryTests(unittest.TestCase):

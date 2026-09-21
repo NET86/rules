@@ -163,7 +163,7 @@
     },
     {
       "id": "qwen",
-      "name": "Qwen / Tongyi",
+      "name": "通义千问 / Qwen",
       "group": "cn",
       "select": {
         "category-ai-cn": [
@@ -179,7 +179,7 @@
     },
     {
       "id": "kimi",
-      "name": "Kimi / Moonshot",
+      "name": "Kimi / 月之暗面",
       "group": "cn",
       "select": {
         "category-ai-cn": [
@@ -194,7 +194,7 @@
     },
     {
       "id": "doubao",
-      "name": "Doubao / Coze China",
+      "name": "豆包 / 扣子",
       "group": "cn",
       "select": {
         "doubao": [
@@ -207,7 +207,7 @@
     },
     {
       "id": "zhipu",
-      "name": "Zhipu / GLM",
+      "name": "智谱 / GLM",
       "group": "cn",
       "select": {
         "category-ai-cn": [
@@ -221,7 +221,7 @@
     },
     {
       "id": "minimax",
-      "name": "MiniMax / Hailuo",
+      "name": "MiniMax / 海螺",
       "group": "cn",
       "select": {
         "category-ai-cn": [
@@ -236,7 +236,7 @@
     },
     {
       "id": "kling",
-      "name": "Kling AI",
+      "name": "可灵 AI",
       "group": "cn",
       "select": {
         "category-ai-cn": [
@@ -248,7 +248,7 @@
     },
     {
       "id": "baidu-wenxin",
-      "name": "Baidu Wenxin / Wenxiaoyan",
+      "name": "文心一言 / 文小言",
       "group": "cn",
       "select": {
         "category-ai-cn": [
@@ -258,7 +258,7 @@
     },
     {
       "id": "tencent-ai",
-      "name": "Tencent Yuanbao / Hunyuan",
+      "name": "腾讯元宝 / 混元",
       "group": "cn",
       "select": {
         "category-ai-cn": [
@@ -269,7 +269,7 @@
     },
     {
       "id": "iflytek-spark",
-      "name": "iFlytek Spark",
+      "name": "讯飞星火",
       "group": "cn",
       "select": {
         "category-ai-cn": [

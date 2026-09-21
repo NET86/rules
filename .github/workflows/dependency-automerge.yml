@@ -1,7 +1,7 @@
-name: Merge tested dependency updates
+name: 依赖自动升级
 on:
   workflow_run:
-    workflows: [Validate rules]
+    workflows: [规则校验]
     types: [completed]
 permissions:
   contents: write

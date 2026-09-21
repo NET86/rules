@@ -1,60 +1,35 @@
-# 验证范围与记录
+# 验证范围
 
-正常发布不设人工 smoke test 门槛。机器验证按“它真正证明什么”分层，避免用 manifest 自己生成的期望值冒充产品正确性。
+发布由自动校验决定，无需每次人工试用。验证结果说明规则能否按预期生成、匹配和发布，不保证账号或代理节点可用。
 
-## 五层验证
+## 自动检查
 
-| 层 | 证明什么 | 不证明什么 |
-| --- | --- | --- |
-| Layer 1：parser / compiler | 输入语法、路径安全、类型转换、确定性生成正确 | 域名应该属于哪个产品 |
-| Layer 2：cross-format | Surge / Mihomo 在共同支持语义内一致；已声明 adapter 被显式处理 | 一个更宽 adapter 因为“已声明”就一定安全 |
-| Layer 3：engine consistency | 实际内核能加载 provider，并按生成规则执行 | manifest 中的规则本身就是正确产品定义 |
-| Layer 4：independent semantic contracts | 少量关键正例必须命中、关键反例必须不命中；aggregate profile 精确等于声明成员/功能包并集 | 全部产品功能、全部域名永远正确 |
-| Layer 5：source/release fail-safe | 抓取失败、删除观察、远端回读、稳定分支恢复不会静默污染 stable | GitHub 调度完全没启动时还能由仓库内部自证健康 |
+| 检查 | 内容 |
+| --- | --- |
+| 输入与生成 | 语法、路径、类型、来源权限、摘要及可重复生成。 |
+| 跨格式一致性 | 独立解析 Surge/Mihomo 文件，核对数量、重复项、摘要和已声明转换差异。 |
+| 产品语义 | 检查关键正反例与厂商归属；合集必须等于声明成员和功能包的并集。 |
+| 真实内核 | 固定 Mihomo 与 FlClash 内嵌核心加载 HTTP 规则源，执行域名、IP 和刷新恢复探测。 |
+| 发布与恢复 | 回读候选和稳定订阅，验证文件及语义契约；模拟抓取、发布、并发与恢复失败。 |
+| 自动化 | 调度去重、来源异常、Issue 去重、依赖升级身份与提交检查。 |
 
-## 当前自动覆盖
+## 关键保护
 
-- 单元/回归：审批边界、select 不递归 include、删除观察冻结、官方只读 radar、Voice fallback、通知、发布/恢复故障注入。
-- Portable gate：独立解析 committed Surge/Mihomo 产物，校验非空、去重、数量、摘要、许可和已声明格式差异。
-- Profile equivalence：`ai-daily` / `ai-core` / `ai-cn` 的实际规则集合必须严格等于 manifest 声明的成员及 `profile_features` 的并集，不能多也不能少。
-- Semantic contracts：直接读取实际单厂商产物和 aggregate 产物验证关键正反例，不用 provenance 自证。所有已维护厂商均有独立契约；缺失厂商、空用例、相互矛盾或厂商错配均阻止发布。新候选必须使用 schema 2，旧 schema 1 只保留发布恢复兼容。
-- Mihomo：固定版本真实 HTTP rule-provider 加载、数量核对、本机路由探针、provider 刷新/故障恢复。分别验证 ai-daily、海外分包和 ai-cn；Voice 每个网段的首尾及相邻地址均执行探针，相邻网段按完整并集判断，国内合集不应命中 Voice IP。
-- 固定 IPv6 回归：daily 测试在临时 HTTP provider 中放置 `2001:db8::4/126`，复用同一内核和 `probe()` 检查首尾命中、紧邻地址不命中。四项预期独立固定、单独统计，不写入生产规则或 manifest；即使上游没有 IPv6 也持续执行，不要求运行环境具备公网 IPv6。
-- HTTP provider 恢复必须同时证明临时 canary 已移除、原有产品入口重新命中，以及缓存字节恢复为原文件；空 provider 不能被误报为恢复成功。
-- 隔离探针只使用 HTTP 专用监听端口，避免 Windows 对同号 UDP 端口的限制使混合监听误失败；不据此声称验证 SOCKS/UDP 流量。
-- FlClash core：从 `sources/engines.json` 固定的 FlClash 内嵌核心构建 CLI，用同一隔离测试验证；不是用独立最新版 Mihomo 冒充。
-- Publication read-back：候选和 stable 的 manifest、所有规则文件以及 semantic contract 都按不可变/稳定 URL 下载并核对摘要，再运行核心验证。
-- Recovery：临时 Git 仓库覆盖 candidate validation failure、post-promotion failure、并发 stable/main 更新、缺失 LKG 和下一轮恢复。
-- 已确认缺陷回归：混合来源的新入口候选持续存在；区域 S3/公共后缀边界隔离；Voice 截断保留旧版、等价网段拆合自动通过；仅来源证据变化不轮换 stable，远端验证仍使用真实 stable 契约。
-- 本轮补强回归：百度/腾讯归属互换而合集不变仍必须失败；非 daily 厂商的关键入口删除受到保护；依赖 PR 落后 main 不合并，检查后 main 并发前进也由真实 Git 拒绝推送。
-- 雷达发现、区段变化与 Voice 截断的行为测试使用固定隔离样本，不能假设本轮真实上游没有待审项或 Voice 始终维持某个数量。生产数据继续由独立校验与真实内核验证约束。
-- Cloudflare 调度：Node 内置测试覆盖身份拒绝、近期运行去重、固定仓库/工作流 dispatch 及 API 失败；部署前执行 Wrangler dry-run。该测试不代表已部署或真实定时执行成功。
+- 每个产品均有少量独立语义用例。缺失、空用例、相互矛盾或厂商错配会阻止发布；普通域名更新无需逐条增加用例。
+- 同时验证日常合集、海外分包和国内合集。语音网段检查首尾与相邻地址，相邻地址按完整网段并集判断。
+- 日常测试固定加入临时 IPv6 网段 `2001:db8::4/126`，在双内核中检查首尾命中、紧邻地址不命中。四个用例独立统计，不写入订阅，不依赖公网 IPv6。
+- 规则源恢复须证明临时测试规则已移除、原有入口重新命中、缓存字节恢复；空规则源不算恢复成功。
+- 来源失败或结构变化会冻结相关删除观察；语音覆盖骤减时保留有效旧版。仅来源证据变化不轮换发布。
+- 回归测试使用隔离样本，避免真实上游数量或待审项变化误触发失败。
 
-## 独立 semantic contract
+语义用例保存在 [semantic-contracts.json](../sources/semantic-contracts.json)。从生成清单派生的动态探针用于核对内核执行，不能替代这些独立产品用例。
 
-`sources/semantic-contracts.json` 只放少量关键产品事实：例如 OpenAI API / ChatGPT 必须命中，Stripe/Google Storage 等共享依赖不得因为官方文档列出就进入相应 AI profile；Google 必须保护 Gemini 主站和 Generative Language API，同时明确 `www.google.com`、`storage.googleapis.com`、Antigravity 等不属于当前默认范围。
+## 验证边界
 
-它不是完整规则数据库，也不复制全部规则。每家只保留少量产品事实与反例；产品成员和预算仍由 `catalog.json` 管理。新增厂商需同步增加契约，普通域名更新无需逐条增加测试。
+- Surge 文件经过独立解析与跨格式检查；有 Surge CLI 时可额外执行原生检查。CI 未验证 macOS/iOS 运行时、系统网络扩展或客户端缓存。
+- FlClash 验证范围为固定的内嵌路由核心，不包含界面导入、覆写和其他核心版本。
+- 路由探针使用隔离的本地 HTTP 环境，不测试真实账号登录、上传、语音通话、节点地域、IP 声誉或公网 DNS/UDP。
+- 共享域名保护采用已知边界表，不是完整公共后缀数据库。官方地址有效也不等于所有相关流量都应进入 AI 分流。
+- Surge 的一条 OpenAI 通配符转换比原正则更宽，差异见 [格式兼容](COMPATIBILITY.md)。
 
-共享域边界使用有限禁止表与区域 S3 模式，覆盖已知相关云平台及公共后缀；不是完整 Public Suffix List，不声称能排除所有未知共享平台。Voice 相对保护检查网段覆盖变化，不能证明官方地址的全部产品归属。
-
-## Manifest-derived 探针的正确定位
-
-根据 manifest 生成根域、子域、欺骗后缀和相似主机的动态探针仍然有价值，但只证明“内核按照当前规则执行”。如果错误规则已经进入 manifest，这一层可能自洽通过，因此不能替代独立 semantic contract。
-
-## 已知限制
-
-Mihomo 某些版本可能把坏 YAML 接受为空 provider；因此不能把 provider update API 成功码当作规则有效。项目在发布前用独立 strict parser 拒绝坏内容，并单独实测 HTTP 下载失败后的旧缓存行为。
-
-Surge 对一条 OpenAI WebPubSub `DOMAIN-REGEX` 没有同等原生语法，当前转换为经过审核但更宽的 `DOMAIN-WILDCARD`。该差异必须出现在 manifest / 产物 warning 中，不宣称严格等价，也不允许自动新增同类宽化转换。
-
-## 没有声称验证
-
-- Surge macOS/iOS 真实运行时、系统网络扩展和客户端更新缓存。
-- FlClash UI 导入、覆写持久性、IPC 包装及未固定的其它核心版本。
-- ChatGPT/Claude/Gemini 等真实账号、登录、上传、语音或 API 功能。
-- 节点地域、IP 声誉、账号状态、DNS/UDP、防火墙、运营商或客户端本地缓存。
-
-这些问题出现实际故障时再定位；日常更新不要求用户重复做人工 smoke test。
-
-Actions artifact 应保存 sync/release 报告、portable validation、Mihomo/FlClash validation 和必要日志，但不得包含订阅密钥、Cookie、Authorization 或私人配置。
+Actions 保存来源、发布和内核验证报告及必要日志，不应包含密钥、Cookie 或私人配置。运行命令见 [维护说明](MAINTAINING.md)。

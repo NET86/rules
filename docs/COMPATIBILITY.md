@@ -1,61 +1,47 @@
-# 格式与匹配语义
+# 格式兼容
 
-| 规范规则 | Surge RULE-SET | FlClash / Mihomo classical YAML |
+| 规则类型 | Surge | Mihomo / FlClash |
 | --- | --- | --- |
-| 精确域名 | DOMAIN | DOMAIN |
-| 后缀（含根域名） | DOMAIN-SUFFIX | DOMAIN-SUFFIX |
-| 域名正则 | 仅允许 `sources/patches.json` 中人工审核的转换 | DOMAIN-REGEX 原样保留 |
-| IPv4 | IP-CIDR + no-resolve | IP-CIDR + no-resolve |
-| IPv6 | IP-CIDR6 + no-resolve | IP-CIDR6 + no-resolve |
+| 精确域名 | `DOMAIN` | `DOMAIN` |
+| 后缀，含根域名 | `DOMAIN-SUFFIX` | `DOMAIN-SUFFIX` |
+| 域名正则 | 仅允许审核后的转换 | 保留 `DOMAIN-REGEX` |
+| IPv4 | `IP-CIDR`，附 `no-resolve` | `IP-CIDR`，附 `no-resolve` |
+| IPv6 | `IP-CIDR6`，附 `no-resolve` | `IP-CIDR6`，附 `no-resolve` |
 
-Surge 域名规则：https://manual.nssurge.com/rules/domain.html
+规范参考：[Surge 域名规则](https://manual.nssurge.com/rules/domain.html) · [Mihomo 规则](https://wiki.metacubex.one/config/rules/)
 
-Mihomo 规则：https://wiki.metacubex.one/config/rules/
+## OpenAI 正则转换
 
-## OpenAI 的一个已知非等价转换
-
-上游原始模式：
+上游正则：
 
 ```text
 ^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
 ```
 
-Surge 输出：
+Surge 转换：
 
 ```text
 DOMAIN-WILDCARD,chatgpt-async-webps-prod-*-*.webpubsub.azure.com
 ```
 
-通配符不能保持“中间字段至少一个字符、最后字段只能是数字”的全部约束，因此 Surge 这一条比 Mihomo 原正则更宽。本项目保留特定服务前缀与 Azure WebPubSub 后缀，不扩大成整个 `webpubsub.azure.com` 或 Azure 域。
+Surge 通配符无法约束中间字段非空、末段仅含数字，因此比原正则更宽。匹配仍限定服务前缀和 Azure WebPubSub 后缀，不覆盖整个云平台。
 
-manifest 必须记录该转换和原因；Surge 产物必须带 warning。未审核的新正则不会自动新增 wildcard adapter，而是进入隔离/人工复核。
+转换记录在 [人工补丁](../sources/patches.json) 和 [发布清单](../rules/manifest.json) 中，Surge 文件也附带提示。其他正则转换须审核。
 
-## 三个 aggregate profile
+## 合集与单厂商
 
-`ai-daily`、`ai-core`、`ai-cn` 的成员由 `sources/catalog.json` 显式声明，不从厂商数量或 group 隐式推导。
+合集成员由 [catalog.json](../sources/catalog.json) 明确声明，完整名单见 [订阅目录](../rules/README.md)：
 
-- `ai-daily`：日常厂商核心域名 + `openai-voice-ip`。
-- `ai-core`：海外厂商核心域名，不含 Voice IP。
-- `ai-cn`：国内 AI 分类。
+- `ai-daily`：日常 AI 核心域名和 OpenAI 语音 IP。
+- `ai-core`：更多海外 AI 核心域名，不含语音 IP。
+- `ai-cn`：国内 AI 分类，出口策略由用户选择。
 
-当前厂商名单和数量见 [自动生成的订阅目录](../rules/README.md)。
+`ai-daily` 与 `ai-core` 成员不同。验证会核对每个合集与声明成员的实际规则并集。单厂商需要独立出口时，应放在合集前。
 
-`ai-daily` **不是** `ai-core + openai-voice-ip`。独立 verifier 会把 aggregate 产物与声明成员/功能包的实际单厂商产物做集合等价检查，避免 profile 静默膨胀或漏项。
+规则默认不包含整个共享登录、存储、遥测或云平台。专用端点可经核对后精确补入；来源与 `include` 处理方式见 [数据来源](SOURCES.md)。
 
-共享认证、存储、遥测、包仓库、整片云平台和第三方通用依赖不再提供默认 compat 规则包。若未来确实需要某个共享依赖，应重新评估它是否值得精确纳入产品范围，而不是恢复一个大而宽的兼容合集。
+## 客户端配置
 
-## `select` 与 include
+Surge 文件用于 `RULE-SET`。Mihomo 文件用于 `behavior: classical`、`format: yaml` 的规则源，均需接入已有客户端配置。示例见 [examples](../examples)。
 
-v2fly `sources` 类型按上游分类文件语义允许递归 include；`select` 类型只读取当前分类文件本层显式规则。
-
-这样可以避免例如只选择 `meta.ai` 之类单项时，snapshot 因分类文件 include 自动拖入大量不相关 vendor。若上游把已选择域名移到 include 中，本项目会把它视为结构变化并冻结相关删除观察，而不是自动跟随 include 扩大依赖面。
-
-## FlClash / Mihomo
-
-`rules/mihomo/*.yaml` 是 `behavior: classical`、`format: yaml` 的 rule-provider 内容，不是完整客户端配置。
-
-CI 同时验证固定 Mihomo 与 `sources/engines.json` 指定的 FlClash 内嵌路由核心，包括 provider 加载、路由探针和 HTTP 更新/恢复。该结果不等于所有 FlClash UI 版本、覆写机制或网络环境都已经实测。
-
-## Surge 验证边界
-
-仓库独立解析 Surge rule-set 产物并与 Mihomo 做跨格式检查；如有可用 Surge CLI，可额外执行原生 `--check`。CI 不把静态解析器冒充 Surge macOS/iOS 真实运行时，也不声称验证了客户端缓存或系统网络扩展。
+已验证的内核与未覆盖场景见 [验证范围](VALIDATION.md)。

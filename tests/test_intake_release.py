@@ -254,13 +254,13 @@ class ReleaseSummaryTests(unittest.TestCase):
             "official_facts": {"kept": {"status": "retained-last-good"},
                                "absent": {"status": "unavailable-no-baseline"}},
         }}, {"result": "PASS"})
-        self.assertIn("V2Fly：本轮抓取成功", text)
-        self.assertIn("OpenAI Voice：沿用旧版（本轮变化异常）", text)
-        self.assertIn("`kept`：沿用旧版（本轮抓取失败）", text)
+        self.assertIn("V2Fly：抓取成功", text)
+        self.assertIn("OpenAI 语音：沿用旧版（变化异常）", text)
+        self.assertIn("`kept`：沿用旧版（抓取失败）", text)
         self.assertIn("`absent`：不可用（无有效基线）", text)
         missing = release.render_actions_summary({}, {}, {}, {"result": "PASS"})
         self.assertIn("V2Fly：未知", missing)
-        self.assertNotIn("本轮抓取成功", missing)
+        self.assertNotIn("抓取成功", missing)
 
     @staticmethod
     def row(vendor, rule, tier="core", sources=None):
@@ -335,7 +335,7 @@ class ReleaseSummaryTests(unittest.TestCase):
         self.assertIn("### 待审核 / 异常明细（12）", text)
         self.assertIn("review-09.example", text)
         self.assertNotIn("review-10.example", text)
-        self.assertIn("另有 **2** 条，详见 exception Issue / sync-report.json。", text)
+        self.assertIn("另有 **2** 条，详见异常 Issue 或 sync-report.json。", text)
 
     def test_summary_marks_no_production_change(self):
         manifest = {"provenance": [self.row("demo", "DOMAIN,example.com")]}
@@ -345,7 +345,7 @@ class ReleaseSummaryTests(unittest.TestCase):
             {"review_required": [], "quarantined_count": 0, "retained_count": 0},
             {"result": "PASS", "stable_noop": "UNCHANGED_RELEASE_CONTENT"},
         )
-        self.assertIn("### 生产规则\n- 无变化", text)
+        self.assertIn("### 规则变化\n- 无变化", text)
         self.assertNotIn("#### 新增", text)
         self.assertNotIn("#### 删除", text)
         self.assertIn("stable：订阅产物和产品契约无变化，未轮换", text)

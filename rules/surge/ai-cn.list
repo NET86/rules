@@ -1,14 +1,14 @@
 # NET86/rules | ai-cn
-# 国内主流 AI 独立分类：只包含显式维护的产品端点，不代表全部入口都应直连。
-# Generated; do not edit. Manifest: https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
+# 国内 AI 服务分类，出口策略自行选择。
+# 自动生成，请勿手改。清单：https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
 # SPDX-License-Identifier: AGPL-3.0-only
-# Notices: https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
+# 第三方声明：https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
 
 # DeepSeek
 DOMAIN-SUFFIX,deepseek.com
 DOMAIN-SUFFIX,deepseeksvc.com
 
-# Qwen / Tongyi
+# 通义千问 / Qwen
 DOMAIN-SUFFIX,qianwen.aliyun.com
 DOMAIN-SUFFIX,qianwen.com
 DOMAIN-SUFFIX,qianwenai.com
@@ -17,42 +17,42 @@ DOMAIN-SUFFIX,qwenlm.ai
 DOMAIN-SUFFIX,tongyi.aliyun.com
 DOMAIN-SUFFIX,tongyi.com
 
-# Kimi / Moonshot
+# Kimi / 月之暗面
 DOMAIN-SUFFIX,kimi.ai
 DOMAIN-SUFFIX,kimi.com
 DOMAIN-SUFFIX,moonshot.ai
 DOMAIN-SUFFIX,moonshot.cn
 
-# Doubao / Coze China
+# 豆包 / 扣子
 DOMAIN-SUFFIX,coze.cn
 DOMAIN-SUFFIX,cozecdn.com
 DOMAIN-SUFFIX,doubao.com
 DOMAIN-SUFFIX,doubaocdn.com
 
-# Zhipu / GLM
+# 智谱 / GLM
 DOMAIN-SUFFIX,bigmodel.cn
 DOMAIN-SUFFIX,chatglm.cn
 DOMAIN-SUFFIX,z.ai
 DOMAIN-SUFFIX,zhipuai.cn
 DOMAIN-SUFFIX,zhipucn.com
 
-# MiniMax / Hailuo
+# MiniMax / 海螺
 DOMAIN-SUFFIX,hailuoai.com
 DOMAIN-SUFFIX,minimax.io
 DOMAIN-SUFFIX,minimaxi.com
 DOMAIN-SUFFIX,xingyeai.com
 
-# Kling AI
+# 可灵 AI
 DOMAIN-SUFFIX,kechuangai.com
 DOMAIN-SUFFIX,kling-ai.com
 DOMAIN-SUFFIX,klingai.com
 
-# Baidu Wenxin / Wenxiaoyan
+# 文心一言 / 文小言
 DOMAIN-SUFFIX,yiyan.baidu.com
 
-# Tencent Yuanbao / Hunyuan
+# 腾讯元宝 / 混元
 DOMAIN-SUFFIX,hunyuan.tencent.com
 DOMAIN-SUFFIX,yuanbao.tencent.com
 
-# iFlytek Spark
+# 讯飞星火
 DOMAIN-SUFFIX,xinghuo.xfyun.cn

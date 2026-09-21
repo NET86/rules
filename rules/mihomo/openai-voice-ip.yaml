@@ -1,8 +1,8 @@
 # NET86/rules | openai-voice-ip
-# OpenAI 官方语音目的 IP：不含域名；ai-daily 已包含，单厂商 openai 未包含。
-# Generated; do not edit. Manifest: https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
+# OpenAI 官方语音目的 IP；ai-daily 已包含，单厂商 openai 未包含。
+# 自动生成，请勿手改。清单：https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
 # SPDX-License-Identifier: AGPL-3.0-only
-# Notices: https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
+# 第三方声明：https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
 payload:
   - "IP-CIDR,102.37.57.54/32,no-resolve"
   - "IP-CIDR,13.71.25.29/32,no-resolve"

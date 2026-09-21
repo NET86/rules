@@ -1,4 +1,4 @@
-name: Review secondary source gaps
+name: 来源补缺检查
 on:
   schedule:
     - cron: '41 3 * * 1'
@@ -33,7 +33,7 @@ jobs:
           path: .work/source-audit.json
           include-hidden-files: true
           retention-days: 30
-      - name: Update one exception issue after evidence upload
+      - name: 上传报告后更新异常 Issue
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
         run: python scripts/notify_review.py sources .work/source-audit.json ${{ job.status == 'failure' && '--failed' || '' }}
         env:

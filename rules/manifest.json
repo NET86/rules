@@ -9,336 +9,336 @@
       "mihomo": {
         "count": 33,
         "path": "rules/mihomo/ai-cn.yaml",
-        "sha256": "6e085053f2948801f9541542861513f0401295bf6eff43a8435308245204927b"
+        "sha256": "cd8b31807d62bd66a40cbb583c424070a1bea82f3d191074b1358e12799ce6ce"
       },
       "surge": {
         "count": 33,
         "path": "rules/surge/ai-cn.list",
-        "sha256": "e35721b0fe7296b66b90089fa1c0411ac0133a14d988123f48d6d6e2c5c66f62"
+        "sha256": "9e518b9ec29fa164421359fd8dc8ea583163e2fee8406ba94293a116a2a68fe0"
       }
     },
     "ai-core": {
       "mihomo": {
         "count": 83,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "0170faff857c5dd71176a2f66757d880f474ae295888de2804ddef30fcd56274"
+        "sha256": "87c16c78df00a26c34aeee6344bc5735e5fc5a7bd749d2f24f1d9b68b3b6a25a"
       },
       "surge": {
         "count": 83,
         "path": "rules/surge/ai-core.list",
-        "sha256": "c4f04b3ca4ca09483ddb3479ef1065e07eafe98cb220998a445bfe69ba27849a"
+        "sha256": "c8ce580c9a167abeebea1dba5184965e482f14077656aa833635d10cd53cdd41"
       }
     },
     "ai-daily": {
       "mihomo": {
         "count": 82,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "1ed0b06a7cad8053877f43370c961ef8929761fd1bfa9677d5f40d26528146ea"
+        "sha256": "c850ce0bdac05007a806eaa02b134ae0b3f96a5fadf4b43c76addbdc8cbc8e8b"
       },
       "surge": {
         "count": 82,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "e4e5759fcf296519c2294e3a5209aae6831c106180d1cba9278a9fbf6f6f42d6"
+        "sha256": "16b1067501535c4a3e60d45ed554a0360da3bd085cd779f58f93c7959b70af6c"
       }
     },
     "baidu-wenxin": {
       "mihomo": {
         "count": 1,
         "path": "rules/mihomo/baidu-wenxin.yaml",
-        "sha256": "d1ce9d6dba97d5a9c753cf522d3eadf24400f3ea76c142f1767b0cf477ebfab5"
+        "sha256": "bf2a65f3931b33f77929cb53916ecc23dd4366a7d4a01e36a2da991b262155d3"
       },
       "surge": {
         "count": 1,
         "path": "rules/surge/baidu-wenxin.list",
-        "sha256": "085c43c3453032acdecc7f0c3c337cf60bfe7cdf02e828f57e20d1234c916e81"
+        "sha256": "a87433f81fd3b1a48d833c49853a6b136aeed7404970e605af4040429dca9779"
       }
     },
     "claude": {
       "mihomo": {
         "count": 8,
         "path": "rules/mihomo/claude.yaml",
-        "sha256": "d638331a706804bba04a3895bb09b440b304d8db3e564a4526b7f4091add46d3"
+        "sha256": "4a8870ed810687887952cf15079694ec3d179dad86f1bf8b3c10a9ce9a1efb8d"
       },
       "surge": {
         "count": 8,
         "path": "rules/surge/claude.list",
-        "sha256": "3f8efc228ea76b90875285636c996d12ffe90ebb1aeb5ced743460ff165aebb1"
+        "sha256": "a21072a6859abf5aadcd8ced3c4501ee32afd17c03a54a68158ce62661c549c7"
       }
     },
     "cursor": {
       "mihomo": {
         "count": 5,
         "path": "rules/mihomo/cursor.yaml",
-        "sha256": "7fe69ffbdcbf24d7f65e73f18e45ee34c0dbb499dfd399aa45c08d45c8170f9b"
+        "sha256": "0bb50a901c3c6d37179ff5c1f6e8370b92221318ec0db6f8c4261ea48e8cdf20"
       },
       "surge": {
         "count": 5,
         "path": "rules/surge/cursor.list",
-        "sha256": "394c77d1371ebda7e06d7921227b1ebbf8cc85c34f2dd9b7c57af8b5b00a20a5"
+        "sha256": "38e99c99dc55283d308e7708f87ffa07c89a71912d4fd68d5382b5e95942cd80"
       }
     },
     "deepseek": {
       "mihomo": {
         "count": 2,
         "path": "rules/mihomo/deepseek.yaml",
-        "sha256": "4155d9a97465b6f89099cd5387fecc11d77e407c0c4162a5f7fd16061b34e204"
+        "sha256": "4161b5445054d41e899fbc6e500e6aaf757a29db18e7707d846a19af1179b606"
       },
       "surge": {
         "count": 2,
         "path": "rules/surge/deepseek.list",
-        "sha256": "0ca5a9a67064d214851a0c7d2ee56a83325bcdda24f37dacf5fb25ee39460f17"
+        "sha256": "80a89ce4e7a5bc18bef1be62c7689175251b609ab4ddab749ca5c97bfd1b08a6"
       }
     },
     "doubao": {
       "mihomo": {
         "count": 4,
         "path": "rules/mihomo/doubao.yaml",
-        "sha256": "e5292412c71649f7698cf055bc817543e6d521b8a2b0318d9da7f958d3470a2a"
+        "sha256": "91b26e44ddddf0d91c3f41b7719e135c59f419182c3213933be3244adad1d617"
       },
       "surge": {
         "count": 4,
         "path": "rules/surge/doubao.list",
-        "sha256": "22c7faf79f0c1eac49dfd889f3ce7496d1219255f664f28cfa4a86af4c7e8e10"
+        "sha256": "f96e03b94f2963333b9fd5960eb61b191379f374eaaf2142ed5f7a2686a53dd7"
       }
     },
     "elevenlabs": {
       "mihomo": {
         "count": 2,
         "path": "rules/mihomo/elevenlabs.yaml",
-        "sha256": "a87ecc16689ed1c346d774eeab73357b9ed4603f67bfe48d4b6bd9f6216291ef"
+        "sha256": "09547d8176710157359c025fcff14e6fcf50be66c1b38138664d2246df8ac0de"
       },
       "surge": {
         "count": 2,
         "path": "rules/surge/elevenlabs.list",
-        "sha256": "7a2edc7233bc3db1b9798022ea84bef26ed4ef76adc8d3354fe4a6d039d8779f"
+        "sha256": "9c3c1b5a5fad5a453ff83a3a9ff3890a3288f78d694d1ae915c75d420716e7c5"
       }
     },
     "github-copilot": {
       "mihomo": {
         "count": 5,
         "path": "rules/mihomo/github-copilot.yaml",
-        "sha256": "68fd7615402dfb8ab8781d2541787da559b3066ce81b0cdffa9d2b995f454f1f"
+        "sha256": "83a246e68b25596292ce0be9694c6a5be26f63f8b40a788c7c1fa140968fe3ff"
       },
       "surge": {
         "count": 5,
         "path": "rules/surge/github-copilot.list",
-        "sha256": "6fd4d16695e89f7e242a134c2d51e03ecacd373ec5c7db4c9abd0a8cdeda3760"
+        "sha256": "b80ebced636e87f09feab1cdc1b9b0e290179a40fee6ba88609dfabef439fc01"
       }
     },
     "google-ai": {
       "mihomo": {
         "count": 23,
         "path": "rules/mihomo/google-ai.yaml",
-        "sha256": "fa00042a2a2fcf5a12f829b1af8b72a4754c4ed0a03370e0d7444e257ef43dbe"
+        "sha256": "4bdbbe36c7c617162201c6c0642143637a17e0b0fa23f925b748cd922e23c8cd"
       },
       "surge": {
         "count": 23,
         "path": "rules/surge/google-ai.list",
-        "sha256": "383ec6277b263cda6909414d1a97270249c0cf65aed69593cef03fadfc1383b0"
+        "sha256": "0e81a7c59bbc1f71c289b1d53c1beff33ca8dec4872ccc177a0f1aabc97befd3"
       }
     },
     "grok": {
       "mihomo": {
         "count": 4,
         "path": "rules/mihomo/grok.yaml",
-        "sha256": "c10eec636f33f51ec19a71f940931dfd4ad98456d8b611c1695e8f4a73ef20bb"
+        "sha256": "c5b851ed3ef15db2849669962ce697cd62b74a6a6ad5e8ebab268c73cab2c3ae"
       },
       "surge": {
         "count": 4,
         "path": "rules/surge/grok.list",
-        "sha256": "15fed5c1c4c2ead026761f58711eca006d2a36f6c71cfd85f28f162a10ce1949"
+        "sha256": "5e3d4dbcdbd849d35d83bf53f6400051ca6d5f7497a06d12493286ecd8581c00"
       }
     },
     "iflytek-spark": {
       "mihomo": {
         "count": 1,
         "path": "rules/mihomo/iflytek-spark.yaml",
-        "sha256": "d94ff4a0346345a592689a907f9ab83b9747327fcec08c41f87a35918c3af1cb"
+        "sha256": "84b90329e2752d0b91485023f4dc55e74a21e40bc20548ce9fb06ed8d53a603c"
       },
       "surge": {
         "count": 1,
         "path": "rules/surge/iflytek-spark.list",
-        "sha256": "f13edb4818f3fea61bab740ec2fc47ef330275b342449c1eccfb6bdd652ef2db"
+        "sha256": "72eca38fb4d190db85ee231247a3ca566960f7f1b8b2438a6d7d9f61e21a1e5e"
       }
     },
     "kimi": {
       "mihomo": {
         "count": 4,
         "path": "rules/mihomo/kimi.yaml",
-        "sha256": "a63d37f3be4a90e7b63f72ee0e4497780f4999b3c5163bb4857532fe1eced8b9"
+        "sha256": "ce96fd3a1cb4f2a7167b33a3b6485ebd91f6ae0793782433821d9daa43c98b19"
       },
       "surge": {
         "count": 4,
         "path": "rules/surge/kimi.list",
-        "sha256": "d68ea26a645d6f0b8fc1cf67c3c7974dc1ed3c8a9cb90e1ad637833322e556dc"
+        "sha256": "7ee50a6e5e4c0019fbc26f50cc70dafba2806f05c5274fec70950305e0c49cdd"
       }
     },
     "kling": {
       "mihomo": {
         "count": 3,
         "path": "rules/mihomo/kling.yaml",
-        "sha256": "45374a1bb0c360f584d0d7b6dd368904b9a0448ea877fd4ca2e912b2c6ed20ce"
+        "sha256": "b8e950764f367a30a2ad226c40688206be477138825a3c6b44c3f364ece6f231"
       },
       "surge": {
         "count": 3,
         "path": "rules/surge/kling.list",
-        "sha256": "9cfc7a4bcad5f96a04bbb1abc000681952f3e53b119e9f3409b042fba364173e"
+        "sha256": "f308a4aa06f0ae7cd404f3ecf058d861d3e6856a057574a300531667aa80cd0f"
       }
     },
     "microsoft-copilot": {
       "mihomo": {
         "count": 4,
         "path": "rules/mihomo/microsoft-copilot.yaml",
-        "sha256": "823e0ea1f5cf986fc6d711f3cb30e4f41da29a870d2a6d20b1f80a49c3e4738c"
+        "sha256": "339045a8fb6b32a0dbc3fde8acf289481c59cf92c67ba6fe43e6195215332174"
       },
       "surge": {
         "count": 4,
         "path": "rules/surge/microsoft-copilot.list",
-        "sha256": "d0c108eccfaa0984be4eb497b1dbf703317c4a33544b6105a5b27aa515b5555c"
+        "sha256": "f44844d2308fa755ffb4077021aa12b558ac2785412e852fd4a2fcaf93028c0d"
       }
     },
     "midjourney": {
       "mihomo": {
         "count": 1,
         "path": "rules/mihomo/midjourney.yaml",
-        "sha256": "d8d28b61cbb6a943113cd79c8f419238ffb9e11b7ab6c5b26ff0fbd5b9fcab30"
+        "sha256": "7f47317030c110f9936861d6da417cf67966f3e504704d02e98df8c2f7cc5ef6"
       },
       "surge": {
         "count": 1,
         "path": "rules/surge/midjourney.list",
-        "sha256": "217405d4b8a84194ead67f9fe9ebc5de559636ad3f1012fd8c7576c4c643e827"
+        "sha256": "ef33d8548c1d3e3ae101092bd5818660b976f24a81933c79f1df9274b6ba13c5"
       }
     },
     "minimax": {
       "mihomo": {
         "count": 4,
         "path": "rules/mihomo/minimax.yaml",
-        "sha256": "25b134bcbb7524056b4e3d786cec8f6b931272788859e3334ab3ea6a1792219f"
+        "sha256": "fe4f0b49195b6998eaa01ff992f711eccd41417774ad38db7230bb2424efb8c3"
       },
       "surge": {
         "count": 4,
         "path": "rules/surge/minimax.list",
-        "sha256": "8f065a7f5048b60e36e19bd80ad8f8f4978bc1a0cebb43e7186cc8a1d8bf2175"
+        "sha256": "8870e827662890ee11b889b3ccee61765b5fb541d8dd6efecbc2514212a5587e"
       }
     },
     "mistral": {
       "mihomo": {
         "count": 1,
         "path": "rules/mihomo/mistral.yaml",
-        "sha256": "327b07d90075cca70bdc5537fe1fd37982561016d7edc630aeb1055ff37ebea9"
+        "sha256": "067569cb77e1bdfbc85a6e6fa5a93329e33dfec931805823ef2dcd1181f9f87b"
       },
       "surge": {
         "count": 1,
         "path": "rules/surge/mistral.list",
-        "sha256": "5579f064706bcfd2b837de1f00a7ef07e21edb3c1a885f0a7a52b45d91f82544"
+        "sha256": "b76c2c4de6d78b7451697693454edfa516d044cd450da292435ed6033be41312"
       }
     },
     "openai": {
       "mihomo": {
         "count": 19,
         "path": "rules/mihomo/openai.yaml",
-        "sha256": "2b077d61c2dfff11ad8be29168275d7958dc79e65987dd09d77e9743a3512af7"
+        "sha256": "667f5d01798cd7bd66cf431dc59d1fd3fa7bd16f1c08cf4609bfb7b6df9fe24f"
       },
       "surge": {
         "count": 19,
         "path": "rules/surge/openai.list",
-        "sha256": "667da6a46cd358570b12f76edda5fa93e40240139cef66628681a1e197e55f1a"
+        "sha256": "d5fc60615a5fce3144fef6b866ad7fb6bd2a7b24ec2345501ecd573929e04132"
       }
     },
     "openai-voice-ip": {
       "mihomo": {
         "count": 23,
         "path": "rules/mihomo/openai-voice-ip.yaml",
-        "sha256": "a6d33f98e35757bcde2c6f99bc3a3366d4cbc8acf18bc985e3c69307eae7e45e"
+        "sha256": "4f56c3b5bf63b2464407bddf582a514bc6d8a213f52153f6ff2832b632eed83b"
       },
       "surge": {
         "count": 23,
         "path": "rules/surge/openai-voice-ip.list",
-        "sha256": "5d542e27e88f591cf570659067f55cff5d7733453fcdb3f26a358a8042e0c2ff"
+        "sha256": "e03500efb15e9cb4459f06cece1a4da7f296b84bec83194f614aed38af3b2743"
       }
     },
     "perplexity": {
       "mihomo": {
         "count": 5,
         "path": "rules/mihomo/perplexity.yaml",
-        "sha256": "8f1650965934b8d25b2c55592a18789b6c297ae565833b5e88c1afc45839f2b6"
+        "sha256": "ec0601f04ed64988a841de2ce18ff657aba87978cbaf542cdf799169f9bbb18f"
       },
       "surge": {
         "count": 5,
         "path": "rules/surge/perplexity.list",
-        "sha256": "5711c556508b7d9d6449e01feb98d98dc9d0e9d67c0f99c648a7a81117c99af4"
+        "sha256": "05bdfc547302501ab7b250cca9265bac8d8e8519f11910eb4a4896bcf50a4628"
       }
     },
     "poe": {
       "mihomo": {
         "count": 2,
         "path": "rules/mihomo/poe.yaml",
-        "sha256": "76af672b7adc86b69512cd9d11f7d25605e23960caf4c1527298b8a599cfaa52"
+        "sha256": "76b76a041a72874d740618bed5c779b4e2efde4cdec05ed7805bda5c9b265b7f"
       },
       "surge": {
         "count": 2,
         "path": "rules/surge/poe.list",
-        "sha256": "8add397606d2df5fd2eafb5c85acb47612a27b28fd05717c80e344bb00b8436b"
+        "sha256": "4953a8dcbbab2015ca940613d4b4fb4e2e5400496c7e9d3d5841de0acf7d8c18"
       }
     },
     "qwen": {
       "mihomo": {
         "count": 7,
         "path": "rules/mihomo/qwen.yaml",
-        "sha256": "14ed1e058c933ba2bee048f5c0b99d2c0a8767f1fa256e100a70b912c0ac44b0"
+        "sha256": "39f107476c5b29d6eb1bc7d24e90e2474044cad19f50650a3fa7a0d8b2fa8820"
       },
       "surge": {
         "count": 7,
         "path": "rules/surge/qwen.list",
-        "sha256": "e5bdf611abc63212cbed55f5ebe94bf80d96e035312eac3300353988d5845e0e"
+        "sha256": "ddad4bb2c8b15c3ba1ea779c6069d03a03580b1325a4b73ffc70ce99f89467b8"
       }
     },
     "runway": {
       "mihomo": {
         "count": 2,
         "path": "rules/mihomo/runway.yaml",
-        "sha256": "17255cfa40760353dede6b8059e3f93a580a293f30c00d86180e66487fd9257f"
+        "sha256": "a13cfe2873425451d3a019a977c42a08a377c712bbea151fb86a961e2b748d10"
       },
       "surge": {
         "count": 2,
         "path": "rules/surge/runway.list",
-        "sha256": "72232b2935cfa25f8cfe0fe1618fe3946120786e57d13f0a9c6ac64dae55bea5"
+        "sha256": "9385d86415dbd93da7ec5ac37ccd329a94ca3d67eebbca93594711a4f2bb4d5d"
       }
     },
     "suno": {
       "mihomo": {
         "count": 2,
         "path": "rules/mihomo/suno.yaml",
-        "sha256": "bed2ecbc79ce39b9965d11c6e132ca476e970d5bbf5004457797996f46cab1ce"
+        "sha256": "cf999e02687c3a563c8033de6777edbf18653983b47a657d21ce0d336da9acf1"
       },
       "surge": {
         "count": 2,
         "path": "rules/surge/suno.list",
-        "sha256": "6f4343b5f35f814120c290cc7142422875aabd460776ff4777822ce292875a9c"
+        "sha256": "b22d6dd3bb5e55577940e3c2854649fad2262e3dd16430a869d3dd024ade756e"
       }
     },
     "tencent-ai": {
       "mihomo": {
         "count": 2,
         "path": "rules/mihomo/tencent-ai.yaml",
-        "sha256": "ab4ce7502eac5a66751b573b424907f8e8dd540fea1e0edaed599eaf714a20e2"
+        "sha256": "7abcfb02f38e03b3522469f6b66dca1cb74966fc9fa14af1d58ea00249b67724"
       },
       "surge": {
         "count": 2,
         "path": "rules/surge/tencent-ai.list",
-        "sha256": "2e31657ef0b7feb60e7009aa664bbf8564939216a0fd215cb05303ad472883c9"
+        "sha256": "ce3abfae8520e7548c6c68380604ba7591c724aed0cb9e1bf7c4ce09c730991d"
       }
     },
     "zhipu": {
       "mihomo": {
         "count": 5,
         "path": "rules/mihomo/zhipu.yaml",
-        "sha256": "bda622b2b5087540b7a19a80d9c2c0149021124bbc3a3047f37a66c69460d697"
+        "sha256": "186dc1a75e9f8326462103504883b54c36cbba370cc38605c9d99b526186a835"
       },
       "surge": {
         "count": 5,
         "path": "rules/surge/zhipu.list",
-        "sha256": "4333ddf8e7fc8feabadb3646a13ace9f536f81289cd71630d659b0010e6ff678"
+        "sha256": "cb24e0d9494df8b0df4ae73c788558b9031864124e20d321724d3978f21ec474"
       }
     }
   },
