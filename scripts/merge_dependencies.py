@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge only trusted Dependabot minor/patch groups after both CI jobs pass."""
+"""Merge trusted Dependabot version-update groups after both CI jobs pass."""
 import json
 import os
 import re
@@ -27,10 +27,10 @@ def eligible(pr, run, jobs, files):
             or run["head_branch"] != pr["head"]["ref"]):
         return False
     branch = pr["head"]["ref"]
-    # These two groups are explicitly limited to minor/patch in dependabot.yml.
-    if re.fullmatch(r"dependabot/github_actions/actions-safe-[0-9a-f]+", branch):
+    # All version levels are allowed; CI success and scope are mandatory.
+    if re.fullmatch(r"dependabot/github_actions/actions-tested-[0-9a-f]+", branch):
         allowed_files = ACTION_FILES
-    elif re.fullmatch(r"dependabot/pip/transport-safe-[0-9a-f]+", branch):
+    elif re.fullmatch(r"dependabot/pip/transport-tested-[0-9a-f]+", branch):
         allowed_files = {"requirements-intake.txt"}
     else:
         return False

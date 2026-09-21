@@ -43,7 +43,7 @@ class BackupTests(unittest.TestCase):
 class DependencyMergeTests(unittest.TestCase):
     def fixture(self):
         repo = {"full_name": "NET86/rules"}
-        branch = "dependabot/pip/transport-safe-123abc"
+        branch = "dependabot/pip/transport-tested-123abc"
         pr = {"state": "open", "draft": False, "user": {"login": "dependabot[bot]"},
               "base": {"repo": repo, "ref": "main"}, "head": {"repo": repo, "ref": branch, "sha": "abc"},
               "changed_files": 1}
@@ -58,11 +58,11 @@ class DependencyMergeTests(unittest.TestCase):
     def test_both_allowed_groups_merge(self):
         pr, run, jobs, files = self.fixture()
         self.assertTrue(eligible(pr, run, jobs, files))
-        pr["head"]["ref"] = run["head_branch"] = "dependabot/github_actions/actions-safe-ab123"
+        pr["head"]["ref"] = run["head_branch"] = "dependabot/github_actions/actions-tested-ab123"
         files[0]["filename"] = ".github/workflows/ci.yml"
         self.assertTrue(eligible(pr, run, jobs, files))
 
-    def test_fails_closed_for_stale_checks_forks_major_updates_and_extra_files(self):
+    def test_fails_closed_for_stale_checks_forks_ungrouped_updates_and_extra_files(self):
         changes = [
             lambda p, r, j, f: p["head"].update(sha="new-commit"),
             lambda p, r, j, f: p["head"].update(repo={"full_name": "other/rules"}),

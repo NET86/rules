@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import worker, { trigger } from "./worker.mjs";
 
-const now = Date.parse("2026-09-21T06:19:00Z");
+const now = Date.parse("2026-09-21T04:01:00Z");
 const secret = { GITHUB_TOKEN: "test-only-secret" };
 const run = (hours) => ({ id: 7, head_branch: "main", created_at: new Date(now - hours * 3600000).toISOString() });
 function mock(...responses) {
