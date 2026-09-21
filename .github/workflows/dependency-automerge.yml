@@ -1,0 +1,30 @@
+name: Merge tested dependency updates
+on:
+  workflow_run:
+    workflows: [Validate rules]
+    types: [completed]
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+concurrency:
+  group: dependency-automerge
+  cancel-in-progress: false
+jobs:
+  merge:
+    if: >-
+      github.repository == 'NET86/rules' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      # Privileged workflow: execute only trusted main code, never PR code/artifacts.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - run: python scripts/merge_dependencies.py
+        env:
+          GH_TOKEN: ${{ github.token }}

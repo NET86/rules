@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""GitHub cron backs up CF dispatches; missing history permits a full validated sync."""
+import json
+import os
+import subprocess
+from datetime import datetime, timezone
+
+
+def backup_needed(history, now):
+    runs = history["workflow_runs"]
+    if not isinstance(runs, list):
+        raise ValueError("Invalid workflow history")
+    if not runs:
+        return True
+    latest = runs[0]
+    if latest["head_branch"] != "main" or latest["event"] != "workflow_dispatch":
+        raise ValueError("Unexpected workflow history")
+    created = datetime.fromisoformat(latest["created_at"].replace("Z", "+00:00"))
+    age = (now - created).total_seconds()
+    healthy = latest["conclusion"] == "success" or latest["status"] in {
+        "queued", "in_progress", "waiting", "pending", "requested"
+    }
+    return not (0 <= age < 5 * 3600 and healthy)
+
+
+def main():
+    if os.environ.get("GITHUB_REPOSITORY") != "NET86/rules":
+        raise ValueError("Scheduler is restricted to NET86/rules")
+    try:
+        raw = subprocess.check_output([
+            "gh", "api", "repos/NET86/rules/actions/workflows/sync.yml/runs"
+            "?branch=main&event=workflow_dispatch&per_page=1"
+        ], text=True, encoding="utf-8", timeout=45)
+        needed = backup_needed(json.loads(raw), datetime.now(timezone.utc))
+    except (subprocess.SubprocessError, ValueError, KeyError, TypeError):
+        # A duplicate validated sync is preferable to suppressing the only backup.
+        print("History unavailable or invalid; retaining backup sync.")
+        needed = True
+    with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+        output.write(f"run_sync={str(needed).lower()}\n")
+    print("Backup sync required." if needed else "Recent primary sync is healthy; skipping backup.")
+
+
+if __name__ == "__main__":
+    main()

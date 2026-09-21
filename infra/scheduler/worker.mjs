@@ -28,7 +28,8 @@ export async function trigger(env, request = fetch, now = Date.now()) {
 
   const actor = await api("/user");
   if (actor.login !== "NET86") throw new Error("GitHub credential must belong to NET86");
-  const history = await api(WORKFLOW + "/runs?branch=main&per_page=1");
+  // A skipped GitHub backup is also a successful run. Never let it suppress the primary.
+  const history = await api(WORKFLOW + "/runs?branch=main&event=workflow_dispatch&per_page=1");
   if (!Array.isArray(history.workflow_runs)) throw new Error("Invalid workflow history");
   const latest = history.workflow_runs[0];
   if (latest) {
