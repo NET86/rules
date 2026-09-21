@@ -1,7 +1,7 @@
 {
   "documents": {
     "anthropic-network": {
-      "document_sha256": "f3afdb93d73db0dfdd353cb1e222a29b2ba6803d3bb8d3e7370054e5bee9865b",
+      "document_sha256": "fb491106737c0df6d5c793583b0217447b2898b40a99e09ee876018386e43c86",
       "extractor": 1,
       "rules": [
         "DOMAIN,api.anthropic.com",
@@ -26,6 +26,7 @@
         "DOMAIN,raw.githubusercontent.com",
         "DOMAIN,registry.npmjs.org",
         "DOMAIN,storage.googleapis.com",
+        "DOMAIN,unpkg.com",
         "DOMAIN-SUFFIX,claudeusercontent.com",
         "DOMAIN-SUFFIX,frame.claudeusercontent.com"
       ],
