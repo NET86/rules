@@ -1,5 +1,5 @@
-# Merge into an existing FlClash/Mihomo profile; not a node subscription.
-# AI starts with REJECT deliberately. Select an actual usable node after importing.
+# 加入已有 FlClash/Mihomo 配置，不包含代理节点。
+# 导入后在 AI 策略组添加并选择可用节点；REJECT 仅为占位。
 proxy-groups:
   - name: AI
     type: select
@@ -33,8 +33,8 @@ rule-providers:
     interval: 3600
 
 rules:
-  # Insert before your existing Google/Microsoft/GitHub/Global/DIRECT/MATCH rules.
+  # 放在宽泛的 Google、Microsoft、GitHub 和最终匹配规则之前。
   - RULE-SET,net86-openai,OpenAI
   - RULE-SET,net86-ai-core,AI
   - RULE-SET,net86-openai-voice,OpenAI,no-resolve
-  # Keep your other routing rules and final MATCH below these entries.
+  # 其余规则和 MATCH 放在下方。

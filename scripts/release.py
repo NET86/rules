@@ -29,8 +29,8 @@ REVIEW_REASON_LABELS = {
     "selected-upstream-domain-disappeared-or-moved": "选定上游目标消失或结构漂移，需要复核",
     "official-uncovered-domain": "官方资料发现未覆盖域名，需要复核",
     "official-source-unavailable-or-parser-drift": "官方来源不可用或解析结构变化",
-    "official-voice-fetch-unavailable": "OpenAI Voice 官方源不可用，沿用上一有效版本",
-    "official-voice-suspicious-change": "OpenAI Voice 范围大幅变化，沿用上一有效版本等待核验",
+    "official-voice-fetch-unavailable": "OpenAI 语音官方源不可用，沿用上一有效版本",
+    "official-voice-suspicious-change": "OpenAI 语音范围大幅变化，沿用上一有效版本等待核验",
     "selected-product-uncovered-domain": "已维护产品所在的混合来源发现未覆盖规则，需要核验",
     "selected-product-section-drift": "混合来源产品区段变化，需要检查发现范围",
     "v2fly-unavailable-or-license-changed": "V2Fly 不可用或许可证变化，沿用上一有效快照",
@@ -85,7 +85,7 @@ def format_review_item(row):
 
 def render_actions_summary(before, after, sync_report, release_report, limit=SUMMARY_LIMIT):
     added, changed, removed = manifest_changes(before, after)
-    lines = ["## Rules 同步摘要", "", "### 生产规则"]
+    lines = ["## 规则同步摘要", "", "### 规则变化"]
 
     if not (added or changed or removed):
         lines.append("- 无变化")
@@ -98,7 +98,7 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
                 lines.append("- " + formatter(row))
             extra = len(rows) - limit
             if extra > 0:
-                lines.append(f"- 另有 **{extra}** 条，详见完整提交 diff。")
+                lines.append(f"- 另有 **{extra}** 条，详见完整提交差异。")
 
         append_group(
             "新增", added,
@@ -129,28 +129,28 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
     ])
     health = sync_report.get("source_health", {})
     labels = {
-        "fresh": "本轮抓取成功",
+        "fresh": "抓取成功",
         "reviewed-local-input": "采用维护者指定的本地输入",
-        "retained-last-good": "沿用旧版（本轮抓取失败）",
-        "retained-suspicious-change": "沿用旧版（本轮变化异常）",
+        "retained-last-good": "沿用旧版（抓取失败）",
+        "retained-suspicious-change": "沿用旧版（变化异常）",
         "unavailable-no-baseline": "不可用（无有效基线）",
     }
-    lines.extend(["", "### 本轮来源健康"])
-    for source, label in (("v2fly", "V2Fly"), ("openai_voice", "OpenAI Voice")):
-        lines.append(f"- {label}：{labels.get(health.get(source), '未知（本轮未提供状态）')}")
+    lines.extend(["", "### 来源状态"])
+    for source, label in (("v2fly", "V2Fly"), ("openai_voice", "OpenAI 语音")):
+        lines.append(f"- {label}：{labels.get(health.get(source), '未知（未提供状态）')}")
     facts = health.get("official_facts", {})
     if facts:
         for source, status in sorted(facts.items()):
-            lines.append(f"- 官方资料 `{source}`：{labels.get(status.get('status'), '未知（本轮未提供状态）')}")
+            lines.append(f"- 官方资料 `{source}`：{labels.get(status.get('status'), '未知（未提供状态）')}")
     else:
-        lines.append("- 官方资料：未知（本轮未提供状态）")
+        lines.append("- 官方资料：未知（未提供状态）")
     if review_required:
         lines.extend(["", f"### 待审核 / 异常明细（{len(review_required)}）"])
         for row in review_required[:limit]:
             lines.append("- " + format_review_item(row))
         extra = len(review_required) - limit
         if extra > 0:
-            lines.append(f"- 另有 **{extra}** 条，详见 exception Issue / sync-report.json。")
+            lines.append(f"- 另有 **{extra}** 条，详见异常 Issue 或 sync-report.json。")
 
     lines.extend([
         "",
@@ -164,11 +164,11 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
 
     candidate = release_report.get("candidate")
     if candidate:
-        lines.append(f"- candidate：`{candidate[:12]}`")
+        lines.append(f"- 候选提交：`{candidate[:12]}`")
         server = os.environ.get("GITHUB_SERVER_URL")
         repository = os.environ.get("GITHUB_REPOSITORY")
         if server and repository:
-            lines.append(f"- [查看完整提交 diff]({server}/{repository}/commit/{candidate})")
+            lines.append(f"- [查看提交差异]({server}/{repository}/commit/{candidate})")
     return "\n".join(lines) + "\n"
 
 
@@ -180,7 +180,7 @@ def append_actions_summary(before, after, sync_report, release_report):
         text = render_actions_summary(before, after, sync_report, release_report)
     except Exception as exc:
         text = (
-            "## Rules 同步摘要\n\n"
+            "## 规则同步摘要\n\n"
             f"- 摘要生成失败：`{type(exc).__name__}`\n"
             f"- 发布结果：**{release_report.get('result', 'UNKNOWN')}**\n"
         )

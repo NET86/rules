@@ -1,70 +1,41 @@
-# 来源、事实与生产权限
+# 数据来源
 
-本仓库区分两件事：**谁能提供事实证据**，以及**谁能自动改变 production rules**。官方资料通常更接近事实原点，但企业 firewall allowlist 并不天然等于 proxy-routing list。
+自动更新来源与补缺参考分开管理。官方网络白名单说明某项功能访问哪些端点，不等于其中所有域名都应进入 AI 分流。
 
-## 生产输入
+## 自动更新来源
 
-| 来源 | 角色 | 自动改变 production |
+| 来源 | 用途 | 更新边界 |
 | --- | --- | --- |
-| [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community) | 唯一通用域名生产流；固定 commit，MIT | `sources` 专属文件的直接规则可自动；`select` 只允许显式选择项 |
-| [OpenAI Voice JSON](https://openai.com/chatgpt-voice.json) | 独立、结构化、用途明确的语音目的 IP | 通过公网 IP / 前缀 / 数量异常检查后可以 |
-| `sources/patches.json` | 少量明确纠错、排除与补缺 | patch 本身需人工审查；之后由确定性构建自动发布 |
+| [V2Fly](https://github.com/v2fly/domain-list-community) | 通用域名来源，固定提交与文件摘要 | 专属分类中的直接规则可自动更新；混合分类仅维护明确选定项。 |
+| [OpenAI 语音数据](https://openai.com/chatgpt-voice.json) | 语音目的 IP | 通过地址、前缀和覆盖变化检查后更新。 |
+| [人工补丁](../sources/patches.json) | 精确补缺、排除及格式适配 | 修改需审核，之后由构建流程统一生成。 |
 
-v2fly 的目标是 geosite 域名分类，不负责决定某域名应代理、直连或阻断。本项目把 `catalog.json` 本身作为生产授权边界：专属 `sources` 的直接规则持续自动维护；混合分类只通过 `select` 明确选择；本地例外只通过 `patches` 表达。
+## 域名范围
 
-### `sources` 与 `select`
+[catalog.json](../sources/catalog.json) 定义厂商、合集成员和来源权限：
 
-- `sources`：厂商明确对应一个专属上游文件时，**该文件直接写出的** DOMAIN / DOMAIN-SUFFIX 可自动吸收；已有审核过的 regex 适配也可继续使用。
-- `sources` 仍会递归读取 include 以保留上游语义，但 include 进来的规则不继承专属文件的自动生产权限；它们会被隔离，避免一个新增 include 扩大整个厂商边界。
-- `select`：混合分类只读取指定文件**本层显式规则**，且只生成 catalog 明确列出的值，不递归 include。
-- 如果 `select` 目标从本层移动进 include，视为结构变化并隔离该厂商的删除观察；不自动扩大隐式依赖，也不把它当普通退役。
-- 已知共享平台根域、区域 S3 边界及常见公共后缀（例如 `amazonaws.com`、`s3.us-east-1.amazonaws.com`、`co.uk`）硬禁止；厂商专属的精确子域/主机不因此被一刀切排除。此有限表不是完整 PSL。
+- `sources`：专属分类直接列出的精确域名和后缀规则可自动更新。读取 `include` 保留上游语义，但被包含文件中的新增规则需另行审核。
+- `select`：仅维护混合分类本层明确选定的域名。选定项消失或移入 `include` 时报告结构变化，并冻结相关删除观察。
+- 整个共享平台根域、已知公共后缀和未审核的宽匹配规则不会自动进入核心规则。厂商专用的精确主机可单独核对。
 
-### 混合来源新入口发现
+Google AI 范围以 Gemini、AI Studio、NotebookLM 为主。完整产品名单见 [订阅目录](../rules/README.md)。
 
-`watch.json.primary_sections` 观察已有厂商在混合文件中的明确产品区段，例如 Google 的 NotebookLM / AI Studio、Copilot 和国内 AI 产品。未覆盖条目每轮重扫，直到纳入 catalog、显式加入 patches.drop 或上游撤回；不因只看一次 diff 就消失。区段标题变化进入现有待审报告。
+## 补缺监测
 
-没有稳定产品分段的混合文件不强行扫描整个分类，也不把候选自动写入生产。专属来源的直接普通域名仍按原权限自动更新，无需逐条人工处理。
+| 来源 | 频率 | 检查范围 |
+| --- | --- | --- |
+| [官方资料](../sources/official.json) | 随每 6 小时同步 | OpenAI、Claude Code、Cursor、Google AI、GitHub Copilot 的指定章节或结构化 API。 |
+| [Sukka AI 源文件](https://github.com/SukkaW/Surge/blob/master/Source/non_ip/ai.conf) | 每周 | [watch.json](../sources/watch.json) 指定的产品区段，只比较精确域名与后缀。 |
+| V2Fly 混合分类 | 随每 6 小时同步 | 已维护产品区段中尚未选定的域名。 |
 
-## 官方事实 radar
+已覆盖和明确排除的条目静默处理；新候选持续留在待审报告，直到被接纳、明确排除或由来源撤回。候选不会自动扩大产品范围。章节变化或抓取失败会报告异常；官方资料保留最近有效基线，规则更新继续使用已验证输入。
 
-`sources/official.json` 当前监测 OpenAI、Anthropic/Claude Code、Cursor、Google Code Assist / Generative Language、GitHub Copilot 等指定网络文档或结构化 API。提取结果只进入运行报告与 gap 分析，**不与 v2fly 自动 union**。
+GitHub Copilot 仅检查 `Specific required domains` 章节。共享 GitHub 服务、遥测、实验及企业用量报告按用途排除；`githubusercontent.com` 下的精确专用主机仍可进入待审。GHE、编辑器、语音模型下载和云端代理的通用访问清单不在检查范围内。
 
-GitHub Copilot 只读取官方 allowlist 的 `Specific required domains` 章节，沿用每 6 小时同步中的官方只读监测；不读取编辑器、语音模型下载、GHE 或云端 agent 的通用网络清单。共享 GitHub 根域、认证资源、遥测、实验及企业用量报告按明确用途排除；不会整体排除 `githubusercontent.com` 下的精确主机，以免漏掉专属端点。提取仅支持完整主机和前导 `*.` / `.` 后缀，主机中间或末尾的通配符不转成父域。新候选只进入现有待审报告，不新增工作流、依赖或通知渠道。
+官方提取支持完整主机及前导 `*.` / `.` 后缀；主机中间或末尾的通配符不转成父域。共享登录、支付、存储、遥测等端点按 [排除策略](../sources/intake-policy.json) 处理，具体产品补缺记录在人工补丁中。
 
-这样处理的原因是官方网络清单常混合：
+## 来源记录
 
-- 已被更宽厂商 suffix 覆盖的精确主机；
-- Auth0、Stripe、Datadog、Intercom、Google Storage、GitHub 等共享依赖；
-- telemetry、updater、installer、enterprise feature、plugin marketplace 等可选功能；
-- 某个固定 S3 / Azure Blob / WebPubSub 主机；
-- 真正值得精确补入的厂商专用缺口。
+[快照清单](../sources/snapshot/lock.json) 固定实际使用的上游提交、文件摘要和许可摘要；[发布清单](../rules/manifest.json) 记录规则出处、产物摘要及格式差异。官方资料仅保存提取事实和来源链接。
 
-官方文档可以证明“某功能需要访问某端点”，但不能自动证明“该端点的全部流量都应该进入 AI 专用出口”。因此官方 radar 发现的新缺口仍需显式判断后才能形成 patch；只有 V2Fly 专属 `sources` 的直接规则享有持续自动生产权限。
-
-官方抓取或解析失败时保留已知事实基线用于诊断，但不会改变 production candidates，也不会因为网页失败把规则解释成空清单。
-
-## Secondary radar
-
-只保留 [Sukka `Source/non_ip/ai.conf`](https://github.com/SukkaW/Surge/blob/master/Source/non_ip/ai.conf) 作为每周低频、只读的 gap radar：
-
-- 已覆盖规则静默处理；
-- 过宽 keyword / URL 规则和明确排除项忽略；
-- 未覆盖的 DOMAIN / DOMAIN-SUFFIX 只形成候选报告；
-- 候选必须通过 v2fly、官方证据或明确人工 patch 才能进入 production。
-
-RuleGo、VPSDance 和 Sukka compiled output 不再作为常态自动 radar。减少来源数量是为了降低相关来源造成的“假独立证据”、通知噪声和长期维护面。
-
-## 当前产品范围
-
-完整厂商名单、合集数量和订阅入口见 [自动生成的订阅目录](../rules/README.md)；各合集成员由 [catalog.json](../sources/catalog.json) 显式声明。
-
-Google 默认只选 Gemini / AI Studio / NotebookLM 相关专用端点，不因 `google-deepmind` 分类文件包含更多实验或企业产品而自动扩张。NotebookLM 更名后的 `notebook.google` 已纳入，原有入口保留；依据 [Google 官方公告](https://blog.google/innovation-and-ai/products/gemini-notebook/notebooklm-gemini-notebook/)。
-
-## 许可与历史证据
-
-当前组合项目继续采用 AGPL-3.0，并保留已有 MIT / Sukka / VPSDance 等历史通知。Sukka 从生产输入降为 radar，不等于既往已经分发的组合内容自动变成 MIT，因此本轮不做许可迁移。
-
-未来生成物不再以 Sukka 或 VPSDance 作为生产规则来源；历史来源、版权和许可证说明保留在 `THIRD_PARTY_NOTICES.md` 与私有历史归档中。生成订阅文件只保留简短 SPDX 与 notices 链接，不重复嵌入完整许可正文。官方网页只保存必要的提取事实/摘要和原始 URL，不重新分发整页内容。
-
-OpenAI Help Center 在部分网络上会拒绝标准库 HTTPS 客户端，因此只对固定的 OpenAI 网络说明 URL 保留受限的浏览器兼容 HTTPS fallback：不跟随重定向、限制响应大小，并仍需通过章节和形状检查。
+版权与许可见 [第三方声明](../THIRD_PARTY_NOTICES.md)。

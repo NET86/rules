@@ -22,10 +22,10 @@ REVIEWED_V2FLY_LICENSE = "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c840114
 PROJECT_URL = "https://github.com/NET86/rules"
 RAW_URL = "https://raw.githubusercontent.com/NET86/rules/stable"
 BUNDLE_DESCRIPTIONS = {
-    "ai-daily": "日常 AI 核心域名 + OpenAI 官方语音 IP。",
-    "ai-core": "海外主流 AI 合集：显式维护的应用级厂商核心域名，不含语音 IP 和共享依赖。",
-    "ai-cn": "国内主流 AI 独立分类：只包含显式维护的产品端点，不代表全部入口都应直连。",
-    "openai-voice-ip": "OpenAI 官方语音目的 IP：不含域名；ai-daily 已包含，单厂商 openai 未包含。",
+    "ai-daily": "日常 AI 核心域名，含 OpenAI 官方语音 IP。",
+    "ai-core": "更多海外 AI 核心域名，不含语音 IP 和共享依赖。",
+    "ai-cn": "国内 AI 服务分类，出口策略自行选择。",
+    "openai-voice-ip": "OpenAI 官方语音目的 IP；ai-daily 已包含，单厂商 openai 未包含。",
 }
 DOMAIN_RE = re.compile(r"(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z")
 TYPES = {"full": "DOMAIN", "domain": "DOMAIN-SUFFIX", "regexp": "DOMAIN-REGEX", "keyword": "DOMAIN-KEYWORD"}
@@ -311,7 +311,7 @@ def render_members(members, target, patches, catalog):
     for owners, rule_lines in ordered_sections:
         if show_sections:
             lines.append("")
-            labels = [vendors[v] + (" Voice" if tier == "voice" else "") for v, tier in owners]
+            labels = [vendors[v] + (" 语音" if tier == "voice" else "") for v, tier in owners]
             comment(" / ".join(labels))
         for line in sorted(rule_lines):
             lines.append(line if target == "surge" else "  - " + json.dumps(line))
@@ -319,27 +319,27 @@ def render_members(members, target, patches, catalog):
 
 
 def subscription_index(catalog):
-    lines = ["# 订阅目录", "", "本页自动生成。日常使用只需选 ai-daily；合集与单厂商分层展示。", "",
-             "下列链接是规则文件，不是节点订阅。stable 是支持的订阅入口；main 仅用于开发与候选。", "",
-             "## 合集", "", "| 版本 | 功能与选择建议 | Surge | Mihomo |", "| --- | --- | --- | --- |"]
+    lines = ["# 订阅目录", "", "日常使用推荐 `ai-daily`。以下为 `stable` 规则文件，不包含代理节点。", "",
+             "本页由产品配置自动生成。", "",
+             "## 合集", "", "| 规则集 | 用途 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |"]
     def row(name, description):
         return f"| {name} | {description} | [{name}.list]({RAW_URL}/rules/surge/{name}.list) | [{name}.yaml]({RAW_URL}/rules/mihomo/{name}.yaml) |"
     for name in ("ai-daily", "ai-core", "ai-cn"):
         lines.append(row(name, f"{len(catalog['profiles'][name]['members'])} 家厂商。{BUNDLE_DESCRIPTIONS[name]}"))
     daily = catalog["profiles"]["ai-daily"]["members"]
-    lines += ["", "ai-daily 含日常厂商核心域名和 openai-voice-ip；ai-core 覆盖更多海外厂商但不含 Voice IP。ai-cn 可另外分配策略。", "",
+    lines += ["", "使用 ai-core 且需要 OpenAI 语音时，另加 openai-voice-ip 并设置相同策略。", "",
               "日常厂商：" + "、".join(daily) + "。", "",
-              "## 单厂商", "", "需要独立出口时才选单厂商，并放在合集前。仅含核心域名；OpenAI 语音需同策略的语音 IP 包（ai-daily 已包含）。", ""]
-    for group, title in (("global", "国外服务"), ("cn", "国内厂商分类")):
-        lines += [f"### {title}", "", "| 文件 | 服务 | Surge | Mihomo |", "| --- | --- | --- | --- |"]
+              "## 单厂商", "", "需要独立出口时选择单厂商，并放在合集前。单厂商仅含核心域名；OpenAI 语音需另加语音 IP 包。", ""]
+    for group, title in (("global", "海外服务"), ("cn", "国内服务")):
+        lines += [f"### {title}", "", "| 文件 | 服务 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |"]
         for vendor in catalog["vendors"]:
             if vendor["group"] == group:
                 lines.append(row(vendor["id"], vendor["name"]))
         lines.append("")
-    lines += ["## 可选功能包", "", "| 文件 | 功能 | Surge | Mihomo |", "| --- | --- | --- | --- |",
+    lines += ["## 可选功能包", "", "| 文件 | 功能 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |",
               row("openai-voice-ip", BUNDLE_DESCRIPTIONS["openai-voice-ip"]), "",
-              "进程、整片云服务/ASN、共享遥测/登录依赖、第三方托管模型、自建反代不自动包含。", "",
-              "[返回首页](../README.md) · [日常示例](../examples/surge-daily.conf) · [分包示例](../examples/flclash-mihomo.yaml) · [格式边界](../docs/COMPATIBILITY.md)", ""]
+              "规则范围与客户端差异见 [格式兼容](../docs/COMPATIBILITY.md)。", "",
+              "[返回首页](../README.md) · [Surge 示例](../examples/surge-daily.conf) · [FlClash 示例](../examples/flclash-daily.yaml)", ""]
     return "\n".join(lines)
 
 
@@ -418,12 +418,12 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
             header = (
                 f"# NET86/rules | {name}\n"
                 f"# {description}\n"
-                f"# Generated; do not edit. Manifest: {RAW_URL}/rules/manifest.json\n"
+                f"# 自动生成，请勿手改。清单：{RAW_URL}/rules/manifest.json\n"
                 "# SPDX-License-Identifier: AGPL-3.0-only\n"
-                f"# Notices: {PROJECT_URL}/blob/main/THIRD_PARTY_NOTICES.md\n"
+                f"# 第三方声明：{PROJECT_URL}/blob/main/THIRD_PARTY_NOTICES.md\n"
             )
             if target == "surge" and any(r.kind == "DOMAIN-REGEX" for r in active_rules):
-                header += "# Note: reviewed wildcard adapter differs from upstream regex; see docs/COMPATIBILITY.md\n"
+                header += "# 注意：此通配符比上游正则更宽，详见 docs/COMPATIBILITY.md\n"
             text = header + body
             path = f"rules/{target}/{name}.{ext}"
             files[path] = text

@@ -180,7 +180,7 @@ class RepositoryTests(unittest.TestCase):
     def test_regex_widening_is_recorded(self):
         self.assertEqual(len(self.manifest["conversion_warnings"]), 1)
         surge = self.files["rules/surge/openai.list"]
-        self.assertIn("# Note: reviewed wildcard adapter differs from upstream regex", surge)
+        self.assertIn("# 注意：此通配符比上游正则更宽", surge)
         self.assertNotIn("\nDOMAIN-REGEX,", surge)
         self.assertIn("DOMAIN-WILDCARD,chatgpt-async-webps-prod-*-*.webpubsub.azure.com", surge)
         self.assertIn("DOMAIN-REGEX,", self.files["rules/mihomo/openai.yaml"])
@@ -232,7 +232,7 @@ class RepositoryTests(unittest.TestCase):
         daily_members = set(catalog["profiles"]["ai-daily"]["members"])
         for vendor in catalog["vendors"]:
             self.assertEqual(f"# {vendor['name']}" in daily, vendor["id"] in daily_members)
-        self.assertIn(" Voice", daily)
+        self.assertIn(" 语音", daily)
         self.assertNotIn("# Source:", daily)
         self.assertIn(rules.RAW_URL + "/rules/manifest.json", daily)
         daily_provenance = [row for row in self.manifest["provenance"] if row["vendor"] in daily_members]

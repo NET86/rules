@@ -1,4 +1,4 @@
-name: Sync reviewed upstreams
+name: 规则同步
 on:
   schedule:
     - cron: '31 4,10,16,22 * * *'
@@ -25,7 +25,7 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-      - name: Skip backup when a recent primary sync succeeded or is still active
+      - name: 检查是否需要兜底同步
         id: backup
         if: github.event_name == 'schedule'
         run: python scripts/schedule_gate.py
@@ -47,11 +47,11 @@ jobs:
         with:
           python-version: '3.12'
       - run: python scripts/check_git_identity.py
-      - name: Recover or verify stable before any downloads, builds or source fetches
+      - name: 验证或恢复稳定版本
         run: python scripts/release.py --recover-only
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Install pinned official-document HTTPS transport
+      - name: 安装锁定的官方文档 HTTPS 依赖
         continue-on-error: true
         run: 'python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt'
       - run: python scripts/download_mihomo.py
@@ -60,12 +60,12 @@ jobs:
           go-version: '1.26.8'
           cache-dependency-path: sources/engines.json
       - run: python scripts/build_flclash_core.py
-      - name: Refresh reviewed production inputs and diagnostic official radar
+      - name: 更新规则来源并检查官方资料
         run: python scripts/sync.py
       - run: python -m unittest discover -s tests -v
       - run: python scripts/rules.py --check
       - run: python scripts/verify_rules.py
-      - name: Validate both cores, publish, verify raw subscriptions and roll back stable on failure
+      - name: 双内核验证、发布、回读与失败恢复
         run: python scripts/release.py --flclash-core .work/bin/flclash-core
         env:
           GH_TOKEN: ${{ github.token }}
@@ -80,7 +80,7 @@ jobs:
             .work/mihomo-*.log
           include-hidden-files: true
           retention-days: 14
-      - name: Update one exception issue after evidence upload
+      - name: 上传报告后更新异常 Issue
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
         run: python scripts/notify_review.py sync .work/sync-report.json ${{ job.status == 'failure' && '--failed' || '' }}
         env:
