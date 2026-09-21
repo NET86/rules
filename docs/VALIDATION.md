@@ -19,6 +19,7 @@
 - Profile equivalence：`ai-daily` / `ai-core` / `ai-cn` 的实际规则集合必须严格等于 manifest 声明的成员及 `profile_features` 的并集，不能多也不能少。
 - Semantic contracts：直接读取实际单厂商产物和 aggregate 产物验证关键正反例，不用 provenance 自证。必要 profile、daily 厂商契约以及每组非空、不矛盾的正反例都必须存在；报告独立用例数量，不能靠动态探针掩盖空契约。
 - Mihomo：固定版本真实 HTTP rule-provider 加载、数量核对、本机路由探针、provider 刷新/故障恢复。
+- 隔离探针只使用 HTTP 专用监听端口，避免 Windows 对同号 UDP 端口的限制使混合监听误失败；不据此声称验证 SOCKS/UDP 流量。
 - FlClash core：从 `sources/engines.json` 固定的 FlClash 内嵌核心构建 CLI，用同一隔离测试验证；不是用独立最新版 Mihomo 冒充。
 - Publication read-back：候选和 stable 的 manifest、所有规则文件以及 semantic contract 都按不可变/稳定 URL 下载并核对摘要，再运行核心验证。
 - Recovery：临时 Git 仓库覆盖 candidate validation failure、post-promotion failure、并发 stable/main 更新、缺失 LKG 和下一轮恢复。

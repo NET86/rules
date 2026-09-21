@@ -174,7 +174,9 @@ def main():
         port, controller = free_port(), free_port()
         selected = ["ai-daily"] if args.profile == "ai-daily" else ["ai-core", "openai-voice-ip"]
         config = {
-            "mixed-port": port, "bind-address": "127.0.0.1", "allow-lan": False,
+            # All probes use HTTP. A mixed listener also binds UDP, which can be
+            # unavailable on Windows even when this TCP port is free.
+            "port": port, "bind-address": "127.0.0.1", "allow-lan": False,
             "mode": "rule", "log-level": "info", "ipv6": False, "find-process-mode": "off",
             "external-controller": f"127.0.0.1:{controller}", "secret": "isolated-local-test",
             "dns": {"enable": False}, "tun": {"enable": False},
@@ -208,7 +210,7 @@ def main():
                             # startup; its app owns lifecycle. Use the unmodified
                             # fork's public controller to open ONLY this test port.
                             request = urllib.request.Request(f"http://127.0.0.1:{controller}/configs",
-                                method="PATCH", data=json.dumps({"mixed-port": port, "allow-lan": False,
+                                method="PATCH", data=json.dumps({"port": port, "allow-lan": False,
                                 "bind-address": "127.0.0.1", "lan-allowed-ips": ["127.0.0.1/32"],
                                 "lan-disallowed-ips": [], "tun": {"enable": False}}).encode(),
                                 headers={"Authorization": "Bearer isolated-local-test", "Content-Type": "application/json"})
@@ -222,7 +224,8 @@ def main():
                         pass
                     time.sleep(0.1)
                 if not providers_ready(loaded, providers) or not proxy_ready(port):
-                    raise RuntimeError(f"Providers not fully loaded: {loaded}")
+                    raise RuntimeError(f"Engine not ready: providers={providers_ready(loaded, providers)}, "
+                                       f"HTTP listener={proxy_ready(port)}; see .work/mihomo-runtime.log")
                 for name, target in manifest["bundles"].items():
                     if loaded[name]["ruleCount"] != target["mihomo"]["count"]:
                         raise RuntimeError(f"Provider count mismatch: {name}")
