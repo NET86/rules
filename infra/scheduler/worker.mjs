@@ -21,8 +21,9 @@ export async function trigger(env, request = fetch, now = Date.now()) {
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
-    if (response.status !== 200) throw new Error(`GitHub ${method} returned ${response.status}`);
-    return response.json();
+    const expected = method === "PUT" ? 204 : 200;
+    if (response.status !== expected) throw new Error(`GitHub ${method} returned ${response.status}`);
+    return expected === 204 ? null : response.json();
   };
 
   const actor = await api("/user");
@@ -37,6 +38,13 @@ export async function trigger(env, request = fetch, now = Date.now()) {
     }
     // Let the existing workflow own validation, publication, recovery and failures.
     if (now - created < RECENT_MS) return { result: "skipped-recent-run", run_id: latest.id };
+  }
+  const workflow = await api(WORKFLOW);
+  if (workflow.state === "disabled_manually") return { result: "skipped-disabled-workflow" };
+  if (workflow.state === "disabled_inactivity") {
+    await api(WORKFLOW + "/enable", "PUT");
+  } else if (workflow.state !== "active") {
+    throw new Error("Workflow is not active or disabled by inactivity");
   }
   const dispatched = await api(WORKFLOW + "/dispatches", "POST", { ref: "main" });
   if (!Number.isSafeInteger(dispatched.workflow_run_id) || dispatched.workflow_run_id <= 0) {

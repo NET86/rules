@@ -4,6 +4,8 @@
 
 此检查只减少调度漏跑，**不表示来源抓取或发布成功**。验证、恢复与异常处理仍由原工作流负责。GitHub API/Actions 故障时 Worker 也无法完成同步；不自动重试 POST，以免产生重复运行。
 
+若工作流被 GitHub 因 60 天无仓库活动自动停用（`disabled_inactivity`），补触发前会恢复启用；维护者手动停用（`disabled_manually`）则保持停用。未知状态不触发。
+
 ## 一次性部署
 
 1. 登录 Cloudflare：`npx --yes wrangler@4.135.0 login --device --browser=false --scopes account:read user:read workers:write workers_scripts:write workers_tail:read`。用 Chrome 打开终端给出的设备授权页并输入临时代码，无需 localhost 回跳。
