@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-21 — Routing contracts and dependency freshness
+
+- Add independent positive/negative contracts for all 24 vendors, including same-aggregate vendor swaps and critical-entry retention. Continue to recover old releases without accepting weaker contracts for new candidates.
+- Validate the domestic profile in both pinned cores and probe every Voice IP range's boundaries and adjacent addresses; preserve the existing rule bytes and product scope.
+- Publish dependency upgrades only by fast-forwarding the exact tested commit when it contains current main; reject stale candidates and concurrent main changes without force pushing or creating an untested merge.
+- Show each production source and official radar source's fresh/retained/unavailable state in the existing Actions summary, including explicit unknown states when evidence is absent.
+
+## 2026-09-21 — Cloudflare runtime compatibility
+
+- Fix a real cloud Cron failure: Workers fetch rejects `redirect: error`. Use `manual` and reject unexpected HTTP status codes, preserving the refusal to follow redirects with credentials.
+
+## 2026-09-21 — Primary scheduling and routine dependency automation
+
+- Use Cloudflare as the primary trigger at 00:01/06:01/12:01/18:01 China time; run GitHub cron 30 minutes later as a history-aware backup. Successful skipped backups never suppress the primary.
+- Check dependencies weekly and automatically merge Dependabot groups, including major updates, only after current-commit Linux/Windows CI succeeds. Failures remain unmerged; no PR code runs in the privileged merge workflow.
+- Clarify that hourly client refresh downloads published rule files and does not build rules locally.
+
 ## 2026-09-21 — Discovery and release reliability
 
 - Add Google's reviewed `notebook.google` entry and independent positive/negative routing cases.

@@ -1,8 +1,12 @@
-# Cloudflare 定时补触发
+# Cloudflare 主调度与 GitHub 兜底
 
-一个无运行依赖、无 HTTP 入口的 Worker，每 6 小时（UTC `00/06/12/18:49`）检查现有同步记录。最近 5 小时已有 main 同步则跳过，否则触发 `NET86/rules` 的 `sync.yml`。原 GitHub cron 保留，两者复用原发布锁；不存储状态、不新增告警。
+一个无运行依赖、无 HTTP 入口的 Worker，每 6 小时（北京时间 `00:01/06:01/12:01/18:01`，UTC `04:01/10:01/16:01/22:01`）通过 GitHub API 发起 `workflow_dispatch`，相当于点击 `NET86/rules` 的 `sync.yml` 的 Run workflow。实际抓取、构建、验证与发布仍由 GitHub Actions 执行。最近 5 小时已有 main 的 `workflow_dispatch` 记录则跳过，避免人工触发或重复事件造成短时间重复构建。GitHub 兜底运行记录不抑制 CF 主调度。
 
-此检查只减少调度漏跑，**不表示来源抓取或发布成功**。验证、恢复与异常处理仍由原工作流负责。GitHub API/Actions 故障时 Worker 也无法完成同步；不自动重试 POST，以免产生重复运行。
+GitHub cron 改到同一小时的 `:31`，比 CF 晚 30 分钟。它实际开始时检查最新 main dispatch：最近 5 小时已成功或仍在排队/运行，则跳过重型同步；失败、取消、过期、无记录或无法读取历史时，执行完整验证与发布。两者复用原发布锁；不存储状态、不新增告警。GitHub 兜底空跑不会被下次当成主同步成功。
+
+CF 改善触发时机，**不能保证 GitHub runner 立即开始或来源抓取成功**。验证、恢复与异常处理仍由原工作流负责。GitHub API/Actions 故障时 Worker 也无法完成同步；不自动重试 POST，以免产生重复运行。主任务失败时由稍后的 GitHub 兜底补跑，不依赖 CF 判断发布健康。
+
+若工作流被 GitHub 因 60 天无仓库活动自动停用（`disabled_inactivity`），补触发前会恢复启用；维护者手动停用（`disabled_manually`）则保持停用。未知状态不触发。
 
 ## 一次性部署
 

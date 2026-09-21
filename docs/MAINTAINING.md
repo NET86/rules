@@ -51,6 +51,8 @@
 
 来源健康、官方网页 fresh/retained、Voice 本次抓取状态和 radar 结果属于**运行报告**，不写进生产 lock 来制造无意义 stable 更新。
 
+Actions 摘要直接显示本轮来源健康；抓取失败后的旧版保留、异常变化保留和缺少有效基线分别标识。`--source-repo` / `--voice-file` 使用的本地输入单独标识，不冒充本轮在线抓取成功；发布 PASS 与来源新鲜度分别展示。
+
 如需展示 freshness，优先记录 `last_success_at` 并在读取时计算年龄，不维护 FRESH/RETAINED/STALE/DEGRADED 四套持久数据库。
 
 ## 文件职责
@@ -79,9 +81,11 @@ python scripts/verify_rules.py
 python scripts/download_mihomo.py
 python scripts/verify_mihomo.py
 python scripts/verify_mihomo.py --profile split
+python scripts/verify_mihomo.py --profile ai-cn
 python scripts/build_flclash_core.py
 python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core
 python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile split
+python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile ai-cn
 python scripts/audit_sources.py
 ~~~
 
@@ -93,14 +97,20 @@ python scripts/audit_sources.py
 
 GitHub Actions cron 可能延迟；公共仓库长期无活动时计划任务也可能被停用。仓库内部无法在“调度完全没有启动”时自证健康，因此不要把历史绿色状态当永久 freshness 证明。无规则变化时不制造空 stable 提交。
 
-可部署 [Cloudflare 定时补触发](../infra/scheduler/README.md)：每 6 小时检查 main 同步历史，最近 5 小时已有运行则跳过，否则 dispatch 原工作流。保留原 GitHub cron；没有数据库、HTTP 入口或新增告警。运行记录只证明调度发生，抓取健康仍以 Actions 报告为准。
+使用 [Cloudflare 主调度](../infra/scheduler/README.md)：北京时间 `00:01/06:01/12:01/18:01` dispatch 原工作流，最近 5 小时已有 dispatch 则跳过。GitHub cron 延后到同一小时的 `:31`；最新 dispatch 在 5 小时内成功或仍活跃则跳过重型同步，失败或缺失则补跑，历史查询异常也保留兜底。GitHub 兜底空跑记录不抑制 CF。没有数据库、HTTP 入口或新增告警；CF 仍依赖 GitHub API 和 runner。
 
-示例客户端刷新间隔为 1 小时。生效仍取决于上游发现、仓库调度、发布/CDN 和客户端刷新，不构成端到端时效承诺。
+示例客户端刷新间隔为 1 小时，即 FlClash/Mihomo/Surge 下载 stable 上已经生成的规则文件，不是在本机抓取上游或构建。既有用户配置不会远程自动改写。生效仍取决于上游发现、仓库调度、发布/CDN 和客户端刷新，不构成端到端时效承诺。
 
-## 低频依赖维护
+## 自动依赖维护
 
-Dependabot 每月分别汇总 Actions 和可选 Python transport 更新，每类最多一个未合并 PR；不自动合并。其 Python fetcher 支持 `requirements-intake.txt`，updater 支持更新 hash；依赖 PR 在 Windows/Linux CI 中强制执行 wheel-only / require-hashes 安装，不能依赖生产流程的可选降级掩盖坏 pin。
+Dependabot 每周检查 Actions 构建组件（检出代码、准备 Python/Go、上传验证报告等）和可选 Python HTTPS 库（curl-cffi、cffi、certifi、pycparser），与分流域名更新无关。每类最多一个未合并 PR，分别进入 `actions-tested` / `transport-tested` 组；patch、minor、major 均允许在完整测试通过后自动升级。
 
-自定义 Mihomo / FlClash pin 不在 Dependabot 支持范围内，不新增一套版本监控器。升级客户端核心时，核对 FlClash 应用引用的实际 revision，更新已有固定版本后运行上述 daily/split 双核心验证；不得把最新版 Mihomo 当作 FlClash 核心。
+分组升级自动检查、开 PR、测试并合并。`workflow_run` 后续任务只检出可信 main，不执行 PR 代码或下载 PR 产物；重查 Dependabot 身份、固定仓库/分组、文件范围、当前提交与 Linux/Windows 两个 CI job 成功。随后抓取主分支和已验证 SHA，要求该 SHA 包含当前 main，再以普通 Git 快进推送它，不生成新的合并组合。主分支在检查后并发变化时，服务器会拒绝非快进推送。PR 提交进入 main 后由 GitHub 标记为已合并。
+
+落后 main 的候选保持未合并，等待 Dependabot 自动 rebase 后的新 CI；不依赖旧基线的绿色结果。Dependabot 会在每周检查等事件中重新评估 rebase，不能承诺立即重试。无需新 PAT、合并队列或新的分支保护；不执行 force push。首次真实依赖升级仍需由实际 PR 验证完整机器人流程，测试不能保证第三方新版绝无回归。
+
+Python fetcher 支持 `requirements-intake.txt`，updater 支持更新 hash；所有 Windows/Linux CI 均强制执行 wheel-only / require-hashes 安装和真实 transport smoke test，不能依赖生产流程的可选降级掩盖坏 pin。Transport 测试以本地 HTTP 服务验证生产 fallback 的真实 libcurl 回调与拒绝重定向行为，不声称覆盖上游反爬或实际 TLS 链路。内置 GITHUB_TOKEN 推送不会再触发 push CI；进入 main 的就是已通过 PR CI 的提交，后续规则发布仍跑完整验证链。失败 PR 未处理会占用每类的单 PR 上限，这是明确的人工例外。
+
+自定义 Mihomo / FlClash pin 不在 Dependabot 支持范围内，不新增一套版本监控器。升级客户端核心时，核对 FlClash 应用引用的实际 revision，更新已有固定版本后运行上述 daily/split/ai-cn 双核心验证；不得把最新版 Mihomo 当作 FlClash 核心。
 
 不要上传订阅密钥、API key、Cookie、Authorization 或完整 HAR。

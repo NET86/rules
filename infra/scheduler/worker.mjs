@@ -10,7 +10,8 @@ export async function trigger(env, request = fetch, now = Date.now()) {
   const api = async (path, method = "GET", body) => {
     const response = await request(API + path, {
       method,
-      redirect: "error",
+      // Workers supports manual/follow, not redirect:error. Status checks reject 3xx.
+      redirect: "manual",
       signal: AbortSignal.timeout(20_000),
       headers: {
         Authorization: `Bearer ${env.GITHUB_TOKEN}`,
@@ -21,13 +22,15 @@ export async function trigger(env, request = fetch, now = Date.now()) {
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
-    if (response.status !== 200) throw new Error(`GitHub ${method} returned ${response.status}`);
-    return response.json();
+    const expected = method === "PUT" ? 204 : 200;
+    if (response.status !== expected) throw new Error(`GitHub ${method} returned ${response.status}`);
+    return expected === 204 ? null : response.json();
   };
 
   const actor = await api("/user");
   if (actor.login !== "NET86") throw new Error("GitHub credential must belong to NET86");
-  const history = await api(WORKFLOW + "/runs?branch=main&per_page=1");
+  // A skipped GitHub backup is also a successful run. Never let it suppress the primary.
+  const history = await api(WORKFLOW + "/runs?branch=main&event=workflow_dispatch&per_page=1");
   if (!Array.isArray(history.workflow_runs)) throw new Error("Invalid workflow history");
   const latest = history.workflow_runs[0];
   if (latest) {
@@ -37,6 +40,13 @@ export async function trigger(env, request = fetch, now = Date.now()) {
     }
     // Let the existing workflow own validation, publication, recovery and failures.
     if (now - created < RECENT_MS) return { result: "skipped-recent-run", run_id: latest.id };
+  }
+  const workflow = await api(WORKFLOW);
+  if (workflow.state === "disabled_manually") return { result: "skipped-disabled-workflow" };
+  if (workflow.state === "disabled_inactivity") {
+    await api(WORKFLOW + "/enable", "PUT");
+  } else if (workflow.state !== "active") {
+    throw new Error("Workflow is not active or disabled by inactivity");
   }
   const dispatched = await api(WORKFLOW + "/dispatches", "POST", { ref: "main" });
   if (!Number.isSafeInteger(dispatched.workflow_run_id) || dispatched.workflow_run_id <= 0) {

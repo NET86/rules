@@ -90,13 +90,19 @@ def load_contracts(root, manifest):
         raise ValueError("Invalid semantic contract structure")
     profiles = contracts.get("profiles", {})
     vendors = contracts.get("vendors", {})
-    if contracts.get("schema") != 1 or not isinstance(profiles, dict) or not isinstance(vendors, dict):
+    if contracts.get("schema") not in {1, 2} or not isinstance(profiles, dict) or not isinstance(vendors, dict):
         raise ValueError("Invalid semantic contract structure")
     if set(profiles) != {"ai-daily", "ai-core", "ai-cn"}:
         raise ValueError("Missing required semantic contract profiles")
     daily = manifest["profiles"]["ai-daily"]["members"]
     if not vendors or not set(daily).issubset(vendors):
         raise ValueError("Missing required daily vendor semantic contracts")
+    # Schema 1 is retained only so already-published stable/LKG can be recovered.
+    # The compiler requires schema 2 for every new candidate.
+    if contracts["schema"] == 2:
+        members = {vendor for spec in manifest["profiles"].values() for vendor in spec["members"]}
+        if set(vendors) != members:
+            raise ValueError("Missing/unexpected standalone vendor semantic contracts")
     for label, contract in list(vendors.items()) + list(profiles.items()):
         if not isinstance(contract, dict):
             raise ValueError(f"Invalid semantic contract: {label}")
