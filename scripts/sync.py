@@ -192,7 +192,7 @@ def main():
             official_state, official_fetch_report = refresh_official(ROOT, fetch)
             repo = args.source_repo.resolve() if args.source_repo else stage / "v2fly-repo"
             snapshot = stage / "snapshot"
-            voice, voice_status = (args.voice_file.read_bytes(), "fresh") if args.voice_file else fetch_voice(ROOT)
+            voice, voice_status = (args.voice_file.read_bytes(), "reviewed-local-input") if args.voice_file else fetch_voice(ROOT)
             catalog = read_json(ROOT / "sources/catalog.json")
             patches = read_json(ROOT / "sources/patches.json")
             contracts = read_json(ROOT / "sources/semantic-contracts.json")
@@ -241,13 +241,13 @@ def main():
             effective = effective_entries(entries, catalog, patches, state)
             official_radar = analyze_official(ROOT, official_state, effective)
             report["source_health"] = {
-                "v2fly": "fresh" if v2fly_fresh else "retained-last-good",
+                "v2fly": "reviewed-local-input" if args.source_repo else ("fresh" if v2fly_fresh else "retained-last-good"),
                 "openai_voice": voice_status,
                 "official_facts": official_fetch_report["sources"],
             }
             report["official_radar"] = official_radar
             report["selection_radar"] = analyze_selected_sources(ROOT, snapshot / "v2fly", effective)
-            if voice_status != "fresh":
+            if voice_status not in {"fresh", "reviewed-local-input"}:
                 report["review_required"].append({
                     "reason": "official-voice-suspicious-change" if voice_status == "retained-suspicious-change" else "official-voice-fetch-unavailable",
                     "source": VOICE_URL,

@@ -1333,7 +1333,7 @@
   "schema": 2,
   "semantic_contract": {
     "path": "sources/semantic-contracts.json",
-    "sha256": "e8dfddf72ad158d6ff50f305489ece3e5edce6524d0da609dc4eb7610d67ff80"
+    "sha256": "94dd07a13c5480bfced82d31f76842aabf8dbca84d0bc82449ba5798e8e00448"
   },
   "upstream": {
     "sha256": {

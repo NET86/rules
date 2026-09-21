@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-21 — Routing contracts and dependency freshness
+
+- Add independent positive/negative contracts for all 24 vendors, including same-aggregate vendor swaps and critical-entry retention. Continue to recover old releases without accepting weaker contracts for new candidates.
+- Validate the domestic profile in both pinned cores and probe every Voice IP range's boundaries and adjacent addresses; preserve the existing rule bytes and product scope.
+- Publish dependency upgrades only by fast-forwarding the exact tested commit when it contains current main; reject stale candidates and concurrent main changes without force pushing or creating an untested merge.
+- Show each production source and official radar source's fresh/retained/unavailable state in the existing Actions summary, including explicit unknown states when evidence is absent.
+
 ## 2026-09-21 — Cloudflare runtime compatibility
 
 - Fix a real cloud Cron failure: Workers fetch rejects `redirect: error`. Use `manual` and reject unexpected HTTP status codes, preserving the refusal to follow redirects with credentials.

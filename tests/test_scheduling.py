@@ -8,6 +8,7 @@ import sys
 import unittest
 from unittest.mock import patch
 import tempfile
+import subprocess
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from schedule_gate import backup_needed
@@ -93,13 +94,74 @@ class DependencyMergeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             event_path = Path(directory) / "event.json"
             event_path.write_text(json.dumps({"workflow_run": {"id": 42}}), encoding="utf-8")
-            responses = [run, {"jobs": jobs, "total_count": 2}, [{"number": 9}], pr, files, {"merged": True}]
+            responses = [run, {"jobs": jobs, "total_count": 2}, [{"number": 9}], pr, files]
             with patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_EVENT_PATH=str(event_path)), \
-                    patch.object(merge_dependencies, "api", side_effect=responses) as api:
+                    patch.object(merge_dependencies, "api", side_effect=responses) as api, \
+                    patch.object(merge_dependencies, "git", return_value="git@github-net86:NET86/rules.git"), \
+                    patch.object(merge_dependencies, "fast_forward", return_value=True) as publish:
                 merge_dependencies.main()
                 self.assertIn("head=NET86%3Adependabot%2Fpip%2F", api.call_args_list[2].args[0])
-                self.assertEqual(api.call_args.args, ("repos/NET86/rules/pulls/9/merge",
-                                                     {"sha": "abc", "merge_method": "squash"}))
+                publish.assert_called_once_with("abc")
+
+
+class DependencyGitTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.remote = self.root / "remote.git"
+        self.local = self.root / "local"
+        subprocess.run(["git", "init", "--template=", "--bare", str(self.remote)], check=True, capture_output=True)
+        subprocess.run(["git", "init", "--template=", "-b", "main", str(self.local)], check=True, capture_output=True)
+        self.git("config", "user.name", "Dependency test")
+        self.git("config", "user.email", "test@example.invalid")
+        self.git("remote", "add", "origin", str(self.remote))
+        self.base = self.commit("base", "base")
+        self.git("push", "origin", "main")
+        self.git("switch", "-c", "dependency")
+        self.head = self.commit("requirements-intake.txt", "tested update")
+        self.git("push", "origin", "dependency")
+        self.git("switch", "main")
+
+    def git(self, *args):
+        return subprocess.check_output(["git", "-C", str(self.local), *args],
+                                       text=True, encoding="utf-8", stderr=subprocess.PIPE).strip()
+
+    def commit(self, path, content):
+        (self.local / path).write_text(content, encoding="utf-8")
+        self.git("add", path)
+        self.git("commit", "-m", "fixture " + content)
+        return self.git("rev-parse", "HEAD")
+
+    def main_revision(self):
+        return self.git("ls-remote", "origin", "refs/heads/main").split()[0]
+
+    def test_publishes_exact_tested_head_without_checking_it_out(self):
+        self.assertTrue(merge_dependencies.fast_forward(self.head, self.git))
+        self.assertEqual(self.main_revision(), self.head)
+        self.assertEqual(self.git("rev-parse", "HEAD"), self.base)
+
+    def test_advanced_main_waits_for_rebase_and_retest(self):
+        advanced = self.commit("new-code", "new production code")
+        self.git("push", "origin", "main")
+        self.assertFalse(merge_dependencies.fast_forward(self.head, self.git))
+        self.assertEqual(self.main_revision(), advanced)
+
+    def test_server_rejects_main_race_after_local_ancestry_check(self):
+        advanced = self.commit("new-code", "concurrent production code")
+        def raced(*args):
+            if args[0] == "push":
+                self.git("push", "origin", "main")
+            return self.git(*args)
+        with self.assertRaises(subprocess.CalledProcessError):
+            merge_dependencies.fast_forward(self.head, raced)
+        self.assertEqual(self.main_revision(), advanced)
+
+    def test_invalid_revision_cannot_reach_git(self):
+        with patch.object(merge_dependencies, "git") as call:
+            with self.assertRaises(ValueError):
+                merge_dependencies.fast_forward("--all", call)
+            call.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import functools
 import http.server
+import ipaddress
 import json
 import os
 import shutil
@@ -18,7 +19,7 @@ import urllib.request
 from pathlib import Path
 
 from rules import ROOT, Rule, read_json, json_text
-from verify_rules import load_contracts
+from verify_rules import load_contracts, parse_artifact
 
 
 class CaptureProxy(socketserver.BaseRequestHandler):
@@ -49,7 +50,8 @@ def free_port():
 def probe(port, host):
     try:
         with socket.create_connection(("127.0.0.1", port), timeout=4) as sock:
-            sock.sendall(f"GET http://{host}/ai-rules-local-test HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n".encode())
+            authority = f"[{host}]" if ":" in host else host
+            sock.sendall(f"GET http://{authority}/ai-rules-local-test HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n".encode())
             response = b""
             # TCP does not preserve response/status-line message boundaries.
             while b"\r\n" not in response and len(response) < 1024:
@@ -68,6 +70,22 @@ def proxy_ready(port):
             return True
     except OSError:
         return False
+
+
+def voice_probe_cases(root, manifest, enabled):
+    """Exercise both ends and adjacent addresses of every published voice range."""
+    path = manifest["bundles"]["openai-voice-ip"]["mihomo"]["path"]
+    lines = parse_artifact((root / path).read_bytes(), "mihomo")
+    networks = [ipaddress.ip_network(line.split(",")[1]) for line in lines]
+    addresses = set()
+    for net in networks:
+        start, end = int(net.network_address), int(net.broadcast_address)
+        for value in (start - 1, start, end, end + 1):
+            if 0 <= value < 2 ** net.max_prefixlen:
+                addresses.add(type(net.network_address)(value))
+    # Adjacent ranges may touch/overlap: classify against the full union.
+    return [(str(address), enabled and any(address in net for net in networks if address.version == net.version))
+            for address in sorted(addresses, key=lambda ip: (ip.version, int(ip)))]
 
 
 def providers_ready(loaded, names):
@@ -144,7 +162,7 @@ def verify_http_refresh(opener, controller, port, directory, name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, default=ROOT / ".work/bin" / ("mihomo.exe" if os.name == "nt" else "mihomo"))
-    parser.add_argument("--profile", choices=["ai-daily", "split"], default="ai-daily")
+    parser.add_argument("--profile", choices=["ai-daily", "split", "ai-cn"], default="ai-daily")
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--engine-label", default="mihomo")
     args = parser.parse_args()
@@ -172,12 +190,12 @@ def main():
         for name in providers:
             providers[name]["url"] = f"http://127.0.0.1:{server.server_port}/{name}.yaml"
         port, controller = free_port(), free_port()
-        selected = ["ai-daily"] if args.profile == "ai-daily" else ["ai-core", "openai-voice-ip"]
+        selected = ["ai-core", "openai-voice-ip"] if args.profile == "split" else [args.profile]
         config = {
             # All probes use HTTP. A mixed listener also binds UDP, which can be
             # unavailable on Windows even when this TCP port is free.
             "port": port, "bind-address": "127.0.0.1", "allow-lan": False,
-            "mode": "rule", "log-level": "info", "ipv6": False, "find-process-mode": "off",
+            "mode": "rule", "log-level": "info", "ipv6": True, "find-process-mode": "off",
             "external-controller": f"127.0.0.1:{controller}", "secret": "isolated-local-test",
             "dns": {"enable": False}, "tun": {"enable": False},
             "profile": {"store-selected": False, "store-fake-ip": False},
@@ -229,7 +247,7 @@ def main():
                 for name, target in manifest["bundles"].items():
                     if loaded[name]["ruleCount"] != target["mihomo"]["count"]:
                         raise RuntimeError(f"Provider count mismatch: {name}")
-                profile_name = "ai-daily" if args.profile == "ai-daily" else "ai-core"
+                profile_name = "ai-core" if args.profile == "split" else args.profile
                 contract_spec = manifest.get("semantic_contract")
                 if not contract_spec or contract_spec.get("path") != "sources/semantic-contracts.json":
                     raise RuntimeError("Manifest missing semantic contract")
@@ -240,7 +258,9 @@ def main():
                 positive = list(contract.get("must_match", []))
                 negative = list(contract.get("must_not_match", []))
                 selected_vendors = set(manifest["profiles"][profile_name]["members"])
-                positive += [r.split(",")[1].split("/")[0] for r in (root / "rules/surge/openai-voice-ip.list").read_text(encoding="utf-8").splitlines() if r.startswith("IP-CIDR,")][:1]
+                ip_cases = voice_probe_cases(root, manifest, args.profile != "ai-cn")
+                for host, matches in ip_cases:
+                    (positive if matches else negative).append(host)
                 core = [Rule.from_text(row["rule"]) for row in manifest["provenance"]
                         if row["tier"] == "core" and row["vendor"] in selected_vendors]
                 representatives = set()
@@ -262,6 +282,7 @@ def main():
                 refresh_report = verify_http_refresh(opener, controller, port, base / "providers", selected[0])
                 report = {"engine_label": args.engine_label, "embedded_listener_controller_setup": embedded_listener_started, "http_provider_refresh": refresh_report, "engine": version, "provider_count": len(providers), "routing_case_count": len(cases), "cases": cases, "result": "PASS", "scope": "Isolated engine and real HTTP provider updates; NOT FlClash UI, Surge runtime or remote AI service connectivity"}
                 report["profile"] = args.profile
+                report["voice_ip_case_count"] = len(ip_cases)
                 (work / "mihomo-validation.json").write_text(json_text(report), encoding="utf-8")
                 (work / f"{args.engine_label}-validation-{args.profile}.json").write_text(json_text(report), encoding="utf-8")
                 print(f"PASS ({args.profile}): {len(providers)} providers loaded; {len(cases)} real-engine routing probes; no remote AI requests")

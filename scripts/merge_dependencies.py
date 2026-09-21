@@ -43,21 +43,42 @@ def eligible(pr, run, jobs, files):
     return REQUIRED_JOBS <= checked
 
 
-def api(path, body=None):
+def api(path):
     if not path.startswith(f"repos/{REPO}/"):
         raise ValueError("Unexpected repository")
-    args = ["gh", "api", path]
-    if body is not None:
-        args += ["--method", "PUT", "--input", "-"]
     return json.loads(subprocess.check_output(
-        args, input=json.dumps(body) if body is not None else None,
+        ["gh", "api", path],
         text=True, encoding="utf-8", timeout=45
     ))
+
+
+def git(*args):
+    return subprocess.check_output(["git", *args], text=True, encoding="utf-8", timeout=120).strip()
+
+
+def fast_forward(head, call=git):
+    """Publish exactly a tested head; the server rejects a concurrent main update."""
+    if not re.fullmatch(r"[0-9a-f]{40}", head):
+        raise ValueError("Invalid tested commit SHA")
+    call("fetch", "--no-tags", "origin", "refs/heads/main:refs/remotes/origin/main", head)
+    base = call("rev-parse", "refs/remotes/origin/main")
+    if call("merge-base", base, head) != base:
+        return False
+    # No merge/rebase or PR checkout: privileged code never executes candidate code.
+    # No force/lease: if main moves beyond our base, ordinary Git fast-forward
+    # enforcement refuses the push instead of creating an untested combination.
+    call("push", "origin", f"{head}:refs/heads/main")
+    return True
 
 
 def main():
     if os.environ.get("GITHUB_REPOSITORY") != REPO:
         raise ValueError("Dependency automation is restricted to NET86/rules")
+    if git("remote", "get-url", "origin") not in {
+        f"https://github.com/{REPO}", f"https://github.com/{REPO}.git",
+        "git@github-net86:NET86/rules.git",
+    }:
+        raise ValueError("Unexpected dependency publication remote")
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
     # Re-fetch server state rather than relying on an old completion event.
     run = api(f"repos/{REPO}/actions/runs/{int(event['workflow_run']['id'])}")
@@ -74,12 +95,10 @@ def main():
         if not eligible(pr, run, jobs, files):
             print(f"PR #{number}: not eligible for automatic merge.")
             continue
-        result = api(f"repos/{REPO}/pulls/{number}/merge", {
-            "sha": pr["head"]["sha"], "merge_method": "squash"
-        })
-        if not result.get("merged"):
-            raise ValueError("GitHub did not merge the tested commit")
-        print(f"PR #{number}: merged tested dependency update.")
+        if fast_forward(pr["head"]["sha"]):
+            print(f"PR #{number}: fast-forwarded the tested dependency commit.")
+        else:
+            print(f"PR #{number}: main advanced; awaiting Dependabot rebase and fresh CI.")
 
 
 if __name__ == "__main__":
