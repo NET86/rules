@@ -18,7 +18,13 @@ v2fly 的目标是 geosite 域名分类，不负责决定某域名应代理、�
 - `sources` 仍会递归读取 include 以保留上游语义，但 include 进来的规则不继承专属文件的自动生产权限；它们会被隔离，避免一个新增 include 扩大整个厂商边界。
 - `select`：混合分类只读取指定文件**本层显式规则**，且只生成 catalog 明确列出的值，不递归 include。
 - 如果 `select` 目标从本层移动进 include，视为结构变化并隔离该厂商的删除观察；不自动扩大隐式依赖，也不把它当普通退役。
-- 整个共享平台根域（例如 `amazonaws.com`、`googleapis.com`、`livekit.cloud`）继续硬禁止；厂商专属的精确子域/主机不因此被一刀切排除。
+- 已知共享平台根域、区域 S3 边界及常见公共后缀（例如 `amazonaws.com`、`s3.us-east-1.amazonaws.com`、`co.uk`）硬禁止；厂商专属的精确子域/主机不因此被一刀切排除。此有限表不是完整 PSL。
+
+### 混合来源新入口发现
+
+`watch.json.primary_sections` 观察 10 个已有厂商在混合文件中的明确产品区段，例如 Google 的 NotebookLM / AI Studio、Copilot 和国内 AI 产品。未覆盖条目每轮重扫，直到纳入 catalog、显式加入 patches.drop 或上游撤回；不因只看一次 diff 就消失。区段标题变化进入现有待审报告。
+
+没有稳定产品分段的混合文件不强行扫描整个分类，也不把候选自动写入生产。专属来源的直接普通域名仍按原权限自动更新，无需逐条人工处理。
 
 ## 官方事实 radar
 
@@ -53,7 +59,7 @@ RuleGo、VPSDance 和 Sukka compiled output 不再作为常态自动 radar。减
 - `ai-core`：上述 5 家，加 Microsoft Copilot、GitHub Copilot、Cursor、Mistral、Poe、Midjourney、Runway、Suno、ElevenLabs。
 - `ai-cn`：DeepSeek、Qwen、Kimi、豆包/Coze China、智谱/GLM、MiniMax/海螺、可灵、百度文心/文小言、腾讯元宝/混元、讯飞星火。
 
-Google 默认只选 Gemini / AI Studio / NotebookLM 相关专用端点，不因 `google-deepmind` 分类文件包含更多实验或企业产品而自动扩张。
+Google 默认只选 Gemini / AI Studio / NotebookLM 相关专用端点，不因 `google-deepmind` 分类文件包含更多实验或企业产品而自动扩张。NotebookLM 更名后的 `notebook.google` 已纳入，原有入口保留；依据 [Google 官方公告](https://blog.google/innovation-and-ai/products/gemini-notebook/notebooklm-gemini-notebook/)。
 
 ## 许可与历史证据
 

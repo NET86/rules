@@ -19,26 +19,26 @@
     },
     "ai-core": {
       "mihomo": {
-        "count": 81,
+        "count": 82,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "e0196c39105080173360301cf744ce02b0365292108f6545bb6d833fea9fd973"
+        "sha256": "958051598ad7e773dd751ff4e274feb2bdcfe6a81702e00b391addc0fdaef0f3"
       },
       "surge": {
-        "count": 81,
+        "count": 82,
         "path": "rules/surge/ai-core.list",
-        "sha256": "e7775fcf68bc5212a9c04ba92119736d4a7439d78d6450006908ac53c83ea8e3"
+        "sha256": "45c709709043ea88c7e216a1c8b94b89bdca18e81d1b05f3e92fe947dad518e0"
       }
     },
     "ai-daily": {
       "mihomo": {
-        "count": 81,
+        "count": 82,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "b93f1e44b4ace76bb4d26f9d8b4c6f94c17b6361d7abcb00278677b46bca22a5"
+        "sha256": "a00faa74b462696fae66c8f3b39b706d95ae85cbc2d1860f46f4a12a769a9c36"
       },
       "surge": {
-        "count": 81,
+        "count": 82,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "8ef961d44dbab155d84293fa9fe809d059c772a31992d4ecd7bccaf614f65083"
+        "sha256": "c8b10a6df0d5c527de7c2503992be3500db46779b687f1706914f9475b43f994"
       }
     },
     "baidu-wenxin": {
@@ -127,14 +127,14 @@
     },
     "google-ai": {
       "mihomo": {
-        "count": 22,
+        "count": 23,
         "path": "rules/mihomo/google-ai.yaml",
-        "sha256": "179aef68b6f13c134011231fa1f18f545622b412328f4b3dbea67d8f8de6a0ca"
+        "sha256": "fa00042a2a2fcf5a12f829b1af8b72a4754c4ed0a03370e0d7444e257ef43dbe"
       },
       "surge": {
-        "count": 22,
+        "count": 23,
         "path": "rules/surge/google-ai.list",
-        "sha256": "a5dc57ada9b2339ceba9b8050defc6b63767a855f68dd002817fe3cec154b17e"
+        "sha256": "383ec6277b263cda6909414d1a97270249c0cf65aed69593cef03fadfc1383b0"
       }
     },
     "grok": {
@@ -754,6 +754,14 @@
       "vendor": "google-ai"
     },
     {
+      "rule": "DOMAIN-SUFFIX,notebook.google",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
       "rule": "DOMAIN-SUFFIX,notebook.google.com",
       "sources": [
         "v2fly:data/google-deepmind (selected explicit rule)"
@@ -1325,7 +1333,7 @@
   "schema": 2,
   "semantic_contract": {
     "path": "sources/semantic-contracts.json",
-    "sha256": "e4d5c7013739334060dd80eadf52336bb971187a3eee94df6552ed3b2ac499c9"
+    "sha256": "e8dfddf72ad158d6ff50f305489ece3e5edce6524d0da609dc4eb7610d67ff80"
   },
   "upstream": {
     "sha256": {

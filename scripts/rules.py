@@ -35,8 +35,19 @@ FORBIDDEN_CORE = {
     "cloudfront.net", "cloudflare.com", "cloudflare.net", "github.com", "githubusercontent.com",
     "auth0.com", "stripe.com", "sentry.io", "intercom.io", "intercomcdn.com", "livekit.cloud",
     "storage.googleapis.com", "blob.core.windows.net", "webpubsub.azure.com", "api.github.com",
-    "datadoghq.com", "segment.io", "algolia.net", "byteoversea.com", "microsoft.com"
+    "datadoghq.com", "segment.io", "algolia.net", "byteoversea.com", "microsoft.com",
+    "s3.amazonaws.com", "s3.amazonaws.com.cn", "azurewebsites.net", "cloudapp.net",
+    "github.io", "workers.dev", "pages.dev", "vercel.app", "netlify.app", "onrender.com",
+    "co.uk", "org.uk", "ac.uk", "gov.uk", "com.cn", "net.cn", "org.cn",
+    "com.au", "net.au", "org.au", "co.jp", "co.nz", "co.in", "com.br", "com.sg"
 }
+
+
+def forbidden_core(value):
+    """Known shared/public boundaries, including regional S3; not a complete PSL."""
+    return value in FORBIDDEN_CORE or re.fullmatch(
+        r"s3(?:[.-][a-z0-9-]+)?\.amazonaws\.com(?:\.cn)?", value
+    ) is not None
 
 
 def read_json(path: Path):
@@ -154,7 +165,7 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
         rule.validate()
         if not review_mode and rule.kind not in {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-REGEX"}:
             raise ValueError(f"Domain candidate needs manual handling: {rule.text}")
-        if not review_mode and tier == "core" and rule.value in FORBIDDEN_CORE:
+        if not review_mode and tier == "core" and forbidden_core(rule.value):
             raise ValueError(f"Shared/broad host forbidden in core: {rule.text}")
         entries.setdefault((vendor, tier, rule), set()).add(evidence)
 
