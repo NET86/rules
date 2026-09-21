@@ -112,7 +112,7 @@ class QuietFileHandler(http.server.SimpleHTTPRequestHandler):
         super().do_GET()
 
 
-def verify_http_refresh(opener, controller, port, directory, name):
+def verify_http_refresh(opener, controller, port, directory, name, original_host):
     path = directory / f"{name}.yaml"
     original = path.read_bytes()
     canary = "ai-rules-refresh-canary.invalid"
@@ -148,8 +148,8 @@ def verify_http_refresh(opener, controller, port, directory, name):
         # that limitation honestly; our strict pre-publication gate rejects it.
         path.write_bytes(original)
         refresh()
-        if probe(port, canary):
-            raise RuntimeError("HTTP provider recovery failed to remove the canary")
+        if probe(port, canary) or not probe(port, original_host) or cached.read_bytes() != original:
+            raise RuntimeError("HTTP provider failed to restore original rules and routing")
     finally:
         QuietFileHandler.unavailable.clear()
         path.write_bytes(original)
@@ -183,6 +183,17 @@ def main():
         for name, targets in manifest["bundles"].items():
             shutil.copyfile(root / targets["mihomo"]["path"], base / "providers" / f"{name}.yaml")
             providers[name] = {"type": "http", "behavior": "classical", "format": "yaml", "path": f"./cache/{name}.yaml", "interval": 3600, "url": ""}
+        # Fixed, independent expectations keep the IPv6 runtime path exercised
+        # even while the official Voice feed contains only IPv4. Never publish it.
+        synthetic_name = "synthetic-ipv6"
+        synthetic_cases = [("2001:db8::3", False), ("2001:db8::4", True),
+                           ("2001:db8::7", True), ("2001:db8::8", False)] if args.profile == "ai-daily" else []
+        if synthetic_cases:
+            if synthetic_name in providers:
+                raise ValueError("Synthetic provider conflicts with a production bundle")
+            (base / "providers" / f"{synthetic_name}.yaml").write_text(
+                'payload:\n  - "IP-CIDR6,2001:db8::4/126,no-resolve"\n', encoding="utf-8")
+            providers[synthetic_name] = {**providers["openai-voice-ip"], "path": f"./cache/{synthetic_name}.yaml"}
         handler = functools.partial(QuietFileHandler, directory=str(base / "providers"))
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
         server.daemon_threads = True
@@ -191,6 +202,8 @@ def main():
             providers[name]["url"] = f"http://127.0.0.1:{server.server_port}/{name}.yaml"
         port, controller = free_port(), free_port()
         selected = ["ai-core", "openai-voice-ip"] if args.profile == "split" else [args.profile]
+        if synthetic_cases:
+            selected.append(synthetic_name)
         config = {
             # All probes use HTTP. A mixed listener also binds UDP, which can be
             # unavailable on Windows even when this TCP port is free.
@@ -247,6 +260,8 @@ def main():
                 for name, target in manifest["bundles"].items():
                     if loaded[name]["ruleCount"] != target["mihomo"]["count"]:
                         raise RuntimeError(f"Provider count mismatch: {name}")
+                if synthetic_cases and loaded[synthetic_name]["ruleCount"] != 1:
+                    raise RuntimeError("Synthetic IPv6 provider count mismatch")
                 profile_name = "ai-core" if args.profile == "split" else args.profile
                 contract_spec = manifest.get("semantic_contract")
                 if not contract_spec or contract_spec.get("path") != "sources/semantic-contracts.json":
@@ -279,13 +294,21 @@ def main():
                         cases.append({"host": host, "expected_core_or_voice": expected, "matched": actual})
                         if actual != expected:
                             raise RuntimeError(f"Routing mismatch: {host}, expected={expected}, actual={actual}")
-                refresh_report = verify_http_refresh(opener, controller, port, base / "providers", selected[0])
-                report = {"engine_label": args.engine_label, "embedded_listener_controller_setup": embedded_listener_started, "http_provider_refresh": refresh_report, "engine": version, "provider_count": len(providers), "routing_case_count": len(cases), "cases": cases, "result": "PASS", "scope": "Isolated engine and real HTTP provider updates; NOT FlClash UI, Surge runtime or remote AI service connectivity"}
+                synthetic_results = []
+                for host, expected in synthetic_cases:
+                    actual = probe(port, host)
+                    synthetic_results.append({"host": host, "expected": expected, "matched": actual})
+                    if actual != expected:
+                        raise RuntimeError(f"Synthetic IPv6 mismatch: {host}, expected={expected}, actual={actual}")
+                refresh_report = verify_http_refresh(opener, controller, port, base / "providers", selected[0], positive[0])
+                report = {"engine_label": args.engine_label, "embedded_listener_controller_setup": embedded_listener_started, "http_provider_refresh": refresh_report, "engine": version, "provider_count": len(manifest["bundles"]), "routing_case_count": len(cases), "cases": cases, "result": "PASS", "scope": "Isolated engine and real HTTP provider updates; NOT FlClash UI, Surge runtime or remote AI service connectivity"}
                 report["profile"] = args.profile
                 report["voice_ip_case_count"] = len(ip_cases)
+                report["synthetic_ipv6_case_count"] = len(synthetic_results)
+                report["synthetic_ipv6_cases"] = synthetic_results
                 (work / "mihomo-validation.json").write_text(json_text(report), encoding="utf-8")
                 (work / f"{args.engine_label}-validation-{args.profile}.json").write_text(json_text(report), encoding="utf-8")
-                print(f"PASS ({args.profile}): {len(providers)} providers loaded; {len(cases)} real-engine routing probes; no remote AI requests")
+                print(f"PASS ({args.profile}): {len(manifest['bundles'])} production providers loaded; {len(cases)} production routing probes; {len(synthetic_results)} synthetic IPv6 probes; no remote AI requests")
             finally:
                 process.terminate()
                 try:

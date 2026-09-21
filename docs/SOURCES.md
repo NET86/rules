@@ -22,7 +22,7 @@ v2fly 的目标是 geosite 域名分类，不负责决定某域名应代理、�
 
 ### 混合来源新入口发现
 
-`watch.json.primary_sections` 观察 10 个已有厂商在混合文件中的明确产品区段，例如 Google 的 NotebookLM / AI Studio、Copilot 和国内 AI 产品。未覆盖条目每轮重扫，直到纳入 catalog、显式加入 patches.drop 或上游撤回；不因只看一次 diff 就消失。区段标题变化进入现有待审报告。
+`watch.json.primary_sections` 观察已有厂商在混合文件中的明确产品区段，例如 Google 的 NotebookLM / AI Studio、Copilot 和国内 AI 产品。未覆盖条目每轮重扫，直到纳入 catalog、显式加入 patches.drop 或上游撤回；不因只看一次 diff 就消失。区段标题变化进入现有待审报告。
 
 没有稳定产品分段的混合文件不强行扫描整个分类，也不把候选自动写入生产。专属来源的直接普通域名仍按原权限自动更新，无需逐条人工处理。
 
@@ -55,9 +55,7 @@ RuleGo、VPSDance 和 Sukka compiled output 不再作为常态自动 radar。减
 
 ## 当前产品范围
 
-- `ai-daily`：OpenAI、Google Gemini、Claude、Grok、Perplexity + OpenAI Voice IP。
-- `ai-core`：上述 5 家，加 Microsoft Copilot、GitHub Copilot、Cursor、Mistral、Poe、Midjourney、Runway、Suno、ElevenLabs。
-- `ai-cn`：DeepSeek、Qwen、Kimi、豆包/Coze China、智谱/GLM、MiniMax/海螺、可灵、百度文心/文小言、腾讯元宝/混元、讯飞星火。
+完整厂商名单、合集数量和订阅入口见 [自动生成的订阅目录](../rules/README.md)；各合集成员由 [catalog.json](../sources/catalog.json) 显式声明。
 
 Google 默认只选 Gemini / AI Studio / NotebookLM 相关专用端点，不因 `google-deepmind` 分类文件包含更多实验或企业产品而自动扩张。NotebookLM 更名后的 `notebook.google` 已纳入，原有入口保留；依据 [Google 官方公告](https://blog.google/innovation-and-ai/products/gemini-notebook/notebooklm-gemini-notebook/)。
 

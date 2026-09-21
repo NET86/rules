@@ -17,14 +17,17 @@
 - 单元/回归：审批边界、select 不递归 include、删除观察冻结、官方只读 radar、Voice fallback、通知、发布/恢复故障注入。
 - Portable gate：独立解析 committed Surge/Mihomo 产物，校验非空、去重、数量、摘要、许可和已声明格式差异。
 - Profile equivalence：`ai-daily` / `ai-core` / `ai-cn` 的实际规则集合必须严格等于 manifest 声明的成员及 `profile_features` 的并集，不能多也不能少。
-- Semantic contracts：直接读取实际单厂商产物和 aggregate 产物验证关键正反例，不用 provenance 自证。当前全部 24 家厂商均有独立契约；缺失厂商、空用例、相互矛盾或厂商错配均阻止发布。新候选必须使用 schema 2，旧 schema 1 只保留发布恢复兼容。
+- Semantic contracts：直接读取实际单厂商产物和 aggregate 产物验证关键正反例，不用 provenance 自证。所有已维护厂商均有独立契约；缺失厂商、空用例、相互矛盾或厂商错配均阻止发布。新候选必须使用 schema 2，旧 schema 1 只保留发布恢复兼容。
 - Mihomo：固定版本真实 HTTP rule-provider 加载、数量核对、本机路由探针、provider 刷新/故障恢复。分别验证 ai-daily、海外分包和 ai-cn；Voice 每个网段的首尾及相邻地址均执行探针，相邻网段按完整并集判断，国内合集不应命中 Voice IP。
+- 固定 IPv6 回归：daily 测试在临时 HTTP provider 中放置 `2001:db8::4/126`，复用同一内核和 `probe()` 检查首尾命中、紧邻地址不命中。四项预期独立固定、单独统计，不写入生产规则或 manifest；即使上游没有 IPv6 也持续执行，不要求运行环境具备公网 IPv6。
+- HTTP provider 恢复必须同时证明临时 canary 已移除、原有产品入口重新命中，以及缓存字节恢复为原文件；空 provider 不能被误报为恢复成功。
 - 隔离探针只使用 HTTP 专用监听端口，避免 Windows 对同号 UDP 端口的限制使混合监听误失败；不据此声称验证 SOCKS/UDP 流量。
 - FlClash core：从 `sources/engines.json` 固定的 FlClash 内嵌核心构建 CLI，用同一隔离测试验证；不是用独立最新版 Mihomo 冒充。
 - Publication read-back：候选和 stable 的 manifest、所有规则文件以及 semantic contract 都按不可变/稳定 URL 下载并核对摘要，再运行核心验证。
 - Recovery：临时 Git 仓库覆盖 candidate validation failure、post-promotion failure、并发 stable/main 更新、缺失 LKG 和下一轮恢复。
 - 已确认缺陷回归：混合来源的新入口候选持续存在；区域 S3/公共后缀边界隔离；Voice 截断保留旧版、等价网段拆合自动通过；仅来源证据变化不轮换 stable，远端验证仍使用真实 stable 契约。
 - 本轮补强回归：百度/腾讯归属互换而合集不变仍必须失败；非 daily 厂商的关键入口删除受到保护；依赖 PR 落后 main 不合并，检查后 main 并发前进也由真实 Git 拒绝推送。
+- 雷达发现、区段变化与 Voice 截断的行为测试使用固定隔离样本，不能假设本轮真实上游没有待审项或 Voice 始终维持某个数量。生产数据继续由独立校验与真实内核验证约束。
 - Cloudflare 调度：Node 内置测试覆盖身份拒绝、近期运行去重、固定仓库/工作流 dispatch 及 API 失败；部署前执行 Wrangler dry-run。该测试不代表已部署或真实定时执行成功。
 
 ## 独立 semantic contract

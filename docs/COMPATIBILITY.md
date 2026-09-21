@@ -34,9 +34,11 @@ manifest 必须记录该转换和原因；Surge 产物必须带 warning。未审
 
 `ai-daily`、`ai-core`、`ai-cn` 的成员由 `sources/catalog.json` 显式声明，不从厂商数量或 group 隐式推导。
 
-- `ai-daily`：5 个日常厂商规则 + `openai-voice-ip`。
-- `ai-core`：14 个海外厂商核心域名，不含 Voice IP。
-- `ai-cn`：10 个国内 AI 分类。
+- `ai-daily`：日常厂商核心域名 + `openai-voice-ip`。
+- `ai-core`：海外厂商核心域名，不含 Voice IP。
+- `ai-cn`：国内 AI 分类。
+
+当前厂商名单和数量见 [自动生成的订阅目录](../rules/README.md)。
 
 `ai-daily` **不是** `ai-core + openai-voice-ip`。独立 verifier 会把 aggregate 产物与声明成员/功能包的实际单厂商产物做集合等价检查，避免 profile 静默膨胀或漏项。
 
