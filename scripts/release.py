@@ -130,6 +130,7 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
     health = sync_report.get("source_health", {})
     labels = {
         "fresh": "本轮抓取成功",
+        "reviewed-local-input": "采用维护者指定的本地输入",
         "retained-last-good": "沿用旧版（本轮抓取失败）",
         "retained-suspicious-change": "沿用旧版（本轮变化异常）",
         "unavailable-no-baseline": "不可用（无有效基线）",

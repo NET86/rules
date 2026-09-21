@@ -51,6 +51,8 @@
 
 来源健康、官方网页 fresh/retained、Voice 本次抓取状态和 radar 结果属于**运行报告**，不写进生产 lock 来制造无意义 stable 更新。
 
+Actions 摘要直接显示本轮来源健康；抓取失败后的旧版保留、异常变化保留和缺少有效基线分别标识。`--source-repo` / `--voice-file` 使用的本地输入单独标识，不冒充本轮在线抓取成功；发布 PASS 与来源新鲜度分别展示。
+
 如需展示 freshness，优先记录 `last_success_at` 并在读取时计算年龄，不维护 FRESH/RETAINED/STALE/DEGRADED 四套持久数据库。
 
 ## 文件职责
@@ -109,6 +111,6 @@ Dependabot 每周检查 Actions 构建组件（检出代码、准备 Python/Go�
 
 Python fetcher 支持 `requirements-intake.txt`，updater 支持更新 hash；所有 Windows/Linux CI 均强制执行 wheel-only / require-hashes 安装和真实 transport smoke test，不能依赖生产流程的可选降级掩盖坏 pin。Transport 测试以本地 HTTP 服务验证生产 fallback 的真实 libcurl 回调与拒绝重定向行为，不声称覆盖上游反爬或实际 TLS 链路。内置 GITHUB_TOKEN 推送不会再触发 push CI；进入 main 的就是已通过 PR CI 的提交，后续规则发布仍跑完整验证链。失败 PR 未处理会占用每类的单 PR 上限，这是明确的人工例外。
 
-自定义 Mihomo / FlClash pin 不在 Dependabot 支持范围内，不新增一套版本监控器。升级客户端核心时，核对 FlClash 应用引用的实际 revision，更新已有固定版本后运行上述 daily/split 双核心验证；不得把最新版 Mihomo 当作 FlClash 核心。
+自定义 Mihomo / FlClash pin 不在 Dependabot 支持范围内，不新增一套版本监控器。升级客户端核心时，核对 FlClash 应用引用的实际 revision，更新已有固定版本后运行上述 daily/split/ai-cn 双核心验证；不得把最新版 Mihomo 当作 FlClash 核心。
 
 不要上传订阅密钥、API key、Cookie、Authorization 或完整 HAR。

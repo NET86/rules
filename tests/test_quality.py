@@ -93,6 +93,30 @@ class SemanticShapeTests(unittest.TestCase):
         self.assertTrue(any(row["rule"] == key[2].text and row["protected"] for row in state["retained"]))
 
 
+class LocalInputHealthTests(unittest.TestCase):
+    def test_explicit_local_inputs_are_not_reported_as_live_fetches_or_outages(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for directory in ("sources", "rules"):
+                shutil.copytree(rules.ROOT / directory, root / directory)
+            def export(repo, snapshot, catalog, voice):
+                shutil.copytree(rules.ROOT / "sources/snapshot", snapshot)
+            argv = ["sync.py", "--source-repo", str(root / "fixture-repo"),
+                    "--voice-file", str(root / "sources/snapshot/openai-voice.json")]
+            official = (rules.read_json(root / "sources/official-state.json"), {"sources": {}, "review_required": []})
+            with patch.object(sync, "ROOT", root), patch.object(sys, "argv", argv), \
+                    patch.object(sync, "snapshot_from_repo", side_effect=export), \
+                    patch.object(sync, "refresh_official", return_value=official):
+                self.assertEqual(sync.main(), 0)
+            report = rules.read_json(root / ".work/sync-report.json")
+            self.assertEqual(report["source_health"]["v2fly"], "reviewed-local-input")
+            self.assertEqual(report["source_health"]["openai_voice"], "reviewed-local-input")
+            self.assertFalse(any(row["reason"].startswith("official-voice") for row in report["review_required"]))
+            summary = release.render_actions_summary({}, {}, report, {"result": "PASS"})
+            self.assertIn("OpenAI Voice：采用维护者指定的本地输入", summary)
+            self.assertNotIn("本轮抓取成功", summary)
+
+
 class ScopeBoundaryTests(unittest.TestCase):
     def test_shared_roots_are_quarantined_but_exact_tenant_rules_still_pass(self):
         catalog = {"vendors": [{"id": "demo", "sources": ["demo"]}]}
