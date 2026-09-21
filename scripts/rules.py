@@ -349,6 +349,9 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
     lock = verify_snapshot(snapshot)
     catalog = read_json(root / "sources/catalog.json")
     profiles = validate_profiles(catalog)
+    contracts = read_json(root / "sources/semantic-contracts.json")
+    if contracts.get("schema") != 2 or set(contracts.get("vendors", {})) != {v["id"] for v in catalog["vendors"]}:
+        raise ValueError("New candidates require schema 2 contracts for every maintained vendor")
     patches = read_json(root / "sources/patches.json")
     selection_issues = []
     candidates = collect(catalog, patches, snapshot / "v2fly", review_mode=True, selection_issues=selection_issues)

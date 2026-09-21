@@ -176,6 +176,20 @@ class IntakeTests(unittest.TestCase):
 
 
 class ReleaseSummaryTests(unittest.TestCase):
+    def test_source_health_distinguishes_publication_success_from_freshness(self):
+        text = release.render_actions_summary({}, {}, {"source_health": {
+            "v2fly": "fresh", "openai_voice": "retained-suspicious-change",
+            "official_facts": {"kept": {"status": "retained-last-good"},
+                               "absent": {"status": "unavailable-no-baseline"}},
+        }}, {"result": "PASS"})
+        self.assertIn("V2Fly：本轮抓取成功", text)
+        self.assertIn("OpenAI Voice：沿用旧版（本轮变化异常）", text)
+        self.assertIn("`kept`：沿用旧版（本轮抓取失败）", text)
+        self.assertIn("`absent`：不可用（无有效基线）", text)
+        missing = release.render_actions_summary({}, {}, {}, {"result": "PASS"})
+        self.assertIn("V2Fly：未知", missing)
+        self.assertNotIn("本轮抓取成功", missing)
+
     @staticmethod
     def row(vendor, rule, tier="core", sources=None):
         return {

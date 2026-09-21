@@ -23,6 +23,7 @@ class SemanticShapeTests(unittest.TestCase):
         mutations = [
             lambda c: c.update(vendors={}),
             lambda c: c["vendors"].pop("openai"),
+            lambda c: c["vendors"].pop("tencent-ai"),
             lambda c: c["profiles"].pop("ai-cn"),
             lambda c: c["profiles"]["ai-daily"].update(must_match=[]),
             lambda c: c["profiles"]["ai-core"].update(must_not_match=[]),
@@ -48,6 +49,48 @@ class SemanticShapeTests(unittest.TestCase):
                        for c in contract[group].values() for field in ("must_match", "must_not_match"))
         self.assertEqual(report["semantic_case_count"], expected)
         self.assertGreater(expected, 0)
+
+    def test_vendor_swap_cannot_hide_inside_an_unchanged_aggregate(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            shutil.copytree(rules.ROOT / "sources", root / "sources")
+            catalog = rules.read_json(root / "sources/catalog.json")
+            vendors = {v["id"]: v for v in catalog["vendors"]}
+            baidu, tencent = vendors["baidu-wenxin"], vendors["tencent-ai"]
+            baidu["select"], tencent["select"] = tencent["select"], baidu["select"]
+            (root / "sources/catalog.json").write_text(rules.json_text(catalog), encoding="utf-8")
+            rules.publish_files(root, rules.compile_outputs(root))
+            with self.assertRaisesRegex(ValueError, "Semantic contract miss: vendor/(baidu-wenxin|tencent-ai)"):
+                verify_rules.verify(root)
+
+    def test_legacy_contracts_can_be_recovered_but_not_compile_new_candidates(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            shutil.copytree(rules.ROOT / "sources", root / "sources")
+            contracts = rules.read_json(root / "sources/semantic-contracts.json")
+            contracts["schema"] = 1
+            contracts["vendors"] = {name: contracts["vendors"][name] for name in
+                                    ("openai", "claude", "grok", "perplexity", "google-ai", "cursor")}
+            data = rules.json_text(contracts).encode()
+            (root / "sources/semantic-contracts.json").write_bytes(data)
+            manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
+            manifest["semantic_contract"]["sha256"] = rules.sha256(data)
+            self.assertEqual(verify_rules.load_contracts(root, manifest)["schema"], 1)
+            with self.assertRaisesRegex(ValueError, "schema 2 contracts"):
+                rules.compile_outputs(root)
+
+    def test_new_vendor_contract_preserves_last_critical_entry_on_removal(self):
+        manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
+        before = {(row["vendor"], row["tier"], rules.Rule.from_text(row["rule"])): set(row["sources"])
+                  for row in manifest["provenance"] if row["tier"] == "core"}
+        key = next(key for key in before if key[0] == "tencent-ai" and key[2].value == "yuanbao.tencent.com")
+        before.pop(key)
+        state, report = automation.reconcile(before, manifest,
+            rules.read_json(rules.ROOT / "sources/catalog.json"),
+            rules.read_json(rules.ROOT / "sources/patches.json"), {},
+            rules.read_json(rules.ROOT / "sources/automation.json"), allow_removals=True,
+            contracts=rules.read_json(rules.ROOT / "sources/semantic-contracts.json"))
+        self.assertTrue(any(row["rule"] == key[2].text and row["protected"] for row in state["retained"]))
 
 
 class ScopeBoundaryTests(unittest.TestCase):

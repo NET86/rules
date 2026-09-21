@@ -127,6 +127,22 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
         f"- 隔离：**{sync_report.get('quarantined_count', 0)}**",
         f"- 保留观察：**{sync_report.get('retained_count', 0)}**",
     ])
+    health = sync_report.get("source_health", {})
+    labels = {
+        "fresh": "本轮抓取成功",
+        "retained-last-good": "沿用旧版（本轮抓取失败）",
+        "retained-suspicious-change": "沿用旧版（本轮变化异常）",
+        "unavailable-no-baseline": "不可用（无有效基线）",
+    }
+    lines.extend(["", "### 本轮来源健康"])
+    for source, label in (("v2fly", "V2Fly"), ("openai_voice", "OpenAI Voice")):
+        lines.append(f"- {label}：{labels.get(health.get(source), '未知（本轮未提供状态）')}")
+    facts = health.get("official_facts", {})
+    if facts:
+        for source, status in sorted(facts.items()):
+            lines.append(f"- 官方资料 `{source}`：{labels.get(status.get('status'), '未知（本轮未提供状态）')}")
+    else:
+        lines.append("- 官方资料：未知（本轮未提供状态）")
     if review_required:
         lines.extend(["", f"### 待审核 / 异常明细（{len(review_required)}）"])
         for row in review_required[:limit]:
@@ -396,7 +412,7 @@ def main():
 
         publisher.recover_stable(healthcheck, report)
         subprocess.run([sys.executable, "scripts/rules.py", "--check"], cwd=ROOT, check=True)
-        for profile in ("ai-daily", "split"):
+        for profile in ("ai-daily", "split", "ai-cn"):
             runtime_gate(ROOT, binaries, profile)
         publisher.git("add", "--", *AUTO_PATHS)
         if publisher.git("diff", "--cached", "--name-only"):

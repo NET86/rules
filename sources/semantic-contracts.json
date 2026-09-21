@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "vendors": {
     "openai": {
       "must_match": ["api.openai.com", "chatgpt.com", "files.oaiusercontent.com", "openaiassets.blob.core.windows.net"],
@@ -24,6 +24,78 @@
     "cursor": {
       "must_match": ["api2.cursor.sh", "vm.cursorvm.com"],
       "must_not_match": ["anysphere-binaries.s3.us-east-1.amazonaws.com", "cloud-agent-artifacts.s3.us-east-1.amazonaws.com"]
+    },
+    "microsoft-copilot": {
+      "must_match": ["copilot.microsoft.com", "copilot.cloud.microsoft"],
+      "must_not_match": ["www.microsoft.com", "githubcopilot.com"]
+    },
+    "github-copilot": {
+      "must_match": ["githubcopilot.com"],
+      "must_not_match": ["api.github.com", "copilot.microsoft.com"]
+    },
+    "mistral": {
+      "must_match": ["mistral.ai"],
+      "must_not_match": ["poe.com", "notmistral.ai"]
+    },
+    "poe": {
+      "must_match": ["poe.com"],
+      "must_not_match": ["mistral.ai", "notpoe.com"]
+    },
+    "midjourney": {
+      "must_match": ["midjourney.com"],
+      "must_not_match": ["discord.com", "runway.com"]
+    },
+    "runway": {
+      "must_match": ["runway.com", "app.runwayml.com"],
+      "must_not_match": ["midjourney.com", "suno.com"]
+    },
+    "suno": {
+      "must_match": ["suno.com", "suno.ai"],
+      "must_not_match": ["runway.com", "notsuno.com"]
+    },
+    "elevenlabs": {
+      "must_match": ["elevenlabs.io"],
+      "must_not_match": ["suno.com", "notelevenlabs.io"]
+    },
+    "deepseek": {
+      "must_match": ["deepseek.com"],
+      "must_not_match": ["qwen.ai", "notdeepseek.com"]
+    },
+    "qwen": {
+      "must_match": ["qwen.ai", "tongyi.aliyun.com"],
+      "must_not_match": ["www.aliyun.com", "deepseek.com"]
+    },
+    "kimi": {
+      "must_match": ["kimi.com", "moonshot.ai"],
+      "must_not_match": ["doubao.com", "notkimi.com"]
+    },
+    "doubao": {
+      "must_match": ["doubao.com", "coze.cn"],
+      "must_not_match": ["coze.com", "kimi.com"]
+    },
+    "zhipu": {
+      "must_match": ["bigmodel.cn", "z.ai"],
+      "must_not_match": ["minimaxi.com", "notbigmodel.cn"]
+    },
+    "minimax": {
+      "must_match": ["minimaxi.com", "hailuoai.com"],
+      "must_not_match": ["bigmodel.cn", "klingai.com"]
+    },
+    "kling": {
+      "must_match": ["klingai.com"],
+      "must_not_match": ["hailuoai.com", "notklingai.com"]
+    },
+    "baidu-wenxin": {
+      "must_match": ["yiyan.baidu.com"],
+      "must_not_match": ["www.baidu.com", "yuanbao.tencent.com"]
+    },
+    "tencent-ai": {
+      "must_match": ["yuanbao.tencent.com", "hunyuan.tencent.com"],
+      "must_not_match": ["cloud.tencent.com", "yiyan.baidu.com"]
+    },
+    "iflytek-spark": {
+      "must_match": ["xinghuo.xfyun.cn"],
+      "must_not_match": ["www.xfyun.cn", "yuanbao.tencent.com"]
     }
   },
   "profiles": {

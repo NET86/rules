@@ -1,0 +1,29 @@
+name: Temporary fast-forward permission probe
+on:
+  push:
+    branches: [strengthen-routing-and-automation]
+permissions:
+  contents: write
+jobs:
+  probe:
+    if: github.repository == 'NET86/rules'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Test existing workflow commits with the built-in token on a disposable branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="refs/heads/test-ff-permission-${GITHUB_RUN_ID}"
+          git push origin "refs/remotes/origin/main:${target}"
+          git push origin "${GITHUB_SHA}:${target}"
+          actual=$(git ls-remote origin "${target}" | cut -f1)
+          test "${actual}" = "${GITHUB_SHA}"
+      - name: Remove the disposable branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method DELETE "repos/NET86/rules/git/refs/heads/test-ff-permission-${GITHUB_RUN_ID}"
