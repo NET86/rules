@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-21 — Primary scheduling and routine dependency automation
+
+- Use Cloudflare as the primary trigger at 00:01/06:01/12:01/18:01 China time; run GitHub cron 30 minutes later as a history-aware backup. Successful skipped backups never suppress the primary.
+- Check dependencies weekly and automatically merge Dependabot groups, including major updates, only after current-commit Linux/Windows CI succeeds. Failures remain unmerged; no PR code runs in the privileged merge workflow.
+- Clarify that hourly client refresh downloads published rule files and does not build rules locally.
+
 ## 2026-09-21 — Discovery and release reliability
 
 - Add Google's reviewed `notebook.google` entry and independent positive/negative routing cases.

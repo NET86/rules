@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import worker, { trigger } from "./worker.mjs";
 
-const now = Date.parse("2026-09-21T06:49:00Z");
+const now = Date.parse("2026-09-21T04:01:00Z");
 const secret = { GITHUB_TOKEN: "test-only-secret" };
 const run = (hours) => ({ id: 7, head_branch: "main", created_at: new Date(now - hours * 3600000).toISOString() });
 function mock(...responses) {
@@ -32,6 +32,7 @@ test("a recent GitHub run avoids a duplicate build", async () => {
   const { request, calls } = mock({ login: "NET86" }, { workflow_runs: [run(1)] });
   assert.equal((await trigger(secret, request, now)).result, "skipped-recent-run");
   assert.equal(calls.length, 2);
+  assert.equal(new URL(calls[1].url).searchParams.get("event"), "workflow_dispatch");
 });
 
 test("stale or absent history dispatches only the fixed main workflow", async () => {

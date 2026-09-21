@@ -1,7 +1,7 @@
 name: Sync reviewed upstreams
 on:
   schedule:
-    - cron: '19 */6 * * *'
+    - cron: '31 4,10,16,22 * * *'
   workflow_dispatch:
 permissions:
   contents: write
@@ -10,8 +10,30 @@ concurrency:
   group: publish-reviewed-rules
   cancel-in-progress: false
 jobs:
-  sync:
+  schedule-gate:
     if: github.repository == 'NET86/rules'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      run_sync: ${{ github.event_name != 'schedule' || steps.backup.outputs.run_sync == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name == 'schedule'
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Skip backup when a recent primary sync succeeded or is still active
+        id: backup
+        if: github.event_name == 'schedule'
+        run: python scripts/schedule_gate.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+  sync:
+    needs: schedule-gate
+    if: needs.schedule-gate.outputs.run_sync == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:

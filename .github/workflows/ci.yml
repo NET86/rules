@@ -22,8 +22,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python scripts/check_git_identity.py
-      - name: Validate dependency update wheels and hashes
-        if: github.actor == 'dependabot[bot]'
+      - name: Validate pinned transport wheels and hashes
         run: 'python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt'
       - run: python -m unittest discover -s tests -v
       - run: python scripts/rules.py --check
