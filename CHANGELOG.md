@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-21 — Derive product coverage documentation from the catalog
+
+- Keep exact provider counts and membership in the generated subscription index; replace duplicate hand-maintained lists with usage guidance and links.
+- Remove the fixed daily provider list from its description. Only documentation and daily subscription comments change; routing entries and product scope stay the same.
+
 ## 2026-09-21 — Permanent IPv6 runtime regression coverage
 
 - Exercise a fixed test-only IPv6 CIDR through the existing HTTP provider and real daily routing probes in both cores, with four independent boundary expectations and separate report counts.

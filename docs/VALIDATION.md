@@ -17,7 +17,7 @@
 - 单元/回归：审批边界、select 不递归 include、删除观察冻结、官方只读 radar、Voice fallback、通知、发布/恢复故障注入。
 - Portable gate：独立解析 committed Surge/Mihomo 产物，校验非空、去重、数量、摘要、许可和已声明格式差异。
 - Profile equivalence：`ai-daily` / `ai-core` / `ai-cn` 的实际规则集合必须严格等于 manifest 声明的成员及 `profile_features` 的并集，不能多也不能少。
-- Semantic contracts：直接读取实际单厂商产物和 aggregate 产物验证关键正反例，不用 provenance 自证。当前全部 24 家厂商均有独立契约；缺失厂商、空用例、相互矛盾或厂商错配均阻止发布。新候选必须使用 schema 2，旧 schema 1 只保留发布恢复兼容。
+- Semantic contracts：直接读取实际单厂商产物和 aggregate 产物验证关键正反例，不用 provenance 自证。所有已维护厂商均有独立契约；缺失厂商、空用例、相互矛盾或厂商错配均阻止发布。新候选必须使用 schema 2，旧 schema 1 只保留发布恢复兼容。
 - Mihomo：固定版本真实 HTTP rule-provider 加载、数量核对、本机路由探针、provider 刷新/故障恢复。分别验证 ai-daily、海外分包和 ai-cn；Voice 每个网段的首尾及相邻地址均执行探针，相邻网段按完整并集判断，国内合集不应命中 Voice IP。
 - 固定 IPv6 回归：daily 测试在临时 HTTP provider 中放置 `2001:db8::4/126`，复用同一内核和 `probe()` 检查首尾命中、紧邻地址不命中。四项预期独立固定、单独统计，不写入生产规则或 manifest；即使上游没有 IPv6 也持续执行，不要求运行环境具备公网 IPv6。
 - HTTP provider 恢复必须同时证明临时 canary 已移除、原有产品入口重新命中，以及缓存字节恢复为原文件；空 provider 不能被误报为恢复成功。

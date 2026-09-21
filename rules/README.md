@@ -8,11 +8,11 @@
 
 | 版本 | 功能与选择建议 | Surge | Mihomo |
 | --- | --- | --- | --- |
-| ai-daily | 维护者日常包：OpenAI、Gemini、Claude、Grok、Perplexity 核心域名 + OpenAI 官方语音 IP。 | [ai-daily.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-daily.list) | [ai-daily.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml) |
-| ai-core | 海外主流 AI 合集：显式维护的应用级厂商核心域名，不含语音 IP 和共享依赖。 | [ai-core.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-core.list) | [ai-core.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml) |
-| ai-cn | 国内主流 AI 独立分类：只包含显式维护的产品端点，不代表全部入口都应直连。 | [ai-cn.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-cn.list) | [ai-cn.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-cn.yaml) |
+| ai-daily | 5 家厂商。日常 AI 核心域名 + OpenAI 官方语音 IP。 | [ai-daily.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-daily.list) | [ai-daily.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml) |
+| ai-core | 14 家厂商。海外主流 AI 合集：显式维护的应用级厂商核心域名，不含语音 IP 和共享依赖。 | [ai-core.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-core.list) | [ai-core.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml) |
+| ai-cn | 10 家厂商。国内主流 AI 独立分类：只包含显式维护的产品端点，不代表全部入口都应直连。 | [ai-cn.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-cn.list) | [ai-cn.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-cn.yaml) |
 
-ai-daily 是 5 个显式日常厂商 + openai-voice-ip；ai-core 是更大的海外主流 AI 合集，两者不是包含关系。ai-cn 可另外分配策略。
+ai-daily 含日常厂商核心域名和 openai-voice-ip；ai-core 覆盖更多海外厂商但不含 Voice IP。ai-cn 可另外分配策略。
 
 日常厂商：openai、google-ai、claude、grok、perplexity。
 

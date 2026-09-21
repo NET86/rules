@@ -22,7 +22,7 @@ REVIEWED_V2FLY_LICENSE = "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c840114
 PROJECT_URL = "https://github.com/NET86/rules"
 RAW_URL = "https://raw.githubusercontent.com/NET86/rules/stable"
 BUNDLE_DESCRIPTIONS = {
-    "ai-daily": "维护者日常包：OpenAI、Gemini、Claude、Grok、Perplexity 核心域名 + OpenAI 官方语音 IP。",
+    "ai-daily": "日常 AI 核心域名 + OpenAI 官方语音 IP。",
     "ai-core": "海外主流 AI 合集：显式维护的应用级厂商核心域名，不含语音 IP 和共享依赖。",
     "ai-cn": "国内主流 AI 独立分类：只包含显式维护的产品端点，不代表全部入口都应直连。",
     "openai-voice-ip": "OpenAI 官方语音目的 IP：不含域名；ai-daily 已包含，单厂商 openai 未包含。",
@@ -325,9 +325,9 @@ def subscription_index(catalog):
     def row(name, description):
         return f"| {name} | {description} | [{name}.list]({RAW_URL}/rules/surge/{name}.list) | [{name}.yaml]({RAW_URL}/rules/mihomo/{name}.yaml) |"
     for name in ("ai-daily", "ai-core", "ai-cn"):
-        lines.append(row(name, BUNDLE_DESCRIPTIONS[name]))
+        lines.append(row(name, f"{len(catalog['profiles'][name]['members'])} 家厂商。{BUNDLE_DESCRIPTIONS[name]}"))
     daily = catalog["profiles"]["ai-daily"]["members"]
-    lines += ["", "ai-daily 是 5 个显式日常厂商 + openai-voice-ip；ai-core 是更大的海外主流 AI 合集，两者不是包含关系。ai-cn 可另外分配策略。", "",
+    lines += ["", "ai-daily 含日常厂商核心域名和 openai-voice-ip；ai-core 覆盖更多海外厂商但不含 Voice IP。ai-cn 可另外分配策略。", "",
               "日常厂商：" + "、".join(daily) + "。", "",
               "## 单厂商", "", "需要独立出口时才选单厂商，并放在合集前。仅含核心域名；OpenAI 语音需同策略的语音 IP 包（ai-daily 已包含）。", ""]
     for group, title in (("global", "国外服务"), ("cn", "国内厂商分类")):

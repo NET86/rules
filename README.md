@@ -11,11 +11,11 @@ Surge / Mihomo 规则仓库。当前主要维护常用海外与国内 AI 服务�
 
 | 规则集 | 适合场景 | Surge | Mihomo |
 | --- | --- | --- | --- |
-| **ai-daily** | 日常使用：OpenAI / ChatGPT、Gemini、Claude、Grok、Perplexity + OpenAI Voice IP | [ai-daily.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-daily.list) | [ai-daily.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml) |
-| **ai-core** | 14 家海外 AI 的核心域名（不含 Voice IP）：日常 5 家之外，另含 Microsoft Copilot、GitHub Copilot、Cursor、Mistral、Poe、Midjourney、Runway、Suno、ElevenLabs | [ai-core.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-core.list) | [ai-core.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml) |
-| **ai-cn** | 国内 AI 服务：DeepSeek、Qwen / 通义、Kimi、豆包 / Coze（国内）、智谱 / GLM、MiniMax / 海螺、可灵、百度文心 / 文小言、腾讯元宝 / 混元、讯飞星火 | [ai-cn.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-cn.list) | [ai-cn.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-cn.yaml) |
+| **ai-daily** | 日常常用海外 AI 核心域名 + OpenAI 官方语音 IP | [ai-daily.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-daily.list) | [ai-daily.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml) |
+| **ai-core** | 更完整的海外 AI 核心域名合集，不含 Voice IP | [ai-core.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-core.list) | [ai-core.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml) |
+| **ai-cn** | 国内 AI 服务分类，可独立选择直连或代理策略 | [ai-cn.list](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-cn.list) | [ai-cn.yaml](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-cn.yaml) |
 
-多数用户可直接使用 `ai-daily`；需要更多海外 AI 服务时使用 `ai-core`，需要 OpenAI 语音分流时另加 `openai-voice-ip` 并使用相同策略。如需单独分流某个服务，可查看 [完整订阅目录](rules/README.md)。
+多数用户可直接使用 `ai-daily`；需要更多海外 AI 服务时使用 `ai-core`，需要 OpenAI 语音分流时另加 `openai-voice-ip` 并使用相同策略。各合集的厂商数量、完整成员和单独订阅入口统一见 [自动生成的订阅目录](rules/README.md)。
 
 ## 使用说明
 
