@@ -25,6 +25,7 @@
 - Recovery：临时 Git 仓库覆盖 candidate validation failure、post-promotion failure、并发 stable/main 更新、缺失 LKG 和下一轮恢复。
 - 已确认缺陷回归：混合来源的新入口候选持续存在；区域 S3/公共后缀边界隔离；Voice 截断保留旧版、等价网段拆合自动通过；仅来源证据变化不轮换 stable，远端验证仍使用真实 stable 契约。
 - 本轮补强回归：百度/腾讯归属互换而合集不变仍必须失败；非 daily 厂商的关键入口删除受到保护；依赖 PR 落后 main 不合并，检查后 main 并发前进也由真实 Git 拒绝推送。
+- 雷达发现、区段变化与 Voice 截断的行为测试使用固定隔离样本，不能假设本轮真实上游没有待审项或 Voice 始终维持某个数量。生产数据继续由独立校验与真实内核验证约束。
 - Cloudflare 调度：Node 内置测试覆盖身份拒绝、近期运行去重、固定仓库/工作流 dispatch 及 API 失败；部署前执行 Wrangler dry-run。该测试不代表已部署或真实定时执行成功。
 
 ## 独立 semantic contract

@@ -138,13 +138,22 @@ class VoiceChangeTests(unittest.TestCase):
         return {"prefixes": [{"ipv4Prefix": value} for value in values]}
 
     def test_truncated_voice_response_retains_verified_previous_list(self):
-        previous = (rules.ROOT / "sources/snapshot/openai-voice.json").read_bytes()
-        candidate = json.loads(previous)
-        candidate["prefixes"] = candidate["prefixes"][:1]
-        with patch.object(sync, "fetch", return_value=json.dumps(candidate).encode()):
-            payload, status = sync.fetch_voice(rules.ROOT)
-        self.assertEqual(payload, previous)
-        self.assertEqual(status, "retained-suspicious-change")
+        # A valid production baseline can contain just one range. The truncation
+        # fixture must keep its own known size instead of constraining live data.
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            snapshot = root / "sources/snapshot"
+            shutil.copytree(rules.ROOT / "sources/snapshot", snapshot)
+            previous = rules.json_text(self.payload(*(f"8.8.8.{i}/32" for i in range(8, 16)))).encode()
+            (snapshot / "openai-voice.json").write_bytes(previous)
+            lock = rules.read_json(snapshot / "lock.json")
+            lock["sha256"]["openai-voice.json"] = rules.sha256(previous)
+            (snapshot / "lock.json").write_text(rules.json_text(lock), encoding="utf-8")
+            candidate = self.payload("8.8.8.8/32")
+            with patch.object(sync, "fetch", return_value=json.dumps(candidate).encode()):
+                payload, status = sync.fetch_voice(root)
+            self.assertEqual(payload, previous)
+            self.assertEqual(status, "retained-suspicious-change")
 
     def test_small_changes_and_equivalent_consolidation_are_automatic(self):
         before = self.payload("8.8.8.8/32", "8.8.8.9/32", "8.8.8.10/32", "8.8.8.11/32")
@@ -167,12 +176,23 @@ class SelectionRadarTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        shutil.copytree(rules.ROOT / "sources", self.root / "sources")
+        # Production sync runs these tests after refreshing upstreams. Use a
+        # fixed fixture so legitimate pending candidates cannot fail the suite.
         self.data = self.root / "sources/snapshot/v2fly"
+        self.data.mkdir(parents=True)
         self.source = self.data / "google-deepmind"
-        manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
-        self.entries = {(r["vendor"], r["tier"], rules.Rule.from_text(r["rule"])): set(r["sources"])
-                        for r in manifest["provenance"]}
+        self.source.write_text("# NotebookLM\nnotebook.google\n", encoding="utf-8")
+        fixtures = {
+            "catalog.json": {"vendors": [{"id": "google-ai", "select": {
+                "google-deepmind": ["notebook.google"]}}]},
+            "patches.json": {"drop": {}},
+            "watch.json": {"primary_sections": [{"vendor": "google-ai",
+                "source": "google-deepmind", "sections": ["NotebookLM"]}]},
+        }
+        for name, value in fixtures.items():
+            (self.root / "sources" / name).write_text(rules.json_text(value), encoding="utf-8")
+        self.entries = {("google-ai", "core", rules.Rule("DOMAIN-SUFFIX", "notebook.google")):
+                        {"v2fly:data/google-deepmind (selected explicit rule)"}}
 
     def test_new_product_endpoint_stays_pending_without_becoming_production(self):
         self.assertFalse(intake.analyze_selected_sources(self.root, self.data, self.entries))
