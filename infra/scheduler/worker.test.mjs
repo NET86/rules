@@ -43,7 +43,7 @@ test("stale or absent history dispatches only the fixed main workflow", async ()
     assert.deepEqual(JSON.parse(calls[3].options.body), { ref: "main" });
     assert.equal(calls[3].options.method, "POST");
     for (const { options } of calls) {
-      assert.equal(options.redirect, "error");
+      assert.equal(options.redirect, "manual");
       assert.ok(options.signal instanceof AbortSignal);
     }
   }
@@ -67,6 +67,8 @@ test("an owner's manual disable is respected", async () => {
 test("API and malformed-response failures stay visible and never retry dispatch", async () => {
   const scenarios = [
     [401],
+    [302],
+    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, 307],
     [{ login: "NET86" }, {}],
     [{ login: "NET86" }, { workflow_runs: [{ ...run(6), head_branch: "other" }] }],
     [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, 403],

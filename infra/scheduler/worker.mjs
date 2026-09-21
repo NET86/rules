@@ -10,7 +10,8 @@ export async function trigger(env, request = fetch, now = Date.now()) {
   const api = async (path, method = "GET", body) => {
     const response = await request(API + path, {
       method,
-      redirect: "error",
+      // Workers supports manual/follow, not redirect:error. Status checks reject 3xx.
+      redirect: "manual",
       signal: AbortSignal.timeout(20_000),
       headers: {
         Authorization: `Bearer ${env.GITHUB_TOKEN}`,
