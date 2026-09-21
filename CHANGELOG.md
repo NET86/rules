@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-21 — Isolate regression fixtures from changing upstream data
+
+- Give selection-radar tests fixed source/catalog fixtures so real pending candidates or upstream section renames remain diagnostic and cannot block unrelated production updates through test assumptions.
+- Give the Voice truncation test its own verified multi-range baseline so a valid reviewed small production baseline is not mistaken for a failed safety test.
+
 ## 2026-09-21 — Routing contracts and dependency freshness
 
 - Add independent positive/negative contracts for all 24 vendors, including same-aggregate vendor swaps and critical-entry retention. Continue to recover old releases without accepting weaker contracts for new candidates.
