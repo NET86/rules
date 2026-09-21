@@ -1,6 +1,6 @@
 # NET86/rules | mistral
 # 单厂商核心域名；不含共享依赖和语音 IP。
-# Generated; do not edit. Manifest: https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
+# 自动生成，请勿手改。清单：https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
 # SPDX-License-Identifier: AGPL-3.0-only
-# Notices: https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
+# 第三方声明：https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
 DOMAIN-SUFFIX,mistral.ai

@@ -1,4 +1,4 @@
-# Daily fragment for FlClash/Mihomo. Merge into an existing profile; not a node subscription.
+# FlClash/Mihomo 日常规则示例：加入已有配置，不包含代理节点。
 proxy-groups:
   - name: AI
     type: select
@@ -16,4 +16,4 @@ rule-providers:
 
 rules:
   - RULE-SET,net86-ai-daily,AI,no-resolve
-  # Keep your other rules and MATCH below. Replace REJECT by selecting a usable node.
+  # 在 AI 策略组添加并选择可用节点，替换 REJECT 占位；其余规则和 MATCH 放在下方。

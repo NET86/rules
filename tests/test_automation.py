@@ -215,7 +215,7 @@ class AuditTests(unittest.TestCase):
         self.assertIn("V2Fly ✓ confirmed · anthropic", summary)
         self.assertIn("官方 confirmed · claude-network", summary)
         self.assertIn("若批准影响：claude / ai-daily / ai-core", summary)
-        self.assertIn("主上游已授权", summary)
+        self.assertIn("主来源已收录", summary)
 
     def test_google_unselected_upstream_rule_is_explained_not_auto_accepted(self):
         with tempfile.TemporaryDirectory() as td:
@@ -277,7 +277,7 @@ class AuditTests(unittest.TestCase):
         self.assertIn("策略排除：**15**", text)
         self.assertIn("待核验缺口：**1**", text)
         self.assertIn("`Claude` · `DOMAIN-SUFFIX,newclaude.example`", text)
-        self.assertIn("证据仅辅助复核，不会自动扩大生产边界", text)
+        self.assertIn("仅供复核，不自动加入订阅", text)
 
     def test_actions_summary_caps_review_details(self):
         report = {
@@ -303,7 +303,7 @@ class AuditTests(unittest.TestCase):
         self.assertIn("待审核 / 异常明细（12）", text)
         self.assertIn("review-09.example", text)
         self.assertNotIn("review-10.example", text)
-        self.assertIn("另有 **2** 条，详见 sources exception Issue / source-audit.json。", text)
+        self.assertIn("另有 **2** 条，详见异常 Issue 或 source-audit.json。", text)
 
 
 class ResilienceTests(unittest.TestCase):
@@ -365,7 +365,7 @@ class NotificationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             report = notify_review.load_report(Path(td) / "missing.json", failed=True)
         self.assertEqual(report["review_required"], [{"reason": "workflow-failed"}])
-        self.assertIn("本次工作流失败", notify_review.issue_body("sync", report))
+        self.assertIn("工作流失败", notify_review.issue_body("sync", report))
 
     def test_sources_issue_preserves_section_and_evidence(self):
         report = {"review_required": [{
@@ -384,7 +384,7 @@ class NotificationTests(unittest.TestCase):
             "block_reason_label": "来源没有被当前 catalog 授权",
         }]}
         body = notify_review.issue_body("sources", report)
-        self.assertIn("Sukka 二级雷达只读运行", body)
+        self.assertIn("Sukka 补缺检查", body)
         self.assertIn('"section": "Claude"', body)
         self.assertIn('"rule": "DOMAIN,new.example"', body)
         self.assertIn('"impact": [', body)

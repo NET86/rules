@@ -11,8 +11,8 @@ from sync import fetch
 
 SUMMARY_LIMIT = 10
 REVIEW_REASON_LABELS = {
-    "uncovered-secondary-domain": "Sukka 有、当前生产未覆盖；证据仅辅助复核，不会自动扩大生产边界",
-    "secondary-radar-unavailable": "二级雷达来源不可用或结构变化",
+    "uncovered-secondary-domain": "Sukka 中的未覆盖规则；仅供复核，不自动加入订阅",
+    "secondary-radar-unavailable": "补缺来源不可用或结构变化",
 }
 SECTION_VENDOR = {
     "OpenAI / ChatGPT": "openai",
@@ -35,8 +35,8 @@ BLOCK_REASON_LABELS = {
     "unreviewed-surge-regex-adapter": "新正则缺少已审核的 Surge 适配",
     "unsupported-or-broad-matching": "匹配类型不支持自动进入生产",
     "unsupported-tier": "规则层级不受当前生产模型支持",
-    "radar-read-only": "主上游已授权；Sukka 雷达仍只读，等待主同步收敛",
-    "unmapped-sukka-section": "Sukka section 尚未映射到本地厂商",
+    "radar-read-only": "主来源已收录，等待规则同步",
+    "unmapped-sukka-section": "Sukka 区段尚未对应到本地厂商",
 }
 
 
@@ -280,7 +280,7 @@ def render_actions_summary(report, limit=SUMMARY_LIMIT):
     review_required = report.get("review_required", [])
 
     lines = [
-        "## Sukka 二级雷达",
+        "## Sukka 补缺检查",
         "",
         "### 扫描结果",
         f"- 有效规则：**{active}**",
@@ -295,7 +295,7 @@ def render_actions_summary(report, limit=SUMMARY_LIMIT):
             lines.append("- " + format_review_item(row))
         extra = len(review_required) - limit
         if extra > 0:
-            lines.append(f"- 另有 **{extra}** 条，详见 sources exception Issue / source-audit.json。")
+            lines.append(f"- 另有 **{extra}** 条，详见异常 Issue 或 source-audit.json。")
     return "\n".join(lines) + "\n"
 
 
@@ -307,7 +307,7 @@ def append_actions_summary(report):
         text = render_actions_summary(report)
     except Exception as exc:
         text = (
-            "## Sukka 二级雷达\n\n"
+            "## Sukka 补缺检查\n\n"
             f"- 摘要生成失败：`{type(exc).__name__}`\n"
         )
     with Path(path).open("a", encoding="utf-8", newline="\n") as handle:

@@ -18,11 +18,11 @@ def issue_body(channel, report):
     rows = sorted({json.dumps({k: v for k, v in row.items() if k in visible}, ensure_ascii=False, sort_keys=True) for row in report.get("review_required", [])})
     failed = any(row.get("reason") == "workflow-failed" for row in report.get("review_required", []))
     if failed:
-        status = "本次工作流失败，请查看 Actions 日志；不要把上一份成功报告当成本次成功。未通过校验的规则不会发布。"
+        status = "工作流失败，请查看 Actions 日志。未通过校验的规则不会发布。"
     elif channel == "sources":
-        status = "Sukka 二级雷达只读运行；以下缺口仅供复核，不会自动进入生产规则。"
+        status = "Sukka 补缺检查：以下候选需审核后补入。"
     else:
-        status = "自动更新继续运行；以下例外已隔离或保留上一可用版本，不会直接扩大核心规则。"
+        status = "自动更新继续运行；以下项目需要复核，异常来源沿用有效基线。"
     return marker + "\n\n" + status + "\n\n```json\n" + json.dumps([json.loads(row) for row in rows], ensure_ascii=False, indent=2) + "\n```\n\n[Actions](https://github.com/NET86/rules/actions) · [维护说明](https://github.com/NET86/rules/blob/main/docs/MAINTAINING.md)。状态不变不重复评论；例外消失后自动关闭。\n"
 
 

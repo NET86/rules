@@ -1,9 +1,9 @@
 # NET86/rules | ai-daily
-# 日常 AI 核心域名 + OpenAI 官方语音 IP。
-# Generated; do not edit. Manifest: https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
+# 日常 AI 核心域名，含 OpenAI 官方语音 IP。
+# 自动生成，请勿手改。清单：https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
 # SPDX-License-Identifier: AGPL-3.0-only
-# Notices: https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
-# Note: reviewed wildcard adapter differs from upstream regex; see docs/COMPATIBILITY.md
+# 第三方声明：https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
+# 注意：此通配符比上游正则更宽，详见 docs/COMPATIBILITY.md
 
 # OpenAI / ChatGPT / Sora / Prism
 DOMAIN,cdn.openaimerge.com
@@ -74,7 +74,7 @@ DOMAIN-SUFFIX,notebooklm.google.com
 DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com
 DOMAIN-SUFFIX,robinfrontend-pa.googleapis.com
 
-# OpenAI / ChatGPT / Sora / Prism Voice
+# OpenAI / ChatGPT / Sora / Prism 语音
 IP-CIDR,102.37.57.54/32,no-resolve
 IP-CIDR,13.71.25.29/32,no-resolve
 IP-CIDR,135.220.40.201/32,no-resolve
