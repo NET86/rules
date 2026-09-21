@@ -18,6 +18,7 @@ import urllib.request
 from pathlib import Path
 
 from rules import ROOT, Rule, read_json, json_text
+from verify_rules import load_contracts
 
 
 class CaptureProxy(socketserver.BaseRequestHandler):
@@ -229,7 +230,7 @@ def main():
                 contract_spec = manifest.get("semantic_contract")
                 if not contract_spec or contract_spec.get("path") != "sources/semantic-contracts.json":
                     raise RuntimeError("Manifest missing semantic contract")
-                contracts = read_json(root / contract_spec["path"])
+                contracts = load_contracts(root, manifest)
                 contract = contracts.get("profiles", {}).get(profile_name)
                 if not contract:
                     raise RuntimeError(f"Missing semantic contract profile: {profile_name}")

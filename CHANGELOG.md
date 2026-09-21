@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-21 — Discovery and release reliability
+
+- Add Google's reviewed `notebook.google` entry and independent positive/negative routing cases.
+- Keep mixed-source product candidates visible through the existing review report, without new persistent state or automatic scope expansion.
+- Reject empty semantic contracts and known shared/public boundaries; retain verified Voice IPs when fetched coverage changes abruptly.
+- Preserve stable/LKG for evidence-only updates and validate remote bytes against the actual published revision.
+- Let optional official-document transport installation degrade without stopping production updates; group monthly Actions/Python dependency PRs.
+- Reduce example client refresh to one hour; provide a small Cloudflare cron backup using existing GitHub run history, with no new alerts or database.
+
 ## 2026-09-18 — Dedicated-source automation
 
 - Removed the duplicate `approvals.json` layer: `catalog.sources`, `catalog.select` and `patches` are now the production authority model.

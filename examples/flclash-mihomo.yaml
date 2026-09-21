@@ -16,21 +16,21 @@ rule-providers:
     format: yaml
     url: https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/openai.yaml
     path: ./rule-providers/net86-openai.yaml
-    interval: 21600
+    interval: 3600
   net86-ai-core:
     type: http
     behavior: classical
     format: yaml
     url: https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml
     path: ./rule-providers/net86-ai-core.yaml
-    interval: 21600
+    interval: 3600
   net86-openai-voice:
     type: http
     behavior: classical
     format: yaml
     url: https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/openai-voice-ip.yaml
     path: ./rule-providers/net86-openai-voice.yaml
-    interval: 21600
+    interval: 3600
 
 rules:
   # Insert before your existing Google/Microsoft/GitHub/Global/DIRECT/MATCH rules.

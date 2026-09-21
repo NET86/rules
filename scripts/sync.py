@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import ipaddress
 import re
 import shutil
 import subprocess
@@ -16,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from automation import effective_entries, reconcile
-from intake import analyze_official, refresh_official
+from intake import analyze_official, analyze_selected_sources, refresh_official
 from rules import (
     ROOT,
     collect,
@@ -51,10 +52,44 @@ def fetch(url: str, limit=4_000_000, attempts=3) -> bytes:
     raise ValueError("No download attempts configured")
 
 
+def voice_change_problem(before, after):
+    """Flag large semantic changes, allowing small updates and CIDR consolidation."""
+    old = [ipaddress.ip_network(rule.value) for rule in voice_rules(before)]
+    new = [ipaddress.ip_network(rule.value) for rule in voice_rules(after)]
+    # Compare covered ranges, so equivalent splits/merges do not require review.
+    merged_new = [net for version in (4, 6) for net in ipaddress.collapse_addresses(
+        net for net in new if net.version == version
+    )]
+    missing = [net for net in old if not any(
+        net.version == current.version and net.subnet_of(current) for current in merged_new
+    )]
+    if len(missing) > max(3, len(old) // 2):
+        return f"Voice lost coverage for {len(missing)}/{len(old)} previous ranges"
+    for version in (4, 6):
+        old_family = [net for net in old if net.version == version]
+        new_family = [net for net in new if net.version == version]
+        if new_family and not old_family:
+            return f"Voice introduced address family IPv{version}"
+        old_size = sum(net.num_addresses for net in ipaddress.collapse_addresses(old_family))
+        new_size = sum(net.num_addresses for net in ipaddress.collapse_addresses(new_family))
+        if new_size * 2 < old_size:
+            return f"Voice IPv{version} address coverage shrank from {old_size} to {new_size}"
+        if new_size > max(old_size * 4, old_size + 256):
+            return f"Voice IPv{version} address coverage expanded from {old_size} to {new_size}"
+    return None
+
+
 def fetch_voice(root: Path):
     try:
         payload = fetch(VOICE_URL)
         voice_rules(json.loads(payload))
+        snapshot = root / "sources/snapshot"
+        verify_snapshot(snapshot)
+        previous = (snapshot / "openai-voice.json").read_bytes()
+        problem = voice_change_problem(json.loads(previous), json.loads(payload))
+        if problem:
+            print(f"WARNING: {problem}; keeping verified last-good voice IPs pending review")
+            return previous, "retained-suspicious-change"
         return payload, "fresh"
     except (OSError, ValueError) as exc:
         snapshot = root / "sources/snapshot"
@@ -211,13 +246,15 @@ def main():
                 "official_facts": official_fetch_report["sources"],
             }
             report["official_radar"] = official_radar
+            report["selection_radar"] = analyze_selected_sources(ROOT, snapshot / "v2fly", effective)
             if voice_status != "fresh":
                 report["review_required"].append({
-                    "reason": "official-voice-fetch-unavailable", "source": VOICE_URL,
-                    "action": "Verified last-good IPs retained; domain updates continue; auto-clears when fetch recovers",
+                    "reason": "official-voice-suspicious-change" if voice_status == "retained-suspicious-change" else "official-voice-fetch-unavailable",
+                    "source": VOICE_URL,
+                    "action": "Verified last-good IPs retained; domain updates continue; clears on a normal response or a reviewed --voice-file baseline",
                 })
             report["review_required"].extend(
-                official_fetch_report["review_required"] + v2fly_errors + selection_issues + official_radar["review_required"]
+                official_fetch_report["review_required"] + v2fly_errors + selection_issues + official_radar["review_required"] + report["selection_radar"]
             )
             (work / "sync-report.json").write_text(json_text(report), encoding="utf-8", newline="\n")
 
@@ -225,7 +262,7 @@ def main():
             commit_stage(ROOT, snapshot, files)
             # Persist the latest successfully parsed official fact baseline. This file
             # has no run timestamp, so unchanged facts produce no commit noise. Stable
-            # promotion still depends on the generated manifest, not radar-only state.
+            # promotion depends on subscription content/contracts, not radar-only state.
             (ROOT / "sources/official-state.json").write_text(json_text(official_state), encoding="utf-8", newline="\n")
             (ROOT / "sources/automation-state.json").write_text(json_text(state), encoding="utf-8", newline="\n")
             print(f"OK: synchronized {len(files)} artifacts after scope, schema and integrity checks")

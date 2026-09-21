@@ -9,7 +9,7 @@ import re
 import urllib.error
 from html.parser import HTMLParser
 
-from rules import ROOT, Rule, read_json, json_text, sha256
+from rules import ROOT, Rule, read_json, json_text, sha256, parse_v2fly
 
 DOMAIN_TOKEN = re.compile(r"(?<![\w@.-])(?:\*\.)*(?:\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}(?![\w.-])")
 FILE_SUFFIXES = {"json", "yaml", "yml", "toml", "md", "txt", "py", "js", "ts", "pem", "crt", "key", "log", "conf", "sh"}
@@ -240,6 +240,42 @@ def analyze_official(root, state, production_entries):
                     "action": "Evidence only: review product relevance and add a narrow patch only if warranted",
                 })
     return report
+
+
+def analyze_selected_sources(root, data, production_entries):
+    """Read-only product-section radar; candidates persist by rescanning current facts."""
+    watched = read_json(root / "sources/watch.json").get("primary_sections", [])
+    patches = read_json(root / "sources/patches.json")
+    catalog = read_json(root / "sources/catalog.json")
+    vendors = {vendor["id"]: vendor for vendor in catalog["vendors"]}
+    pending = []
+    for watch in watched:
+        vendor, source = watch["vendor"], watch["source"]
+        if source not in vendors[vendor].get("select", {}):
+            raise ValueError(f"Selection radar must reference a mixed selected source: {vendor}/{source}")
+        wanted, seen, found = set(watch["sections"]), set(), set()
+        section = None
+        for line in (data / source).read_text(encoding="utf-8").splitlines():
+            if line.startswith("# ") and not line.startswith("# https://"):
+                section = line[2:].strip()
+                if section in wanted:
+                    seen.add(section)
+            if section in wanted:
+                for rule, attrs in parse_v2fly(line):
+                    if isinstance(rule, Rule) and "@ads" not in attrs:
+                        found.add((section, rule))
+        for section, rule in sorted(found):
+            if rule.text in patches.get("drop", {}).get(vendor, {}):
+                continue
+            if not covered_by_vendor(rule, vendor, production_entries):
+                pending.append({"vendor": vendor, "source": f"v2fly:data/{source}",
+                                "section": section, "rule": rule.text,
+                                "reason": "selected-product-uncovered-domain"})
+        if seen != wanted:
+            pending.append({"vendor": vendor, "source": f"v2fly:data/{source}",
+                            "section": ", ".join(sorted(wanted - seen)),
+                            "reason": "selected-product-section-drift"})
+    return pending
 
 
 def main():

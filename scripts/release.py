@@ -30,6 +30,9 @@ REVIEW_REASON_LABELS = {
     "official-uncovered-domain": "官方资料发现未覆盖域名，需要复核",
     "official-source-unavailable-or-parser-drift": "官方来源不可用或解析结构变化",
     "official-voice-fetch-unavailable": "OpenAI Voice 官方源不可用，沿用上一有效版本",
+    "official-voice-suspicious-change": "OpenAI Voice 范围大幅变化，沿用上一有效版本等待核验",
+    "selected-product-uncovered-domain": "已维护产品所在的混合来源发现未覆盖规则，需要核验",
+    "selected-product-section-drift": "混合来源产品区段变化，需要检查发现范围",
     "v2fly-unavailable-or-license-changed": "V2Fly 不可用或许可证变化，沿用上一有效快照",
     "workflow-failed": "工作流失败",
 }
@@ -137,8 +140,8 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
         "### 发布结果",
         f"- 结果：**{release_report.get('result', 'UNKNOWN')}**",
     ])
-    if release_report.get("stable_noop") == "UNCHANGED_GENERATED_MANIFEST":
-        lines.append("- stable：生产 manifest 无变化，未轮换")
+    if release_report.get("stable_noop") == "UNCHANGED_RELEASE_CONTENT":
+        lines.append("- stable：订阅产物和产品契约无变化，未轮换")
     elif release_report.get("result") == "PASS":
         lines.append("- stable：已更新并通过远端验证")
 
@@ -193,8 +196,13 @@ class Publisher:
         return self.git(*args, input=message + "\n")
 
     def same_release(self, candidate, stable):
-        """A stable publication is meaningful only when its generated manifest changes."""
-        return self.git("show", f"{candidate}:rules/manifest.json") == self.git("show", f"{stable}:rules/manifest.json")
+        """Keep evidence-only snapshot/observation changes on main."""
+        fields = ("schema", "bundles", "profiles", "profile_features", "semantic_contract",
+                  "conversion_warnings", "license", "formats")
+        def surface(revision):
+            manifest = json.loads(self.git("show", f"{revision}:rules/manifest.json"))
+            return {field: manifest[field] for field in fields}
+        return surface(candidate) == surface(stable)
 
     def require_refs(self, expected):
         for branch, revision in expected.items():
@@ -241,7 +249,7 @@ class Publisher:
             # diagnostic state even if stable promotion later fails.
             if old_main != candidate:
                 self.git("push", self.remote, f"{candidate}:refs/heads/main")
-            validate_published(candidate, "candidate")
+            validate_published(candidate, "candidate", candidate)
             report["candidate_remote_validation"] = "PASS"
             self.require_refs({"main": candidate, "stable": old_stable, "last-known-good": old_lkg})
             if not self.same_release(candidate, old_stable):
@@ -255,9 +263,9 @@ class Publisher:
                     f"{promoted}:refs/heads/stable",
                 )
             else:
-                report["stable_noop"] = "UNCHANGED_GENERATED_MANIFEST"
+                report["stable_noop"] = "UNCHANGED_RELEASE_CONTENT"
             report["stable_revision"] = promoted
-            validate_published("stable", "stable")
+            validate_published("stable", "stable", promoted)
             self.require_refs({"stable": promoted})
             report.update(result="PASS", stable_remote_validation="PASS")
             return promoted
@@ -281,7 +289,7 @@ class Publisher:
                         report["rollback_conflicts"] = ["stable"]
                     report["stable_after_failure"] = self.remote_ref("stable")
                     if report["rollback"] != "SKIPPED_CONCURRENT_STABLE_UPDATE":
-                        validate_published("stable", "rollback")
+                        validate_published("stable", "rollback", old_stable)
                         report["rollback_remote_validation"] = "PASS"
                 except Exception as rollback_error:
                     report["rollback"] = "RESTORED_VERIFICATION_PENDING" if report.get("rollback_refs_restored") else "FAILED_REMOTE_UNAVAILABLE"
@@ -396,14 +404,10 @@ def main():
         if publisher.git("status", "--porcelain"):
             raise ValueError("Unexpected uncommitted changes outside automatic publication scope")
         candidate = publisher.git("rev-parse", "HEAD")
-        expected = json.loads((ROOT / "rules/manifest.json").read_text(encoding="utf-8"))
-
-        def postvalidate(revision, label):
+        def postvalidate(revision, label, expected_revision):
             with tempfile.TemporaryDirectory(prefix="published-", dir=work) as td:
                 target = Path(td)
-                manifest = expected if label != "rollback" else json.loads(
-                    publisher.git("show", f"{report['previous_stable']}:rules/manifest.json")
-                )
+                manifest = json.loads(publisher.git("show", f"{expected_revision}:rules/manifest.json"))
                 count = downloaded_rules(target, revision, manifest)
                 runtime_gate(target, binaries)
                 report[label + "_artifact_count"] = count
