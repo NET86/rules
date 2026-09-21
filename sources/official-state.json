@@ -81,6 +81,31 @@
       "url": "https://cursor.com/docs/enterprise/network-configuration",
       "vendor": "cursor"
     },
+    "github-copilot-network": {
+      "document_sha256": "56edc0b38695a6cbf802cce890c2b527ae5f54fff12d7700c5668ed245605305",
+      "extractor": 1,
+      "rules": [
+        "DOMAIN,api.github.com",
+        "DOMAIN,avatars.githubusercontent.com",
+        "DOMAIN,collector.github.com",
+        "DOMAIN,copilot-proxy.githubusercontent.com",
+        "DOMAIN,copilot-reports.github.com",
+        "DOMAIN,copilot-telemetry.githubusercontent.com",
+        "DOMAIN,default.exp-tas.com",
+        "DOMAIN,github.com",
+        "DOMAIN,github.githubassets.com",
+        "DOMAIN,origin-tracker.githubusercontent.com",
+        "DOMAIN-SUFFIX,business.githubcopilot.com",
+        "DOMAIN-SUFFIX,enterprise.githubcopilot.com",
+        "DOMAIN-SUFFIX,github.com",
+        "DOMAIN-SUFFIX,githubassets.com",
+        "DOMAIN-SUFFIX,githubcopilot.com",
+        "DOMAIN-SUFFIX,githubusercontent.com",
+        "DOMAIN-SUFFIX,individual.githubcopilot.com"
+      ],
+      "url": "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference",
+      "vendor": "github-copilot"
+    },
     "google-codeassist": {
       "document_sha256": "05bef62065739a3c05ee27c5048d5e4b7f3227d871c02553db2573ebc27f7219",
       "extractor": 1,

@@ -28,7 +28,9 @@ v2fly 的目标是 geosite 域名分类，不负责决定某域名应代理、�
 
 ## 官方事实 radar
 
-`sources/official.json` 当前监测 OpenAI、Anthropic/Claude Code、Cursor、Google Code Assist / Generative Language 等指定网络文档或结构化 API。提取结果只进入运行报告与 gap 分析，**不与 v2fly 自动 union**。
+`sources/official.json` 当前监测 OpenAI、Anthropic/Claude Code、Cursor、Google Code Assist / Generative Language、GitHub Copilot 等指定网络文档或结构化 API。提取结果只进入运行报告与 gap 分析，**不与 v2fly 自动 union**。
+
+GitHub Copilot 只读取官方 allowlist 的 `Specific required domains` 章节，沿用每 6 小时同步中的官方只读监测；不读取编辑器、语音模型下载、GHE 或云端 agent 的通用网络清单。共享 GitHub 根域、认证资源、遥测、实验及企业用量报告按明确用途排除；不会整体排除 `githubusercontent.com` 下的精确主机，以免漏掉专属端点。提取仅支持完整主机和前导 `*.` / `.` 后缀，主机中间或末尾的通配符不转成父域。新候选只进入现有待审报告，不新增工作流、依赖或通知渠道。
 
 这样处理的原因是官方网络清单常混合：
 

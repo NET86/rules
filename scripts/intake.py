@@ -11,7 +11,8 @@ from html.parser import HTMLParser
 
 from rules import ROOT, Rule, read_json, json_text, sha256, parse_v2fly
 
-DOMAIN_TOKEN = re.compile(r"(?<![\w@.-])(?:\*\.)*(?:\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}(?![\w.-])")
+# Partial-label wildcards must not be truncated into broader parent domains.
+DOMAIN_TOKEN = re.compile(r"(?<![\w@.*-])(?:\*\.)?(?:\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}(?![\w.*-])")
 FILE_SUFFIXES = {"json", "yaml", "yml", "toml", "md", "txt", "py", "js", "ts", "pem", "crt", "key", "log", "conf", "sh"}
 
 
