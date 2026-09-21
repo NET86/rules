@@ -45,6 +45,77 @@ class IntakeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             intake.extract_document(source, json.dumps(doc).encode())
 
+    def test_partial_host_wildcards_never_become_parent_domains(self):
+        source = {"id": "fixture", "url": "https://official.test", "vendor": "fixture",
+                  "format": "html", "sections": ["Network"],
+                  "required_hosts": ["githubcopilot.com"], "min_hosts": 1}
+        page = b"""<h2>Network</h2><p>https://*.githubcopilot.com/*
+            https://copilot-reports-*.b01.azurefd.net
+            https://usagereports*.blob.core.windows.net
+            https://api.*.example.com https://api.example.net*</p>"""
+        self.assertEqual(intake.extract_document(source, page)["rules"],
+                         ["DOMAIN-SUFFIX,githubcopilot.com"])
+
+    def test_copilot_radar_filters_shared_services_without_hiding_new_exact_hosts(self):
+        source = next(s for s in rules.read_json(rules.ROOT / "sources/official.json")["sources"]
+                      if s["id"] == "github-copilot-network")
+        page = b"""<h2>Copilot on GitHub.com</h2><p>unselected.github.com</p>
+            <h3>Specific required domains</h3><table><tr><td>
+            https://*.githubcopilot.com/* https://*.business.githubcopilot.com
+            https://copilot-proxy.githubusercontent.com
+            https://origin-tracker.githubusercontent.com
+            https://new-copilot-service.githubusercontent.com
+            https://api.github.com/user https://github.com/login/* *.github.com
+            https://avatars.githubusercontent.com *.githubusercontent.com
+            https://github.githubassets.com *.githubassets.com
+            https://collector.github.com https://copilot-telemetry.githubusercontent.com
+            https://default.exp-tas.com https://copilot-reports.github.com
+            https://copilot-reports-*.b01.azurefd.net
+            https://usagereports*.blob.core.windows.net
+            </td></tr></table>
+            <h2>Copilot on GHE.com</h2><p>*.SUBDOMAIN.ghe.com</p>
+            <h2>Editor-specific requirements</h2><p>vscode.dev</p>
+            <h2>Copilot voice features</h2><p>*.api.azureml.ms</p>
+            <h2>Copilot cloud agent recommended allowlist</h2>
+            <h3>Container Registries</h3><p>*.docker.io</p>"""
+        doc = intake.extract_document(source, page)
+        production = {
+            ("github-copilot", "core", rules.Rule("DOMAIN-SUFFIX", "githubcopilot.com")): {"v2fly"},
+            ("github-copilot", "core", rules.Rule("DOMAIN", "copilot-proxy.githubusercontent.com")): {"v2fly"},
+        }
+        before = copy.deepcopy(production)
+        report = intake.analyze_official(rules.ROOT, {"documents": {source["id"]: doc}}, production)
+        self.assertEqual(production, before)
+        self.assertEqual({row["rule"] for row in report["review_required"]}, {
+            "DOMAIN,origin-tracker.githubusercontent.com",
+            "DOMAIN,new-copilot-service.githubusercontent.com",
+        })
+        self.assertEqual({row["rule"] for row in report["decisions"] if row["action"] == "already-covered"}, {
+            "DOMAIN-SUFFIX,githubcopilot.com", "DOMAIN-SUFFIX,business.githubcopilot.com",
+            "DOMAIN,copilot-proxy.githubusercontent.com",
+        })
+        for outside in ("unselected.github.com", "subdomain.ghe.com", "vscode.dev", "api.azureml.ms",
+                        "docker.io", "b01.azurefd.net", "blob.core.windows.net"):
+            self.assertFalse(any(rules.Rule.from_text(text).value == outside for text in doc["rules"]), outside)
+
+    def test_copilot_document_drift_retains_last_good_facts(self):
+        source = next(s for s in rules.read_json(rules.ROOT / "sources/official.json")["sources"]
+                      if s["id"] == "github-copilot-network")
+        baseline = rules.read_json(rules.ROOT / "sources/official-state.json")["documents"][source["id"]]
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "sources").mkdir()
+            before = {"schema": 1, "documents": {source["id"]: baseline}}
+            (root / "sources/official.json").write_text(json.dumps({"sources": [source]}))
+            (root / "sources/official-state.json").write_text(json.dumps(before))
+            for payload in (b"<h3>Renamed requirements</h3><p>githubcopilot.com</p>",
+                            b"<h3>Specific required domains</h3><p>Access denied</p>"):
+                with self.subTest(payload=payload):
+                    after, report = intake.refresh_official(root, lambda url: payload)
+                    self.assertEqual(after, before)
+                    self.assertEqual(report["sources"][source["id"]]["status"], "retained-last-good")
+                    self.assertEqual(report["review_required"][0]["source_id"], source["id"])
+
     def test_official_analysis_never_mutates_production_entries(self):
         production = {
             ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "example.com")): {"v2fly"},
@@ -81,7 +152,8 @@ class IntakeTests(unittest.TestCase):
             raise OSError("offline")
         after, report = intake.refresh_official(rules.ROOT, fail)
         self.assertEqual(before, after)
-        self.assertEqual(len(report["review_required"]), 6)
+        expected = {s["id"] for s in rules.read_json(rules.ROOT / "sources/official.json")["sources"]}
+        self.assertEqual({row["source_id"] for row in report["review_required"]}, expected)
         self.assertTrue(all(row["error_detail"] == "offline" for row in report["review_required"]))
 
     def test_official_wording_only_change_does_not_mutate_fact_baseline(self):

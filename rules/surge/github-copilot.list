@@ -6,4 +6,5 @@
 DOMAIN,copilot-proxy.githubusercontent.com
 DOMAIN,copilot-workspace.githubnext.com
 DOMAIN,copilotprodattachments.blob.core.windows.net
+DOMAIN,origin-tracker.githubusercontent.com
 DOMAIN-SUFFIX,githubcopilot.com
