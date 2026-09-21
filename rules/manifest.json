@@ -19,14 +19,14 @@
     },
     "ai-core": {
       "mihomo": {
-        "count": 82,
+        "count": 83,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "958051598ad7e773dd751ff4e274feb2bdcfe6a81702e00b391addc0fdaef0f3"
+        "sha256": "0170faff857c5dd71176a2f66757d880f474ae295888de2804ddef30fcd56274"
       },
       "surge": {
-        "count": 82,
+        "count": 83,
         "path": "rules/surge/ai-core.list",
-        "sha256": "45c709709043ea88c7e216a1c8b94b89bdca18e81d1b05f3e92fe947dad518e0"
+        "sha256": "c4f04b3ca4ca09483ddb3479ef1065e07eafe98cb220998a445bfe69ba27849a"
       }
     },
     "ai-daily": {
@@ -115,14 +115,14 @@
     },
     "github-copilot": {
       "mihomo": {
-        "count": 4,
+        "count": 5,
         "path": "rules/mihomo/github-copilot.yaml",
-        "sha256": "4b7dde6caa7bbf1507d93725a2c43f46ff707a1a87afa6dc23c9cd02f25709e8"
+        "sha256": "68fd7615402dfb8ab8781d2541787da559b3066ce81b0cdffa9d2b995f454f1f"
       },
       "surge": {
-        "count": 4,
+        "count": 5,
         "path": "rules/surge/github-copilot.list",
-        "sha256": "5eb11f60a787ba47dea8bf7b13b9e8e4b97c5de556318eef0988a135bef2af5f"
+        "sha256": "6fd4d16695e89f7e242a134c2d51e03ecacd373ec5c7db4c9abd0a8cdeda3760"
       }
     },
     "google-ai": {
@@ -605,6 +605,14 @@
       "rule": "DOMAIN,copilotprodattachments.blob.core.windows.net",
       "sources": [
         "v2fly:data/github-copilot"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,origin-tracker.githubusercontent.com",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference Official Copilot endpoint for public-code matching and code references, checked 2026-09-21; exact host only, not the shared githubusercontent.com namespace"
       ],
       "tier": "core",
       "vendor": "github-copilot"
@@ -1333,7 +1341,7 @@
   "schema": 2,
   "semantic_contract": {
     "path": "sources/semantic-contracts.json",
-    "sha256": "94dd07a13c5480bfced82d31f76842aabf8dbca84d0bc82449ba5798e8e00448"
+    "sha256": "c8805b8da86cd2aa72a5a6ee6a141d24b3fa8134a41432462f2ce55ae2e7a8ba"
   },
   "upstream": {
     "sha256": {
