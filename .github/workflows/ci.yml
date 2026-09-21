@@ -22,9 +22,13 @@ jobs:
         with:
           python-version: '3.12'
       - run: python scripts/check_git_identity.py
+      - name: Validate dependency update wheels and hashes
+        if: github.actor == 'dependabot[bot]'
+        run: 'python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt'
       - run: python -m unittest discover -s tests -v
       - run: python scripts/rules.py --check
       - run: python scripts/verify_rules.py
+      - run: node --test infra/scheduler/worker.test.mjs
       - run: python scripts/download_mihomo.py
       - run: python scripts/verify_mihomo.py
       - run: python scripts/verify_mihomo.py --profile split

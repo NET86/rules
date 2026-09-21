@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4.135.0/config-schema.json",
+  "name": "net86-rules-scheduler",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-21",
+  "workers_dev": false,
+  "preview_urls": false,
+  "secrets": { "required": ["GITHUB_TOKEN"] },
+  "triggers": { "crons": ["49 */6 * * *"] },
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}

@@ -3,7 +3,7 @@
   "vendors": {
     "openai": {
       "must_match": ["api.openai.com", "chatgpt.com", "files.oaiusercontent.com", "openaiassets.blob.core.windows.net"],
-      "must_not_match": ["api.stripe.com", "storage.googleapis.com", "example.livekit.cloud"]
+      "must_not_match": ["api.stripe.com", "storage.googleapis.com", "example.livekit.cloud", "unrelated.s3.us-east-1.amazonaws.com", "unrelated.co.uk"]
     },
     "claude": {
       "must_match": ["api.anthropic.com", "claude.ai", "bridge.claudeusercontent.com"],
@@ -18,7 +18,7 @@
       "must_not_match": ["other-bucket.s3.amazonaws.com"]
     },
     "google-ai": {
-      "must_match": ["gemini.google.com", "generativelanguage.googleapis.com", "aistudio.google.com", "notebooklm.google.com"],
+      "must_match": ["gemini.google.com", "generativelanguage.googleapis.com", "aistudio.google.com", "notebooklm.google.com", "notebook.google"],
       "must_not_match": ["www.google.com", "storage.googleapis.com", "cloudaicompanion.googleapis.com", "antigravity.google.com"]
     },
     "cursor": {
@@ -29,15 +29,15 @@
   "profiles": {
     "ai-daily": {
       "must_match": ["api.openai.com", "gemini.google.com", "claude.ai", "grok.com", "perplexity.ai"],
-      "must_not_match": ["openrouter.ai", "groq.com", "huggingface.co", "storage.googleapis.com", "www.google.com"]
+      "must_not_match": ["openrouter.ai", "groq.com", "huggingface.co", "storage.googleapis.com", "www.google.com", "unrelated.s3.us-east-1.amazonaws.com", "unrelated.co.uk"]
     },
     "ai-core": {
       "must_match": ["api.openai.com", "gemini.google.com", "claude.ai", "grok.com", "perplexity.ai", "copilot.microsoft.com", "githubcopilot.com", "api2.cursor.sh", "mistral.ai", "poe.com", "midjourney.com", "runway.com", "suno.com", "elevenlabs.com"],
-      "must_not_match": ["openrouter.ai", "groq.com", "huggingface.co", "meta.ai", "windsurf.com", "dify.ai", "www.microsoft.com"]
+      "must_not_match": ["openrouter.ai", "groq.com", "huggingface.co", "meta.ai", "windsurf.com", "dify.ai", "www.microsoft.com", "unrelated.s3.us-east-1.amazonaws.com", "unrelated.co.uk"]
     },
     "ai-cn": {
       "must_match": ["deepseek.com", "qwen.ai", "kimi.com", "doubao.com", "bigmodel.cn", "minimaxi.com", "klingai.com", "yiyan.baidu.com", "yuanbao.tencent.com", "xinghuo.xfyun.cn"],
-      "must_not_match": ["www.baidu.com", "cloud.tencent.com", "www.xfyun.cn"]
+      "must_not_match": ["www.baidu.com", "cloud.tencent.com", "www.xfyun.cn", "unrelated.s3.us-east-1.amazonaws.com", "unrelated.co.uk"]
     }
   }
 }

@@ -75,7 +75,7 @@ def check_cases(label, rules, contract):
             raise ValueError(f"Semantic contract false positive: {label} matched {host}")
 
 
-def semantic_contract(root, manifest, parsed_bundles):
+def load_contracts(root, manifest):
     spec = manifest.get("semantic_contract")
     if not spec:
         raise ValueError("Missing required manifest profile/semantic contract")
@@ -86,6 +86,33 @@ def semantic_contract(root, manifest, parsed_bundles):
     if sha256(data) != spec["sha256"]:
         raise ValueError("Semantic contract digest mismatch")
     contracts = json.loads(data)
+    if not isinstance(contracts, dict):
+        raise ValueError("Invalid semantic contract structure")
+    profiles = contracts.get("profiles", {})
+    vendors = contracts.get("vendors", {})
+    if contracts.get("schema") != 1 or not isinstance(profiles, dict) or not isinstance(vendors, dict):
+        raise ValueError("Invalid semantic contract structure")
+    if set(profiles) != {"ai-daily", "ai-core", "ai-cn"}:
+        raise ValueError("Missing required semantic contract profiles")
+    daily = manifest["profiles"]["ai-daily"]["members"]
+    if not vendors or not set(daily).issubset(vendors):
+        raise ValueError("Missing required daily vendor semantic contracts")
+    for label, contract in list(vendors.items()) + list(profiles.items()):
+        if not isinstance(contract, dict):
+            raise ValueError(f"Invalid semantic contract: {label}")
+        for field in ("must_match", "must_not_match"):
+            hosts = contract.get(field)
+            if not isinstance(hosts, list) or not hosts or any(
+                not isinstance(host, str) or not HOST.fullmatch(host) for host in hosts
+            ) or len(hosts) != len(set(hosts)):
+                raise ValueError(f"Empty/invalid semantic cases: {label}/{field}")
+        if set(contract["must_match"]) & set(contract["must_not_match"]):
+            raise ValueError(f"Contradictory semantic cases: {label}")
+    return contracts
+
+
+def semantic_contract(root, manifest, parsed_bundles):
+    contracts = load_contracts(root, manifest)
 
     # Contracts must exercise the actual standalone vendor artifacts, not the
     # generator's provenance declaration. This keeps the semantic oracle
@@ -175,6 +202,11 @@ def verify(root, surge_cli=None):
         "artifact_count": checked,
         "profile_equivalence": composition,
         "semantic_contract": semantic,
+        "semantic_case_count": sum(
+            len(contract[field])
+            for name, group in load_contracts(root, manifest).items() if name in {"vendors", "profiles"}
+            for contract in group.values() for field in ("must_match", "must_not_match")
+        ),
         "surge_native": "PASS" if surge_cli else "NOT_RUN",
         "scope": "Portable syntax/hash/count/cross-format, exact profile composition and independent semantic-contract gate; not AI account connectivity",
     }

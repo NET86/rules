@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from rules import FORBIDDEN_CORE, Rule
+from rules import Rule, forbidden_core
 
 
 def key_of(row):
@@ -44,7 +44,7 @@ def scope_problem(key, sources, catalog, patches):
         return "unsupported-tier"
     if rule.kind not in {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-REGEX"}:
         return "unsupported-or-broad-matching"
-    if rule.value in FORBIDDEN_CORE:
+    if forbidden_core(rule.value):
         return "shared-platform-forbidden-in-core"
     if rule.text in patches.get("drop", {}).get(vendor, {}):
         return "locally-dropped-rule"

@@ -243,7 +243,7 @@ class ReleaseSummaryTests(unittest.TestCase):
             manifest,
             manifest,
             {"review_required": review_required, "quarantined_count": 12, "retained_count": 0},
-            {"result": "PASS", "stable_noop": "UNCHANGED_GENERATED_MANIFEST"},
+            {"result": "PASS", "stable_noop": "UNCHANGED_RELEASE_CONTENT"},
         )
 
         self.assertIn("### 待审核 / 异常明细（12）", text)
@@ -257,22 +257,27 @@ class ReleaseSummaryTests(unittest.TestCase):
             manifest,
             manifest,
             {"review_required": [], "quarantined_count": 0, "retained_count": 0},
-            {"result": "PASS", "stable_noop": "UNCHANGED_GENERATED_MANIFEST"},
+            {"result": "PASS", "stable_noop": "UNCHANGED_RELEASE_CONTENT"},
         )
         self.assertIn("### 生产规则\n- 无变化", text)
         self.assertNotIn("#### 新增", text)
         self.assertNotIn("#### 删除", text)
-        self.assertIn("stable：生产 manifest 无变化，未轮换", text)
+        self.assertIn("stable：订阅产物和产品契约无变化，未轮换", text)
 
 
 class ReleaseTests(unittest.TestCase):
+    def manifest(self, marker):
+        manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
+        manifest["bundles"]["ai-daily"]["mihomo"]["sha256"] = rules.sha256(marker.encode())
+        return manifest
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.base = Path(self.temp.name)
         self.remote = self.base / "remote.git"
         self.root = self.base / "local"
-        subprocess.run(["git", "init", "--bare", str(self.remote)], check=True, capture_output=True)
-        subprocess.run(["git", "init", "-b", "main", str(self.root)], check=True, capture_output=True)
+        subprocess.run(["git", "init", "--template=", "--bare", str(self.remote)], check=True, capture_output=True)
+        subprocess.run(["git", "init", "--template=", "-b", "main", str(self.root)], check=True, capture_output=True)
         self.publisher = release.Publisher(self.root)
         self.git = self.publisher.git
         self.git("config", "user.name", "Release test")
@@ -280,14 +285,14 @@ class ReleaseTests(unittest.TestCase):
         self.git("remote", "add", "origin", str(self.remote))
         (self.root / "rules").mkdir()
         (self.root / "rules/data").write_text("known good")
-        (self.root / "rules/manifest.json").write_text(json.dumps({"marker": "known-good"}))
+        (self.root / "rules/manifest.json").write_text(json.dumps(self.manifest("known-good")))
         (self.root / "code").write_text("old code")
         self.git("add", ".")
         self.git("commit", "-m", "known good")
         self.old = self.git("rev-parse", "HEAD")
         self.git("push", "origin", "HEAD:main", "HEAD:stable", "HEAD:last-known-good")
         (self.root / "rules/data").write_text("candidate")
-        (self.root / "rules/manifest.json").write_text(json.dumps({"marker": "candidate"}))
+        (self.root / "rules/manifest.json").write_text(json.dumps(self.manifest("candidate")))
         (self.root / "code").write_text("new recovery code")
         self.git("add", ".")
         self.git("commit", "-m", "candidate")
@@ -299,31 +304,34 @@ class ReleaseTests(unittest.TestCase):
 
     def test_success_updates_stable_and_retains_previous_verified_release(self):
         called = []
-        self.publisher.run(self.candidate, lambda ref, label: called.append(label), self.report)
+        self.publisher.run(self.candidate, lambda ref, label, expected: called.append(label), self.report)
         stable = self.publisher.remote_ref("stable")
         self.assertEqual(self.publisher.tree(stable), self.publisher.tree(self.candidate))
         self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
         self.assertEqual(called, ["candidate", "stable"])
         self.assertEqual(self.report["result"], "PASS")
 
-    def test_non_manifest_state_change_updates_main_without_rotating_stable(self):
+    def test_evidence_only_change_updates_main_without_rotating_stable(self):
         (self.root / "rules/data").write_text("known good")
-        (self.root / "rules/manifest.json").write_text(json.dumps({"marker": "known-good"}))
-        (self.root / "code").write_text("radar baseline changed; production manifest unchanged")
+        manifest = self.manifest("known-good")
+        manifest["upstream"]["v2fly_revision"] = "e" * 40
+        manifest["automation"]["retained"] = [{"observation_days": ["2026-09-21"]}]
+        (self.root / "rules/manifest.json").write_text(json.dumps(manifest))
+        (self.root / "code").write_text("evidence changed; subscription content unchanged")
         self.git("add", ".")
         self.git("commit", "-m", "radar-only state change")
         candidate = self.git("rev-parse", "HEAD")
         called = []
         report = {}
-        self.publisher.run(candidate, lambda ref, label: called.append(label), report)
+        self.publisher.run(candidate, lambda ref, label, expected: called.append((label, expected)), report)
         self.assertEqual(self.publisher.remote_ref("main"), candidate)
         self.assertEqual(self.publisher.remote_ref("stable"), self.old)
         self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
-        self.assertEqual(report["stable_noop"], "UNCHANGED_GENERATED_MANIFEST")
-        self.assertEqual(called, ["candidate", "stable"])
+        self.assertEqual(report["stable_noop"], "UNCHANGED_RELEASE_CONTENT")
+        self.assertEqual(called, [("candidate", candidate), ("stable", self.old)])
 
     def test_candidate_remote_failure_never_promotes_and_does_not_roll_back_main(self):
-        def validate(ref, label):
+        def validate(ref, label, expected):
             if label == "candidate":
                 raise ValueError("bad downloaded bytes")
         with self.assertRaises(ValueError):
@@ -335,7 +343,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(self.report["rollback"], "NOT_NEEDED_STABLE_UNCHANGED")
 
     def test_postpromotion_failure_forward_rolls_back_all_rules(self):
-        def validate(ref, label):
+        def validate(ref, label, expected):
             if label == "stable":
                 raise ValueError("postpublication failure")
         with self.assertRaises(ValueError):
@@ -354,7 +362,7 @@ class ReleaseTests(unittest.TestCase):
 
     def test_concurrent_main_edit_is_never_overwritten(self):
         other = None
-        def validate(ref, label):
+        def validate(ref, label, expected):
             nonlocal other
             if label == "candidate":
                 other = self.git("commit-tree", self.publisher.tree(self.candidate), "-p", self.candidate, input="independent edit\n")

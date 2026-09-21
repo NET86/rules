@@ -32,6 +32,8 @@ Surge / Mihomo 规则仓库。当前主要维护常用海外与国内 AI 服务�
 
 自动更新会经过范围、格式、规则一致性和实际运行验证；如果更新异常，`stable` 会继续保留上一份已验证版本。
 
+仓库每 6 小时计划同步，客户端示例每 1 小时刷新；仅来源证据变化不会产生空发布。维护者可启用 [Cloudflare 定时补触发](infra/scheduler/README.md) 降低漏跑风险，无需新增告警服务。
+
 更多说明：[数据来源](docs/SOURCES.md) / [维护方式](docs/MAINTAINING.md) / [验证说明](docs/VALIDATION.md) / [格式兼容](docs/COMPATIBILITY.md)
 
 ## 许可

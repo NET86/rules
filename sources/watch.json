@@ -1,5 +1,17 @@
 {
   "schema": 2,
+  "primary_sections": [
+    {"vendor":"google-ai","source":"google-deepmind","sections":["Google Generative Language API","Google AI Studio","NotebookLM"]},
+    {"vendor":"microsoft-copilot","source":"category-ai-!cn","sections":["Copilot"]},
+    {"vendor":"qwen","source":"category-ai-cn","sections":["通义千问"]},
+    {"vendor":"kimi","source":"category-ai-cn","sections":["月之暗面"]},
+    {"vendor":"zhipu","source":"category-ai-cn","sections":["智谱"]},
+    {"vendor":"minimax","source":"category-ai-cn","sections":["MiniMax"]},
+    {"vendor":"kling","source":"category-ai-cn","sections":["可灵AI（快手）"]},
+    {"vendor":"baidu-wenxin","source":"category-ai-cn","sections":["文心一言"]},
+    {"vendor":"tencent-ai","source":"category-ai-cn","sections":["腾讯混元","元宝"]},
+    {"vendor":"iflytek-spark","source":"category-ai-cn","sections":["讯飞星火"]}
+  ],
   "sources": [
     {
       "id": "sukka-source-ai",

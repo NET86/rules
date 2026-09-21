@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from automation import scope_problem
-from rules import ROOT, FORBIDDEN_CORE, Rule, json_text, load_explicit_source, load_source, read_json
+from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json
 from sync import fetch
 
 
@@ -83,7 +83,7 @@ def analyze(source, content, existing):
         candidate = Rule.from_text(fields[0] + "," + fields[1].lower())
         if covered(candidate, existing):
             already_covered += 1
-        elif candidate.value in FORBIDDEN_CORE:
+        elif forbidden_core(candidate.value):
             excluded += 1
         else:
             gaps[candidate.text] = section

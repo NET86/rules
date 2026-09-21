@@ -12,7 +12,7 @@ rule-providers:
     format: yaml
     url: https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml
     path: ./rule-providers/net86-ai-daily.yaml
-    interval: 21600
+    interval: 3600
 
 rules:
   - RULE-SET,net86-ai-daily,AI,no-resolve
