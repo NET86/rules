@@ -36,11 +36,11 @@ test("a recent GitHub run avoids a duplicate build", async () => {
 
 test("stale or absent history dispatches only the fixed main workflow", async () => {
   for (const history of [[], [run(6)]]) {
-    const { request, calls } = mock({ login: "NET86" }, { workflow_runs: history }, { workflow_run_id: 8 });
+    const { request, calls } = mock({ login: "NET86" }, { workflow_runs: history }, { state: "active" }, { workflow_run_id: 8 });
     assert.deepEqual(await trigger(secret, request, now), { result: "dispatched", run_id: 8 });
-    assert.equal(calls[2].url, "https://api.github.com/repos/NET86/rules/actions/workflows/sync.yml/dispatches");
-    assert.deepEqual(JSON.parse(calls[2].options.body), { ref: "main" });
-    assert.equal(calls[2].options.method, "POST");
+    assert.equal(calls[3].url, "https://api.github.com/repos/NET86/rules/actions/workflows/sync.yml/dispatches");
+    assert.deepEqual(JSON.parse(calls[3].options.body), { ref: "main" });
+    assert.equal(calls[3].options.method, "POST");
     for (const { options } of calls) {
       assert.equal(options.redirect, "error");
       assert.ok(options.signal instanceof AbortSignal);
@@ -48,13 +48,30 @@ test("stale or absent history dispatches only the fixed main workflow", async ()
   }
 });
 
+test("GitHub inactivity disabling is recovered before dispatch", async () => {
+  const { request, calls } = mock({ login: "NET86" }, { workflow_runs: [run(60 * 24)] },
+                                { state: "disabled_inactivity" }, 204, { workflow_run_id: 8 });
+  assert.equal((await trigger(secret, request, now)).result, "dispatched");
+  assert.equal(calls[3].url, "https://api.github.com/repos/NET86/rules/actions/workflows/sync.yml/enable");
+  assert.equal(calls[3].options.method, "PUT");
+  assert.equal(calls[4].options.method, "POST");
+});
+
+test("an owner's manual disable is respected", async () => {
+  const { request, calls } = mock({ login: "NET86" }, { workflow_runs: [] }, { state: "disabled_manually" });
+  assert.equal((await trigger(secret, request, now)).result, "skipped-disabled-workflow");
+  assert.ok(calls.every(({ options }) => options.method === "GET"));
+});
+
 test("API and malformed-response failures stay visible and never retry dispatch", async () => {
   const scenarios = [
     [401],
     [{ login: "NET86" }, {}],
     [{ login: "NET86" }, { workflow_runs: [{ ...run(6), head_branch: "other" }] }],
-    [{ login: "NET86" }, { workflow_runs: [] }, 403],
-    [{ login: "NET86" }, { workflow_runs: [] }, { workflow_run_id: null }],
+    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, 403],
+    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, { workflow_run_id: null }],
+    [{ login: "NET86" }, { workflow_runs: [] }, { state: "disabled_inactivity" }, 403],
+    [{ login: "NET86" }, { workflow_runs: [] }, { state: "unknown" }],
   ];
   for (const responses of scenarios) {
     const { request, calls } = mock(...responses);
