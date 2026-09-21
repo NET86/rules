@@ -30,8 +30,8 @@
       "must_not_match": ["www.microsoft.com", "githubcopilot.com"]
     },
     "github-copilot": {
-      "must_match": ["githubcopilot.com"],
-      "must_not_match": ["api.github.com", "copilot.microsoft.com"]
+      "must_match": ["githubcopilot.com", "origin-tracker.githubusercontent.com"],
+      "must_not_match": ["api.github.com", "copilot.microsoft.com", "raw.githubusercontent.com", "child.origin-tracker.githubusercontent.com", "not-origin-tracker.githubusercontent.com"]
     },
     "mistral": {
       "must_match": ["mistral.ai"],
