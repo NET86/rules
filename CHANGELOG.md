@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-21 — Cloudflare runtime compatibility
+
+- Fix a real cloud Cron failure: Workers fetch rejects `redirect: error`. Use `manual` and reject unexpected HTTP status codes, preserving the refusal to follow redirects with credentials.
+
 ## 2026-09-21 — Primary scheduling and routine dependency automation
 
 - Use Cloudflare as the primary trigger at 00:01/06:01/12:01/18:01 China time; run GitHub cron 30 minutes later as a history-aware backup. Successful skipped backups never suppress the primary.
