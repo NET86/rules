@@ -97,8 +97,11 @@ class SemanticShapeTests(unittest.TestCase):
 class LocalInputHealthTests(unittest.TestCase):
     def test_parser_drift_retains_snapshot_without_blocking_fresh_voice(self):
         catalog = rules.read_json(rules.ROOT / "sources/catalog.json")
-        for mode, bad_line in ((mode, text) for mode in ("sources", "select")
-                               for text in (b"unknown:parser-drift.test", b"regexp:[")):
+        cases = [(mode, text) for mode in ("sources", "select")
+                 for text in (b"unknown:parser-drift.test", b"regexp:[")]
+        first_source = next(iter(next(v["sources"] for v in catalog["vendors"] if v.get("sources"))))
+        cases.append(("sources", f"include:{first_source}".encode()))
+        for mode, bad_line in cases:
             name = next(iter(next(v[mode] for v in catalog["vendors"] if v.get(mode))))
             with self.subTest(mode=mode, bad_line=bad_line), tempfile.TemporaryDirectory() as td:
                 root = Path(td)

@@ -364,6 +364,91 @@ class IntakeTests(unittest.TestCase):
 
 
 class ReleaseSummaryTests(unittest.TestCase):
+    def test_final_summary_compares_actual_previous_stable_not_checkout_head(self):
+        before = {"provenance": [{"vendor": "demo", "tier": "core", "rule": "DOMAIN,old.example", "sources": []}]}
+        after = copy.deepcopy(before)
+        after["provenance"].append({"vendor": "demo", "tier": "core", "rule": "DOMAIN,new.example", "sources": []})
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "rules").mkdir()
+            (root / ".work").mkdir()
+            (root / "rules/manifest.json").write_text(json.dumps(after))
+            (root / ".work/release-report.json").write_text(json.dumps({
+                "result": "PASS", "candidate": "b" * 40, "previous_stable": "a" * 40,
+                "stable_revision": "c" * 40, "stable_remote_validation": "PASS"}))
+            with patch.object(release.Publisher, "git", return_value=json.dumps(before)) as git:
+                text = release.render_workflow_summary(root, "sync", "success")
+            git.assert_called_once_with("show", "a" * 40 + ":rules/manifest.json")
+            self.assertIn("new.example", text)
+            self.assertIn("上次 stable", text)
+            self.assertLess(text.index("发布结果"), text.index("规则变化"))
+            self.assertIn("success", text)
+
+    def test_final_summary_distinguishes_early_failure_and_post_publication_failure(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / ".work").mkdir()
+            for channel in ("sync", "ci", "sources", "dependencies"):
+                with self.subTest(channel=channel):
+                    text = release.render_workflow_summary(root, channel, "failure")
+                    self.assertIn("failure", text)
+                    self.assertIn("未", text)
+                    self.assertNotIn("待审核 / 异常：**0**", text)
+                    self.assertNotIn("stable：已更新", text)
+            (root / ".work/release-report.json").write_text(json.dumps({
+                "result": "PASS", "stable_remote_validation": "PASS", "stable_revision": "a" * 40,
+                "stable_noop": "UNCHANGED_RELEASE_CONTENT"}))
+            text = release.render_workflow_summary(root, "sync", "failure")
+            self.assertIn("failure", text)
+            self.assertIn("UNCHANGED_RELEASE_CONTENT", text)
+            (root / ".work/release-report.json").write_text("{broken")
+            text = release.render_workflow_summary(root, "sync", "failure")
+            self.assertIn("报告无效", text)
+
+    def test_summary_reports_rollback_and_cannot_claim_unverified_publication(self):
+        text = release.render_actions_summary(None, None, {}, {
+            "result": "FAILED", "error": "Injected failure", "rollback": "RESTORED_STABLE",
+            "stable_revision": "a" * 40, "stable_after_failure": "b" * 40,
+            "rollback_remote_validation": "PASS"})
+        self.assertIn("RESTORED_STABLE", text)
+        self.assertIn("Injected failure", text)
+        self.assertIn("回读", text)
+        self.assertIn("本次目标 stable：`" + "a" * 40, text)
+        self.assertIn("失败后 stable（观测值）：`" + "b" * 40, text)
+        self.assertNotIn("稳定提交：`" + "a" * 40, text)
+        self.assertIn("恢复异常：`rollback offline`", release.render_actions_summary(None, None, {}, {
+            "result": "FAILED", "rollback": "FAILED_REMOTE_UNAVAILABLE", "rollback_error": "rollback offline"}))
+        text = release.render_actions_summary({}, {}, {}, {"result": "PASS"})
+        self.assertNotIn("stable：已更新并通过远端验证", text)
+        self.assertNotIn("待审核 / 异常：**0**", text)
+
+    def test_summary_only_never_mutates_and_output_failure_does_not_replace_job_result(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            with patch.object(release, "ROOT", root), \
+                    patch.object(sys, "argv", ["release.py", "--summary-only", "ci", "--job-status", "failure"]), \
+                    patch.dict(release.os.environ, GITHUB_STEP_SUMMARY=str(root)), \
+                    patch.object(release, "Publisher") as publisher, patch("builtins.print") as output:
+                release.main()
+            publisher.assert_not_called()
+            self.assertFalse((root / ".work").exists())
+            self.assertIn("failure", output.call_args_list[0].args[0])
+            self.assertIn("summary write failed", output.call_args_list[-1].args[0])
+
+    def test_ci_summary_ignores_alias_reports_and_separates_windows_and_linux(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / ".work").mkdir()
+            (root / ".work/mihomo-validation.json").write_text(json.dumps({"result": "PASS", "routing_case_count": 99999}))
+            (root / ".work/mihomo-validation-ai-daily.json").write_text(json.dumps({"result": "PASS", "routing_case_count": 42}))
+            for os_name in ("Windows", "Linux"):
+                with self.subTest(os=os_name), patch.dict(release.os.environ, RUNNER_OS=os_name):
+                    text = release.render_workflow_summary(root, "ci", "failure")
+                    self.assertIn("| mihomo / ai-daily | PASS | 42 |", text)
+                    self.assertIn("| mihomo / split | 未完成 | 未知 |", text)
+                    self.assertNotIn("99999", text)
+                    self.assertEqual("| flclash-core /" in text, os_name == "Linux")
+
     def test_recovery_preflight_never_creates_a_publication_receipt(self):
         for failure in (False, True):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as td:
@@ -429,7 +514,7 @@ class ReleaseSummaryTests(unittest.TestCase):
                 "quarantined_count": 2,
                 "retained_count": 3,
             },
-            {"result": "PASS", "candidate": "a" * 40},
+            {"result": "PASS", "candidate": "a" * 40, "stable_remote_validation": "PASS"},
         )
 
         self.assertIn("#### 新增（12）", text)

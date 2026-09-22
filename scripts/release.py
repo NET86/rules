@@ -73,8 +73,9 @@ def manifest_changes(before, after):
 def format_review_item(row):
     subject = row.get("vendor") or row.get("source_id") or "system"
     parts = [f"`{subject}`"]
-    if row.get("rule"):
-        parts.append(f"`{row['rule']}`")
+    rule = row.get("rule") or row.get("value")
+    if rule:
+        parts.append(f"`{rule}`")
     if row.get("tier"):
         parts.append(str(row["tier"]))
     reason = row.get("reason", "unknown")
@@ -85,13 +86,34 @@ def format_review_item(row):
 
 
 def render_actions_summary(before, after, sync_report, release_report, limit=SUMMARY_LIMIT):
+    comparable = before is not None and after is not None
+    before, after = before or {}, after or {}
     added, changed, removed = manifest_changes(before, after)
     old_bundles, new_bundles = before.get("bundles", {}), after.get("bundles", {})
     bundle_changes = [name for name in sorted(old_bundles.keys() | new_bundles.keys())
-                      if old_bundles.get(name) != new_bundles.get(name)]
-    lines = ["## 规则同步摘要", "", "### 规则变化"]
-
-    if not (added or changed or removed or bundle_changes):
+                      if old_bundles.get(name) != new_bundles.get(name)] if comparable else []
+    lines = ["## 规则同步摘要", "", "### 发布结果",
+             f"- 结果：**{release_report.get('result', '未开始或未生成报告')}**"]
+    if release_report.get("stable_noop") == "UNCHANGED_RELEASE_CONTENT":
+        lines.append("- stable：订阅产物和产品契约无变化，未轮换（`UNCHANGED_RELEASE_CONTENT`）")
+    elif release_report.get("result") == "PASS" and release_report.get("stable_remote_validation") == "PASS":
+        lines.append("- stable：已更新并通过远端验证")
+    else:
+        lines.append("- 未确认新的稳定版本发布成功；以回读和恢复结果为准。")
+    stable_label = "稳定提交" if release_report.get("result") == "PASS" else "本次目标 stable"
+    for key, label in (("candidate", "候选提交"), ("stable_revision", stable_label),
+                       ("stable_after_failure", "失败后 stable（观测值）"),
+                       ("rollback", "失败恢复"), ("rollback_remote_validation", "恢复回读")):
+        if release_report.get(key):
+            lines.append(f"- {label}：`{release_report[key]}`")
+    for key, label in (("error", "原因"), ("rollback_error", "恢复异常")):
+        if release_report.get(key):
+            detail = " ".join(str(release_report[key]).split())[:300].replace("`", "'")
+            lines.append(f"- {label}：`{detail}`")
+    lines.extend(["", "变化口径：候选相对上次 stable；未通过发布的候选变化不代表已生效。", "", "### 规则变化"])
+    if not comparable:
+        lines.append("- 对比数据不可用，未判断规则变化。")
+    elif not (added or changed or removed or bundle_changes):
         lines.append("- 无变化")
     else:
         def append_group(title, rows, formatter):
@@ -136,9 +158,9 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
     lines.extend([
         "",
         "### 同步状态",
-        f"- 待审核 / 异常：**{len(review_required)}**",
-        f"- 隔离：**{sync_report.get('quarantined_count', 0)}**",
-        f"- 保留观察：**{sync_report.get('retained_count', 0)}**",
+        f"- 待审核 / 异常：**{len(review_required) if 'review_required' in sync_report else '未知（未生成报告）'}**",
+        f"- 隔离：**{sync_report.get('quarantined_count', '未知')}**",
+        f"- 保留观察：**{sync_report.get('retained_count', '未知')}**",
     ])
     health = sync_report.get("source_health", {})
     labels = {
@@ -153,8 +175,11 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
         lines.append(f"- {label}：{labels.get(health.get(source), '未知（未提供状态）')}")
     facts = health.get("official_facts", {})
     if facts:
+        fresh = sum(status.get("status") == "fresh" for status in facts.values())
+        lines.append(f"- 官方资料：{fresh} / {len(facts)} 份抓取成功；完整明细见 sync-report.json。")
         for source, status in sorted(facts.items()):
-            lines.append(f"- 官方资料 `{source}`：{labels.get(status.get('status'), '未知（未提供状态）')}")
+            if status.get("status") != "fresh":
+                lines.append(f"- 官方资料 `{source}`：{labels.get(status.get('status'), '未知（未提供状态）')}")
     else:
         lines.append("- 官方资料：未知（未提供状态）")
     if review_required:
@@ -165,40 +190,90 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
         if extra > 0:
             lines.append(f"- 另有 **{extra}** 条，详见异常 Issue 或 sync-report.json。")
 
-    lines.extend([
-        "",
-        "### 发布结果",
-        f"- 结果：**{release_report.get('result', 'UNKNOWN')}**",
-    ])
-    if release_report.get("stable_noop") == "UNCHANGED_RELEASE_CONTENT":
-        lines.append("- stable：订阅产物和产品契约无变化，未轮换")
-    elif release_report.get("result") == "PASS":
-        lines.append("- stable：已更新并通过远端验证")
-
-    candidate = release_report.get("candidate")
-    if candidate:
-        lines.append(f"- 候选提交：`{candidate[:12]}`")
-        server = os.environ.get("GITHUB_SERVER_URL")
-        repository = os.environ.get("GITHUB_REPOSITORY")
-        if server and repository:
-            lines.append(f"- [查看提交差异]({server}/{repository}/commit/{candidate})")
     return "\n".join(lines) + "\n"
 
 
-def append_actions_summary(before, after, sync_report, release_report):
-    path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if not path:
-        return
+def render_workflow_summary(root, channel, job_status):
+    """Read this job's evidence only; never publish, recover or fetch remote data."""
+    notes = []
+
+    def load(relative):
+        path = root / relative
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("Expected report object")
+            return data
+        except FileNotFoundError:
+            return None
+        except (OSError, ValueError):
+            notes.append(f"- `{relative}`：报告无效，未将其判为成功。")
+            return None
+
+    titles = {"sync": "规则同步", "ci": "规则校验", "sources": "来源补缺", "dependencies": "依赖升级"}
+    lines = [f"## {titles[channel]} · 作业结果：{job_status}", "",
+             "状态截至摘要步骤，最终状态以 Actions 为准；发布和合并结果单独报告。", ""]
+    if channel == "sync":
+        report = load(".work/release-report.json") or {}
+        source = load(".work/sync-report.json") or {}
+        after = load("rules/manifest.json")
+        before = None
+        revision = report.get("previous_stable", "")
+        if isinstance(revision, str) and re.fullmatch(r"[a-f0-9]{40}", revision):
+            try:
+                before = json.loads(Publisher(root).git("show", f"{revision}:rules/manifest.json"))
+                if not isinstance(before, dict):
+                    raise ValueError("Invalid previous manifest")
+            except (OSError, ValueError, subprocess.SubprocessError):
+                before = None
+                notes.append("- 上次 stable 的对比数据不可用；未用 main 冒充发布基线。")
+        lines.append(render_actions_summary(before, after, source, report))
+        recovery = load(".work/recovery-report.json") or {}
+        lines.append(f"恢复预检：`{recovery.get('stable_preflight', recovery.get('result', '未生成报告'))}`。")
+    elif channel == "ci":
+        portable = load(".work/portable-validation.json") or {}
+        lines += ["本作业只校验，未执行生产发布。", "",
+                  f"可移植校验：`{portable.get('result', '未完成或未生成报告')}`；"
+                  f"产物 {portable.get('artifact_count', '未知')}，语义用例 {portable.get('semantic_case_count', '未知')}。", "",
+                  "| 内核 / 配置 | 报告 | 路由用例 |", "| --- | --- | --- |"]
+        engines = ("mihomo",) if os.environ.get("RUNNER_OS") == "Windows" else ("mihomo", "flclash-core")
+        for engine in engines:
+            for profile in ("ai-daily", "split", "ai-cn"):
+                report = load(f".work/{engine}-validation-{profile}.json") or {}
+                lines.append(f"| {engine} / {profile} | {report.get('result', '未完成')} | {report.get('routing_case_count', '未知')} |")
+        lines += ["", "未执行的检查不计为通过；原生 Surge、客户端界面和真实 AI 账号连接不在此验收范围。"]
+    elif channel == "sources":
+        from audit_sources import render_actions_summary as audit_summary
+        report = load(".work/source-audit.json")
+        lines.append(audit_summary(report) if report and isinstance(report.get("review_required"), list)
+                     else "补缺扫描未完成或未生成有效报告，不能判断为零缺口。")
+        lines.append("本作业只读，不修改生产规则。")
+    else:
+        report = load(".work/dependency-report.json")
+        lines.append("只允许精确测试提交快进 main，未执行 stable 发布。")
+        if report is None:
+            lines.append("未生成完整合并报告；发生失败时以日志和远端引用为准。")
+        else:
+            lines.extend(report.get("decisions", []) or ["没有符合条件的打开 PR，未执行合并。"])
+    if notes:
+        lines += ["", "### 证据限制", *notes]
+    lines += ["", "完整证据见本次运行的日志和 artifact；缺失报告不等于检查通过。"]
+    return "\n".join(lines) + "\n"
+
+
+def write_workflow_summary(channel, job_status):
     try:
-        text = render_actions_summary(before, after, sync_report, release_report)
+        text = render_workflow_summary(ROOT, channel, job_status)
     except Exception as exc:
-        text = (
-            "## 规则同步摘要\n\n"
-            f"- 摘要生成失败：`{type(exc).__name__}`\n"
-            f"- 发布结果：**{release_report.get('result', 'UNKNOWN')}**\n"
-        )
-    with Path(path).open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(text)
+        text = f"## 作业结果：{job_status}\n\n摘要生成失败：`{type(exc).__name__}`；未据此判断发布结果，请查看原始日志。\n"
+    print(text)
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        try:
+            with Path(path).open("a", encoding="utf-8", newline="\n") as handle:
+                handle.write(text)
+        except OSError as exc:
+            print(f"WARNING: summary write failed ({type(exc).__name__}); original job outcome is unchanged", file=sys.stderr)
 
 
 class Publisher:
@@ -388,14 +463,18 @@ def main():
     parser.add_argument("--mihomo", type=Path, default=ROOT / ".work/bin/mihomo")
     parser.add_argument("--flclash-core", type=Path)
     parser.add_argument("--recover-only", action="store_true", help="Portable stable/LKG repair before any new downloads, builds or source sync")
+    parser.add_argument("--summary-only", choices=["sync", "ci", "sources", "dependencies"], help="Read-only final Actions summary; never publishes")
+    parser.add_argument("--job-status", choices=["success", "failure", "cancelled", "unknown"], default="unknown")
     args = parser.parse_args()
+    if args.summary_only:
+        write_workflow_summary(args.summary_only, args.job_status)
+        return
     if os.environ.get("GITHUB_REPOSITORY") != "NET86/rules":
         raise ValueError("Live publication is restricted to NET86/rules CI")
     work = ROOT / ".work"
     work.mkdir(exist_ok=True)
     report = {"result": "RECOVERY_PREFLIGHT" if args.recover_only else "PREVALIDATING"}
     publisher = Publisher(ROOT)
-    before_manifest = None
     try:
         publisher.git("config", "user.name", "github-actions[bot]")
         publisher.git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
@@ -412,7 +491,6 @@ def main():
             report["result"] = "PASS"
             return
 
-        before_manifest = json.loads(publisher.git("show", "HEAD:rules/manifest.json"))
         if args.flclash_core is None:
             raise ValueError("--flclash-core is required for full publication validation")
         binaries = [("mihomo", args.mihomo.resolve()), ("flclash-core", args.flclash_core.resolve())]
@@ -453,11 +531,6 @@ def main():
     finally:
         name = "recovery-report.json" if args.recover_only else "release-report.json"
         (work / name).write_text(json_text(report), encoding="utf-8")
-        if not args.recover_only:
-            current_manifest = json.loads((ROOT / "rules/manifest.json").read_text(encoding="utf-8"))
-            sync_report_path = work / "sync-report.json"
-            sync_report = json.loads(sync_report_path.read_text(encoding="utf-8")) if sync_report_path.exists() else {}
-            append_actions_summary(before_manifest or {}, current_manifest, sync_report, report)
         print(json_text(report))
 
 

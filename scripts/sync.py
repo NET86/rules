@@ -115,7 +115,9 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
     explicit_names = {name for vendor in catalog["vendors"] for name in vendor.get("select", {})}
     written, expanded = set(), set()
 
-    def export(name, recurse):
+    def export(name, recurse, stack=()):
+        if name in stack:
+            raise ValueError(f"Include cycle: {stack + (name,)}")
         if not re.fullmatch(r"[a-z0-9!_-]+", name):
             raise ValueError(f"Unsafe source: {name}")
         if name not in written:
@@ -132,7 +134,7 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
         expanded.add(name)
         for rule, _ in rows:
             if isinstance(rule, str):
-                export(rule, True)
+                export(rule, True, stack + (name,))
 
     for name in sorted(recursive_names):
         export(name, True)

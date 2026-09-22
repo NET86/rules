@@ -85,3 +85,6 @@ jobs:
         run: python scripts/notify_review.py sync .work/sync-report.json ${{ job.status == 'failure' && '--failed' || '' }}
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: 汇总本次执行结果
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
+        run: python scripts/release.py --summary-only sync --job-status ${{ job.status }}

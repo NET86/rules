@@ -18,9 +18,13 @@ def main():
     if not (repo / ".git").exists():
         subprocess.run(["git", "init", str(repo)], check=True)
         subprocess.run(["git", "-C", str(repo), "remote", "add", "origin", lock["core_repository"]], check=True)
-    subprocess.run(["git", "-C", str(repo), "fetch", "--depth", "1", "origin", lock["core_revision"]], check=True)
+    origin = subprocess.check_output(["git", "-C", str(repo), "remote", "get-url", "origin"], text=True, timeout=30).strip()
+    dirty = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=all"], text=True, timeout=30).strip()
+    if origin != lock["core_repository"] or dirty:
+        raise ValueError("Cached core source has an unexpected origin or local changes; refusing to build or clean it")
+    subprocess.run(["git", "-C", str(repo), "fetch", "--depth", "1", "origin", lock["core_revision"]], check=True, timeout=180)
     subprocess.run(["git", "-C", str(repo), "switch", "--detach", lock["core_revision"]], check=True)
-    subprocess.run(["go", "build", "-trimpath", "-buildvcs=false", "-o", str(binary), "."], cwd=repo, check=True, timeout=600)
+    subprocess.run(["go", "build", "-mod=readonly", "-trimpath", "-buildvcs=false", "-o", str(binary), "."], cwd=repo, check=True, timeout=600)
     print(f"Built FlClash {lock['app_version']} routing core {lock['core_revision']}: {binary}")
 
 

@@ -412,6 +412,17 @@ class NotificationTests(unittest.TestCase):
     def setUp(self):
         self.report = {"review_required": [{"vendor": "demo", "rule": "DOMAIN,new.test", "reason": "new-scope", "first_seen": "2026-01-01"}]}
 
+    def test_disappeared_selection_keeps_each_domain_in_issue_and_summary(self):
+        rows = [{"vendor": "demo", "source": "mixed", "value": value,
+                 "reason": "selected-upstream-domain-disappeared-or-moved"}
+                for value in ("first.example", "second.example")]
+        body = notify_review.issue_body("sync", {"review_required": rows})
+        import release
+        for row in rows:
+            self.assertIn(row["value"], body)
+            self.assertIn(row["value"], release.format_review_item(row))
+        self.assertNotEqual(body, notify_review.issue_body("sync", {"review_required": rows[:1]}))
+
     def test_clock_changes_do_not_change_issue_body(self):
         first = notify_review.issue_body("sync", self.report)
         self.report["review_required"][0]["first_seen"] = "2026-01-10"
@@ -533,6 +544,10 @@ class NotificationTests(unittest.TestCase):
             text = (rules.ROOT / f".github/workflows/{workflow}.yml").read_text(encoding="utf-8")
             with self.subTest(workflow=workflow):
                 self.assertLess(text.index("actions/upload-artifact@"), text.index("scripts/notify_review.py"))
+                self.assertLess(text.index("scripts/notify_review.py"), text.index("--summary-only"))
+        for workflow, channel in (("ci", "ci"), ("sync", "sync"), ("audit", "sources"), ("dependency-automerge", "dependencies")):
+            text = (rules.ROOT / f".github/workflows/{workflow}.yml").read_text(encoding="utf-8")
+            self.assertIn(f"--summary-only {channel} --job-status ${{{{ job.status }}}}", text)
 
 
 class EngineHarnessTests(unittest.TestCase):

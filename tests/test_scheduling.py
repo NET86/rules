@@ -35,6 +35,24 @@ class BackupTests(unittest.TestCase):
             self.assertTrue(backup_needed({"workflow_runs": [run]}, now))
         self.assertTrue(backup_needed({"workflow_runs": []}, now))
 
+    def test_summary_cannot_change_the_scheduling_output(self):
+        import schedule_gate
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for needed in (False, True):
+                for invalid_summary in (False, True):
+                    with self.subTest(needed=needed, invalid_summary=invalid_summary):
+                        output, summary = root / "output", root / "summary"
+                        output.write_text("")
+                        with patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_OUTPUT=str(output),
+                                        GITHUB_STEP_SUMMARY=str(root if invalid_summary else summary)), \
+                                patch.object(schedule_gate.subprocess, "check_output", return_value='{"workflow_runs":[]}'), \
+                                patch.object(schedule_gate, "backup_needed", return_value=needed):
+                            schedule_gate.main()
+                        self.assertEqual(output.read_text().strip(), f"run_sync={str(needed).lower()}")
+                        if not invalid_summary:
+                            self.assertIn("需要兜底" if needed else "本次没有重复执行生产校验", summary.read_text(encoding="utf-8"))
+
     def test_skipped_backup_cannot_be_mistaken_for_primary(self):
         with self.assertRaises(ValueError):
             backup_needed({"workflow_runs": [{"head_branch": "main", "event": "schedule"}]},
@@ -99,7 +117,8 @@ class DependencyMergeTests(unittest.TestCase):
                     patch.object(merge_dependencies, "api", side_effect=responses) as api, \
                     patch.object(merge_dependencies, "git", return_value="git@github-net86:NET86/rules.git"), \
                     patch.object(merge_dependencies, "fast_forward", return_value=True) as publish:
-                merge_dependencies.main()
+                result = merge_dependencies.main()
+                self.assertIn("已快进", result["decisions"][0])
                 self.assertIn("head=NET86%3Adependabot%2Fpip%2F", api.call_args_list[2].args[0])
                 publish.assert_called_once_with("abc")
 

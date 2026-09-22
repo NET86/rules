@@ -38,7 +38,16 @@ def main():
         needed = True
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
         output.write(f"run_sync={str(needed).lower()}\n")
-    print("Backup sync required." if needed else "Recent primary sync is healthy; skipping backup.")
+    message = ("需要兜底同步：没有可确认的近期健康主调度记录。" if needed
+               else "跳过兜底：近期主调度已成功或仍在运行；本次没有重复执行生产校验。")
+    print(message)
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        try:
+            with open(path, "a", encoding="utf-8") as output:
+                output.write("## 调度判定\n\n" + message + "\n")
+        except OSError:
+            print("WARNING: summary unavailable; scheduling decision is unchanged")
 
 
 if __name__ == "__main__":

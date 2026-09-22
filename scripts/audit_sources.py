@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """Read-only secondary radar: report uncovered narrow domains, never mutate production."""
 
-import os
-from pathlib import Path
-
 from automation import scope_problem, vendor_spec
 from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json
 from sync import fetch
@@ -292,6 +289,7 @@ def render_actions_summary(report, limit=SUMMARY_LIMIT):
         "## Sukka 补缺检查",
         "",
         "### 扫描结果",
+        f"- 成功解析来源：**{len(summaries)}**；以下数量仅统计成功来源，失败来源的缺口未知。",
         f"- 有效规则：**{active}**",
         f"- 已覆盖：**{covered_count}**",
         f"- 策略排除：**{excluded}**",
@@ -306,21 +304,6 @@ def render_actions_summary(report, limit=SUMMARY_LIMIT):
         if extra > 0:
             lines.append(f"- 另有 **{extra}** 条，详见异常 Issue 或 source-audit.json。")
     return "\n".join(lines) + "\n"
-
-
-def append_actions_summary(report):
-    path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if not path:
-        return
-    try:
-        text = render_actions_summary(report)
-    except Exception as exc:
-        text = (
-            "## Sukka 补缺检查\n\n"
-            f"- 摘要生成失败：`{type(exc).__name__}`\n"
-        )
-    with Path(path).open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(text)
 
 
 def main():
@@ -354,7 +337,6 @@ def main():
     work = ROOT / ".work"
     work.mkdir(exist_ok=True)
     (work / "source-audit.json").write_text(json_text(report), encoding="utf-8", newline="\n")
-    append_actions_summary(report)
     print(f"OK: checked {len(config['sources'])} read-only radar source(s); {len(report['review_required'])} exception(s)")
     return 0
 
