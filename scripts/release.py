@@ -266,7 +266,10 @@ def write_workflow_summary(channel, job_status):
         text = render_workflow_summary(ROOT, channel, job_status)
     except Exception as exc:
         text = f"## 作业结果：{job_status}\n\n摘要生成失败：`{type(exc).__name__}`；未据此判断发布结果，请查看原始日志。\n"
-    print(text)
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        print(text.encode("ascii", "backslashreplace").decode("ascii"))
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
         try:

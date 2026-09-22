@@ -434,6 +434,14 @@ class ReleaseSummaryTests(unittest.TestCase):
             self.assertFalse((root / ".work").exists())
             self.assertIn("failure", output.call_args_list[0].args[0])
             self.assertIn("summary write failed", output.call_args_list[-1].args[0])
+            import io
+            summary = root / "summary.md"
+            with io.TextIOWrapper(io.BytesIO(), encoding="cp1252") as console, \
+                    patch.object(release.sys, "stdout", console), \
+                    patch.object(release, "render_workflow_summary", return_value="中文摘要\n"), \
+                    patch.dict(release.os.environ, GITHUB_STEP_SUMMARY=str(summary)):
+                release.write_workflow_summary("ci", "success")
+            self.assertEqual(summary.read_text(encoding="utf-8"), "中文摘要\n")
 
     def test_ci_summary_ignores_alias_reports_and_separates_windows_and_linux(self):
         with tempfile.TemporaryDirectory() as td:

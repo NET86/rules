@@ -1,5 +1,6 @@
 """Protect primary/backup freshness and privileged dependency merge boundaries."""
 import copy
+import io
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -44,7 +45,9 @@ class BackupTests(unittest.TestCase):
                     with self.subTest(needed=needed, invalid_summary=invalid_summary):
                         output, summary = root / "output", root / "summary"
                         output.write_text("")
-                        with patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_OUTPUT=str(output),
+                        with io.TextIOWrapper(io.BytesIO(), encoding="cp1252") as console, \
+                                patch.object(sys, "stdout", console), \
+                                patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_OUTPUT=str(output),
                                         GITHUB_STEP_SUMMARY=str(root if invalid_summary else summary)), \
                                 patch.object(schedule_gate.subprocess, "check_output", return_value='{"workflow_runs":[]}'), \
                                 patch.object(schedule_gate, "backup_needed", return_value=needed):
@@ -113,7 +116,9 @@ class DependencyMergeTests(unittest.TestCase):
             event_path = Path(directory) / "event.json"
             event_path.write_text(json.dumps({"workflow_run": {"id": 42}}), encoding="utf-8")
             responses = [run, {"jobs": jobs, "total_count": 2}, [{"number": 9}], pr, files]
-            with patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_EVENT_PATH=str(event_path)), \
+            with io.TextIOWrapper(io.BytesIO(), encoding="cp1252") as console, \
+                    patch.object(sys, "stdout", console), \
+                    patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_EVENT_PATH=str(event_path)), \
                     patch.object(merge_dependencies, "api", side_effect=responses) as api, \
                     patch.object(merge_dependencies, "git", return_value="git@github-net86:NET86/rules.git"), \
                     patch.object(merge_dependencies, "fast_forward", return_value=True) as publish:

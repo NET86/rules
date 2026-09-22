@@ -99,7 +99,7 @@ def main():
             decisions.append(f"- PR #{number}：已快进到经过测试的 `{pr['head']['sha']}`。")
         else:
             decisions.append(f"- PR #{number}：main 已前进，未合并；等待 rebase 和重新测试。")
-        print(decisions[-1])
+        print(json.dumps(decisions[-1]))  # Keep redirected legacy Windows consoles safe.
     return {"decisions": decisions}
 
 
