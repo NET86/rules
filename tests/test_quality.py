@@ -79,21 +79,62 @@ class SemanticShapeTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "schema 2 contracts"):
                 rules.compile_outputs(root)
 
-    def test_new_vendor_contract_preserves_last_critical_entry_on_removal(self):
+    def test_vendor_and_profile_contracts_preserve_critical_coverage(self):
         manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
-        before = {(row["vendor"], row["tier"], rules.Rule.from_text(row["rule"])): set(row["sources"])
-                  for row in manifest["provenance"] if row["tier"] == "core"}
-        key = next(key for key in before if key[0] == "tencent-ai" and key[2].value == "yuanbao.tencent.com")
-        before.pop(key)
-        state, report = automation.reconcile(before, manifest,
-            rules.read_json(rules.ROOT / "sources/catalog.json"),
-            rules.read_json(rules.ROOT / "sources/patches.json"), {},
-            rules.read_json(rules.ROOT / "sources/automation.json"), allow_removals=True,
-            contracts=rules.read_json(rules.ROOT / "sources/semantic-contracts.json"))
-        self.assertTrue(any(row["rule"] == key[2].text and row["protected"] for row in state["retained"]))
+        for vendor, host in (("tencent-ai", "yuanbao.tencent.com"), ("elevenlabs", "elevenlabs.com")):
+            with self.subTest(vendor=vendor):
+                entries = {automation.key_of(row): set(row["sources"]) for row in manifest["provenance"]}
+                key = next(key for key in entries if key[0] == vendor and key[2].value == host)
+                entries.pop(key)
+                state, _ = automation.reconcile(entries, manifest,
+                    rules.read_json(rules.ROOT / "sources/catalog.json"),
+                    rules.read_json(rules.ROOT / "sources/patches.json"), {},
+                    rules.read_json(rules.ROOT / "sources/automation.json"), allow_removals=True,
+                    contracts=rules.read_json(rules.ROOT / "sources/semantic-contracts.json"))
+                self.assertTrue(any(automation.key_of(row) == key and row["protected"] for row in state["retained"]))
 
 
 class LocalInputHealthTests(unittest.TestCase):
+    def test_parser_drift_retains_snapshot_without_blocking_fresh_voice(self):
+        catalog = rules.read_json(rules.ROOT / "sources/catalog.json")
+        for mode, bad_line in ((mode, text) for mode in ("sources", "select")
+                               for text in (b"unknown:parser-drift.test", b"regexp:[")):
+            name = next(iter(next(v[mode] for v in catalog["vendors"] if v.get(mode))))
+            with self.subTest(mode=mode, bad_line=bad_line), tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                for directory in ("sources", "rules"):
+                    shutil.copytree(rules.ROOT / directory, root / directory)
+                baseline = root / "sources/snapshot"
+                old_voice = {"prefixes": [{"ipv4Prefix": "8.8.8.8/32"}]}
+                (baseline / "openai-voice.json").write_text(rules.json_text(old_voice), encoding="utf-8")
+                lock = rules.read_json(baseline / "lock.json")
+                lock["sha256"]["openai-voice.json"] = rules.sha256((baseline / "openai-voice.json").read_bytes())
+                (baseline / "lock.json").write_text(rules.json_text(lock), encoding="utf-8")
+                rules.publish_files(root, rules.compile_outputs(root))
+                fresh_voice = {"prefixes": old_voice["prefixes"] + [{"ipv4Prefix": "8.8.8.9/32"}]}
+                official = (rules.read_json(root / "sources/official-state.json"), {"sources": {}, "review_required": []})
+
+                def upstream_git(args, **kwargs):
+                    if args[-2:] == ["rev-parse", "HEAD"]:
+                        return "f" * 40
+                    relative = args[-1].split(":", 1)[1]
+                    path = baseline / ("V2FLY-LICENSE" if relative == "LICENSE" else relative.replace("data/", "v2fly/", 1))
+                    data = path.read_bytes()
+                    return data + b"\n" + bad_line + b"\n" if relative == f"data/{name}" else data
+
+                with patch.object(sync, "ROOT", root), patch.object(sys, "argv", ["sync.py"]), \
+                        patch.object(sync.subprocess, "run"), \
+                        patch.object(sync.subprocess, "check_output", side_effect=upstream_git), \
+                        patch.object(sync, "fetch", return_value=rules.json_text(fresh_voice).encode()), \
+                        patch.object(sync, "refresh_official", return_value=official):
+                    self.assertEqual(sync.main(), 0)
+                report = rules.read_json(root / ".work/sync-report.json")
+                self.assertEqual(report["source_health"]["v2fly"], "retained-last-good")
+                self.assertEqual(report["source_health"]["openai_voice"], "fresh")
+                self.assertEqual(rules.read_json(baseline / "openai-voice.json"), fresh_voice)
+                self.assertEqual(rules.verify_snapshot(baseline)["v2fly_revision"], lock["v2fly_revision"])
+                self.assertEqual(verify_rules.verify(root)["result"], "PASS")
+
     def test_explicit_local_inputs_are_not_reported_as_live_fetches_or_outages(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -122,14 +163,44 @@ class ScopeBoundaryTests(unittest.TestCase):
         catalog = {"vendors": [{"id": "demo", "sources": ["demo"]}]}
         patches = {"add": [], "drop": {}, "surge_regex": {}}
         origins = {"v2fly:data/demo"}
-        for value in ("co.uk", "s3.us-east-1.amazonaws.com", "s3.eu-west-2.amazonaws.com",
-                      "s3-cn-north-1.amazonaws.com.cn", "workers.dev", "github.io"):
-            key = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", value))
-            self.assertEqual(automation.scope_problem(key, origins, catalog, patches),
-                             "shared-platform-forbidden-in-core", value)
-        for value in ("product.s3.us-east-1.amazonaws.com", "product.workers.dev", "product.co.uk"):
-            key = ("demo", "core", rules.Rule("DOMAIN", value))
-            self.assertIsNone(automation.scope_problem(key, origins, catalog, patches), value)
+        boundaries = {"co.uk", "s3.eu-west-2.amazonaws.com", "s3-cn-north-1.amazonaws.com.cn",
+                      "workers.dev", "github.io", "unpkg.com", "s3.us-east-1.amazonaws.com",
+                      "cloudinary.com", "res.cloudinary.com", "api.cloudinary.com", "b-cdn.net",
+                      "githubassets.com", "host.livekit.cloud", "turn.livekit.cloud",
+                      "tencentcloudapi.com", "cloud.tencent.com", "xf-yun.com",
+                      "aliyuncs.com", "baidubce.com", "volces.com"} | set(rules.read_json(
+                          rules.ROOT / "sources/intake-policy.json")["official_shared_suffixes"])
+        for value in sorted(boundaries):
+            with self.subTest(boundary=value):
+                for kind in ("DOMAIN", "DOMAIN-SUFFIX"):
+                    key = ("demo", "core", rules.Rule(kind, value))
+                    self.assertEqual(automation.scope_problem(key, origins, catalog, patches),
+                                     "shared-platform-forbidden-in-core")
+                tenant = ("demo", "core", rules.Rule("DOMAIN", "product." + value))
+                self.assertIsNone(automation.scope_problem(tenant, origins, catalog, patches))
+
+    def test_regional_s3_root_is_excluded_but_tenant_facts_require_review(self):
+        policy = rules.read_json(rules.ROOT / "sources/intake-policy.json")
+        root_domain = "s3.us-east-1.amazonaws.com"
+        tenant = "unreviewed-tenant." + root_domain
+        source = {"id": "fixture", "vendor": "cursor", "url": "https://official.example/network"}
+        state = {"documents": {"fixture": dict(source, rules=[
+            "DOMAIN-SUFFIX," + root_domain, "DOMAIN," + tenant])}}
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "sources").mkdir()
+            for name, content in (("intake-policy.json", policy), ("official.json", {"sources": [source]}),
+                                  ("patches.json", {"drop": {}})):
+                (root / "sources" / name).write_text(rules.json_text(content), encoding="utf-8")
+            entries = {}
+            report = intake.analyze_official(root, state, entries)
+        self.assertEqual([row["rule"] for row in report["review_required"]], ["DOMAIN," + tenant])
+        self.assertEqual([row["rule"] for row in report["decisions"]], ["DOMAIN-SUFFIX," + root_domain])
+        self.assertEqual(entries, {})
+        key = ("cursor", "core", rules.Rule("DOMAIN", tenant))
+        self.assertEqual(automation.scope_problem(key, {source["url"]},
+            {"vendors": [{"id": "cursor", "sources": ["cursor"]}]},
+            {"add": [], "drop": {}, "surge_regex": {}}), "source-not-authorized-by-catalog")
 
 
 class VoiceChangeTests(unittest.TestCase):

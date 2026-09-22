@@ -102,6 +102,22 @@ class ReconciliationTests(unittest.TestCase):
         self.assertIn("demo", report["deletion_observation_frozen_vendors"])
         self.assertFalse(report["automatically_removed"])
 
+    def test_vendor_outage_does_not_freeze_unrelated_retirement(self):
+        other_stable = ("other", *self.stable[1:])
+        other_old = ("other", *self.old[1:])
+        other_origins = {"v2fly:data/other"}
+        self.catalog["vendors"].append({"id": "other", "sources": ["other"]})
+        self.candidates[other_stable] = other_origins
+        self.before["provenance"].extend(automation.row_of(key, other_origins)
+                                         for key in (other_stable, other_old))
+        state, _ = self.reconcile(1)
+        state, _ = self.reconcile(2, state)
+        state, report = self.reconcile(20, state, unhealthy_vendors={"demo"})
+        self.assertEqual([automation.key_of(row) for row in state["retained"]], [self.old])
+        self.assertEqual(state["retained"][0]["observation_days"], ["2026-01-01", "2026-01-02"])
+        self.assertEqual([automation.key_of(row) for row in report["automatically_removed"]], [other_old])
+        self.assertEqual(report["deletion_observation_frozen_vendors"], ["demo"])
+
     def test_last_vendor_rule_is_retained(self):
         self.candidates = {}
         state, _ = self.reconcile(1)
@@ -133,8 +149,8 @@ class ReconciliationTests(unittest.TestCase):
 
 class AuditTests(unittest.TestCase):
     def setUp(self):
-        self.source = {"id": "demo", "url": "https://example.com/rules", "role": "secondary gap radar"}
-        self.existing = {rules.Rule("DOMAIN-SUFFIX", "openai.com")}
+        self.source = {"id": "demo", "url": "https://example.com/rules", "role": "secondary gap radar", "vendor": "openai"}
+        self.existing = {"openai": {rules.Rule("DOMAIN-SUFFIX", "openai.com")}}
 
     def test_covered_changes_are_silent_and_broad_non_domains_are_excluded(self):
         pending, summary = audit_sources.analyze(
@@ -242,17 +258,29 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(row["evidence"]["product_scope"]["status"], "outside-explicit-select")
         self.assertEqual(row["block_reason"], "outside-explicit-product-select")
 
-    def test_wider_sukka_scope_is_only_related_v2fly_evidence(self):
-        with tempfile.TemporaryDirectory() as td:
-            data = Path(td)
-            (data / "anthropic").write_text("full:new.example.com\n", encoding="utf-8")
-            catalog = {"profiles": {}, "vendors": [{"id": "claude", "sources": ["anthropic"]}]}
-            evidence = audit_sources.v2fly_evidence(
-                rules.Rule("DOMAIN-SUFFIX", "new.example.com"), "claude", catalog, data,
-            )
-        self.assertTrue(evidence["present"])
-        self.assertEqual(evidence["level"], "related")
-        self.assertEqual(evidence["matches"][0]["relation"], "same-domain-different-scope")
+    def test_radar_evidence_scope_and_availability_do_not_grant_authority(self):
+        cases = [
+            ("full:new.example.com", "DOMAIN-SUFFIX", "related", "same-domain-different-scope"),
+            ("full:api.new.example.com", "DOMAIN-SUFFIX", "related", "candidate-wider-than-evidence"),
+            ("new.example.com", "DOMAIN", "confirmed", "evidence-covers-candidate"),
+            (None, "DOMAIN", "unknown", None),
+        ]
+        for upstream, kind, level, relation in cases:
+            with self.subTest(upstream=upstream), tempfile.TemporaryDirectory() as td:
+                data = Path(td)
+                if upstream:
+                    (data / "anthropic").write_text(upstream + "\n", encoding="utf-8")
+                catalog = {"profiles": {}, "vendors": [{"id": "claude", "sources": ["anthropic"]}]}
+                row = audit_sources.enrich_pending(
+                    [{"section": "Claude", "rule": kind + ",new.example.com"}], catalog,
+                    {"add": [], "drop": {}, "surge_regex": {}}, {"documents": {}}, data,
+                )[0]
+                evidence = row["evidence"]["v2fly"]
+                self.assertEqual(evidence["level"], level)
+                self.assertEqual(evidence["status"], "available" if upstream else "unavailable")
+                self.assertEqual(row["block_reason"], "primary-source-scope-mismatch" if upstream else "evidence-unavailable")
+                self.assertEqual([match["relation"] for match in evidence["matches"]], [relation] if relation else [])
+                self.assertIn("快照证据", audit_sources.format_review_item(row))
 
     def test_actions_summary_lists_scan_counts_and_gap_details(self):
         report = {
@@ -411,11 +439,17 @@ class NotificationTests(unittest.TestCase):
             self.assertEqual(notify_review.load_report(path, failed=True)["review_required"], [{"reason": "workflow-failed"}])
 
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
-    def test_unchanged_issue_makes_no_writes(self):
-        row = {"number": 1, "title": "[rules automation] sync exceptions", "body": notify_review.issue_body("sync", self.report), "state": "OPEN"}
-        call = Mock(return_value=json.dumps([row]))
-        notify_review.notify("sync", self.report, call)
-        self.assertEqual(call.call_count, 1)
+    def test_unchanged_open_issue_is_quiet_and_closed_issue_reopens(self):
+        for state in ("OPEN", "CLOSED"):
+            with self.subTest(state=state):
+                row = {"number": 1, "title": "[rules automation] sync exceptions",
+                       "body": notify_review.issue_body("sync", self.report), "state": state}
+                call = Mock(return_value=json.dumps([row]))
+                notify_review.notify("sync", self.report, call)
+                self.assertEqual(call.call_count, 1 if state == "OPEN" else 2)
+                if state == "CLOSED":
+                    self.assertEqual(call.call_args.args,
+                                     ("issue", "reopen", "1", "--repo", "NET86/rules"))
 
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
     def test_empty_report_does_not_create_issue(self):

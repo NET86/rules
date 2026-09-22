@@ -3,5 +3,25 @@
 # 自动生成，请勿手改。清单：https://raw.githubusercontent.com/NET86/rules/stable/rules/manifest.json
 # SPDX-License-Identifier: AGPL-3.0-only
 # 第三方声明：https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
+DOMAIN,api.hunyuan.cloud.tencent.com
+DOMAIN,hunyuan.ap-bangkok.tencentcloudapi.com
+DOMAIN,hunyuan.ap-beijing.tencentcloudapi.com
+DOMAIN,hunyuan.ap-chengdu.tencentcloudapi.com
+DOMAIN,hunyuan.ap-chongqing.tencentcloudapi.com
+DOMAIN,hunyuan.ap-guangzhou.tencentcloudapi.com
+DOMAIN,hunyuan.ap-hongkong.tencentcloudapi.com
+DOMAIN,hunyuan.ap-jakarta.tencentcloudapi.com
+DOMAIN,hunyuan.ap-nanjing.tencentcloudapi.com
+DOMAIN,hunyuan.ap-seoul.tencentcloudapi.com
+DOMAIN,hunyuan.ap-shanghai-fsi.tencentcloudapi.com
+DOMAIN,hunyuan.ap-shanghai.tencentcloudapi.com
+DOMAIN,hunyuan.ap-shenzhen-fsi.tencentcloudapi.com
+DOMAIN,hunyuan.ap-singapore.tencentcloudapi.com
+DOMAIN,hunyuan.ap-tokyo.tencentcloudapi.com
+DOMAIN,hunyuan.eu-frankfurt.tencentcloudapi.com
+DOMAIN,hunyuan.na-ashburn.tencentcloudapi.com
+DOMAIN,hunyuan.na-siliconvalley.tencentcloudapi.com
+DOMAIN,hunyuan.sa-saopaulo.tencentcloudapi.com
+DOMAIN,hunyuan.tencentcloudapi.com
 DOMAIN-SUFFIX,hunyuan.tencent.com
 DOMAIN-SUFFIX,yuanbao.tencent.com

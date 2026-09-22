@@ -33,10 +33,14 @@ FORBIDDEN_CORE = {
     "com", "net", "ai", "cn", "google.com", "googleapis.com", "gstatic.com",
     "amazonaws.com", "azure.com", "azureedge.net", "azurefd.net", "windows.net",
     "cloudfront.net", "cloudflare.com", "cloudflare.net", "github.com", "githubusercontent.com",
-    "auth0.com", "stripe.com", "sentry.io", "intercom.io", "intercomcdn.com", "livekit.cloud",
+    "auth0.com", "stripe.com", "sentry.io", "intercom.io", "intercomcdn.com", "livekit.cloud", "unpkg.com",
+    "workos.com", "workoscdn.com", "imgix.net", "ct.sendgrid.net", "apple.com",
     "storage.googleapis.com", "blob.core.windows.net", "webpubsub.azure.com", "api.github.com",
     "datadoghq.com", "segment.io", "algolia.net", "byteoversea.com", "microsoft.com",
     "s3.amazonaws.com", "s3.amazonaws.com.cn", "azurewebsites.net", "cloudapp.net",
+    "cloudinary.com", "res.cloudinary.com", "api.cloudinary.com", "b-cdn.net", "githubassets.com",
+    "host.livekit.cloud", "turn.livekit.cloud", "tencentcloudapi.com", "cloud.tencent.com",
+    "xf-yun.com", "aliyuncs.com", "baidubce.com", "volces.com",
     "github.io", "workers.dev", "pages.dev", "vercel.app", "netlify.app", "onrender.com",
     "co.uk", "org.uk", "ac.uk", "gov.uk", "com.cn", "net.cn", "org.cn",
     "com.au", "net.au", "org.au", "co.jp", "co.nz", "co.in", "com.br", "com.sg"
@@ -88,7 +92,10 @@ class Rule:
         if self.kind in {"DOMAIN", "DOMAIN-SUFFIX"} and not DOMAIN_RE.fullmatch(self.value):
             raise ValueError(f"Invalid domain: {self.value}")
         if self.kind == "DOMAIN-REGEX":
-            re.compile(self.value)
+            try:
+                re.compile(self.value)
+            except re.error as exc:
+                raise ValueError(f"Invalid domain regex: {self.value}") from exc
         if self.kind in {"IP-CIDR", "IP-CIDR6"}:
             network = ipaddress.ip_network(self.value, strict=True)
             if network.version != (6 if self.kind == "IP-CIDR6" else 4):
@@ -180,7 +187,9 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
                     continue
                 add(vid, "core", rule, f"v2fly:data/{origin}")
         for source, selected in vendor.get("select", {}).items():
-            available = {r.value: (r, attrs, origin) for r, attrs, origin in load_explicit_source(data, source)}
+            available = {}
+            for row in load_explicit_source(data, source):
+                available.setdefault(row[0].value, []).append(row)
             for value in selected:
                 if value not in available:
                     if review_mode:
@@ -189,10 +198,10 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
                                                      "reason": "selected-upstream-domain-disappeared-or-moved"})
                         continue
                     raise ValueError(f"Selected upstream domain disappeared or moved behind include: {vid} {value}")
-                rule, attrs, origin = available[value]
-                if "@ads" in attrs or rule.text in dropped:
-                    continue
-                add(vid, "core", rule, f"v2fly:data/{origin} (selected explicit rule)")
+                for rule, attrs, origin in available[value]:
+                    if "@ads" in attrs or rule.text in dropped:
+                        continue
+                    add(vid, "core", rule, f"v2fly:data/{origin} (selected explicit rule)")
     for patch in patches["add"]:
         if patch["vendor"] not in ids or patch["tier"] != "core":
             raise ValueError(f"Invalid patch target: {patch}")
@@ -236,14 +245,22 @@ def voice_rules(payload):
         raise ValueError("Unexpected OpenAI voice JSON schema")
     result = set()
     for entry in payload["prefixes"]:
+        if not isinstance(entry, dict):
+            raise ValueError("Voice prefix entry must be an object")
         keys = set(entry) & {"ipv4Prefix", "ipv6Prefix"}
         if len(keys) != 1:
             raise ValueError(f"Invalid voice prefix entry: {entry}")
         key = next(iter(keys))
+        if not isinstance(entry[key], str):
+            raise ValueError("Voice prefix must be a CIDR string")
         net = ipaddress.ip_network(entry[key], strict=True)
         if net.version != (4 if key == "ipv4Prefix" else 6):
             raise ValueError("Voice address family mismatch")
-        if not net.network_address.is_global or net.prefixlen < (16 if net.version == 4 else 32):
+        endpoints = (net.network_address, net.broadcast_address)
+        if net.prefixlen < (16 if net.version == 4 else 32) or any(
+            not address.is_global or address.is_multicast or address.is_reserved
+            for address in endpoints
+        ):
             raise ValueError(f"Suspicious voice range: {net}")
         result.add(Rule("IP-CIDR" if net.version == 4 else "IP-CIDR6", str(net)))
     if not 1 <= len(result) <= 512:
@@ -320,16 +337,16 @@ def render_members(members, target, patches, catalog):
 
 def subscription_index(catalog):
     lines = ["# 订阅目录", "", "日常使用推荐 `ai-daily`。以下为 `stable` 规则文件，不包含代理节点。", "",
-             "本页由产品配置自动生成。", "",
+             "<!-- 本页由 scripts/rules.py 自动生成，请勿手改。 -->", "",
              "## 合集", "", "| 规则集 | 用途 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |"]
     def row(name, description):
-        return f"| {name} | {description} | [{name}.list]({RAW_URL}/rules/surge/{name}.list) | [{name}.yaml]({RAW_URL}/rules/mihomo/{name}.yaml) |"
+        return f"| {name} | {description} | [订阅]({RAW_URL}/rules/surge/{name}.list) | [订阅]({RAW_URL}/rules/mihomo/{name}.yaml) |"
     for name in ("ai-daily", "ai-core", "ai-cn"):
         lines.append(row(name, f"{len(catalog['profiles'][name]['members'])} 家厂商。{BUNDLE_DESCRIPTIONS[name]}"))
     daily = catalog["profiles"]["ai-daily"]["members"]
-    lines += ["", "使用 ai-core 且需要 OpenAI 语音时，另加 openai-voice-ip 并设置相同策略。", "",
+    lines += ["", "使用 `ai-core` 或单厂商 `openai` 且需要语音时，另加 `openai-voice-ip` 并设置相同策略。", "",
               "日常厂商：" + "、".join(daily) + "。", "",
-              "## 单厂商", "", "需要独立出口时选择单厂商，并放在合集前。单厂商仅含核心域名；OpenAI 语音需另加语音 IP 包。", ""]
+              "## 单厂商", "", "仅含核心域名。需要独立出口时选用，并放在合集前。", ""]
     for group, title in (("global", "海外服务"), ("cn", "国内服务")):
         lines += [f"### {title}", "", "| 文件 | 服务 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |"]
         for vendor in catalog["vendors"]:

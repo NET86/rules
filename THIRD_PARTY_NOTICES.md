@@ -6,11 +6,11 @@
 
 | 来源 | 许可 | 声明 |
 | --- | --- | --- |
-| [V2Fly](https://github.com/v2fly/domain-list-community) | [MIT 原文](sources/snapshot/V2FLY-LICENSE) | Copyright (c) 2018-2019 V2Ray. 域名快照固定提交和文件摘要，生成规则保留本声明链接。 |
-| [Sukka](https://github.com/SukkaW/Surge) | [AGPL-3.0 原文](https://github.com/SukkaW/Surge/blob/4c5439b2d9d98c39a52691b8662c7e82bd1a2c40/LICENSE) | Copyright Sukka and contributors. 保留派生材料署名；相关修改包括厂商分类、范围筛选、去重及 Surge/Mihomo 格式转换。 |
+| [V2Fly](https://github.com/v2fly/domain-list-community) | [MIT 原文](sources/snapshot/V2FLY-LICENSE) | Copyright (c) 2018-2019 V2Ray. 生成规则附本声明链接。 |
+| [Sukka](https://github.com/SukkaW/Surge) | [AGPL-3.0 原文](https://github.com/SukkaW/Surge/blob/4c5439b2d9d98c39a52691b8662c7e82bd1a2c40/LICENSE) | Copyright Sukka and contributors. 派生修改包括厂商分类、范围筛选、去重及 Surge/Mihomo 格式转换。 |
 | [VPSDance](https://github.com/VPSDance/ai-proxy-rules) | [MIT 原文](licenses/VPSDance-MIT.txt) | Copyright (c) 2026 VPSDance. 保留已分发 Google AI 派生补丁的版权与许可通知。 |
 
-各来源在自动更新中的用途见 [数据来源](docs/SOURCES.md)。原 NET86 MIT 许可文本保留于 [licenses/NET86-MIT.txt](licenses/NET86-MIT.txt)。
+当前来源及用途见 [数据来源](docs/SOURCES.md)。原 NET86 MIT 许可文本保留于 [licenses/NET86-MIT.txt](licenses/NET86-MIT.txt)。
 
 ## 官方资料
 

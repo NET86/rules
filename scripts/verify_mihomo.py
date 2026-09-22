@@ -23,6 +23,8 @@ from verify_rules import load_contracts, parse_artifact
 
 
 class CaptureProxy(socketserver.BaseRequestHandler):
+    response = b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+
     def handle(self):
         self.request.settimeout(5)
         def headers():
@@ -38,7 +40,11 @@ class CaptureProxy(socketserver.BaseRequestHandler):
             self.request.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
             data = headers()
         if data.startswith(b"GET "):
-            self.request.sendall(b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            self.request.sendall(self.response)
+
+
+class NonMatchingProxy(CaptureProxy):
+    response = b"HTTP/1.1 418 Non-Matching Outlet\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
 
 
 def free_port():
@@ -48,20 +54,23 @@ def free_port():
 
 
 def probe(port, host):
-    try:
-        with socket.create_connection(("127.0.0.1", port), timeout=4) as sock:
-            authority = f"[{host}]" if ":" in host else host
-            sock.sendall(f"GET http://{authority}/ai-rules-local-test HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n".encode())
-            response = b""
-            # TCP does not preserve response/status-line message boundaries.
-            while b"\r\n" not in response and len(response) < 1024:
-                chunk = sock.recv(1024 - len(response))
-                if not chunk:
-                    break
-                response += chunk
-        return b" 204 " in response.split(b"\r\n", 1)[0]
-    except (ConnectionError, TimeoutError, OSError):
-        return False
+    """Require evidence from a known local outlet; transport failure is not a pass."""
+    with socket.create_connection(("127.0.0.1", port), timeout=4) as sock:
+        authority = f"[{host}]" if ":" in host else host
+        sock.sendall(f"GET http://{authority}/ai-rules-local-test HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n".encode())
+        response = b""
+        # TCP does not preserve response/status-line message boundaries.
+        while b"\r\n" not in response and len(response) < 1024:
+            chunk = sock.recv(1024 - len(response))
+            if not chunk:
+                break
+            response += chunk
+    status = response.split(b"\r\n", 1)[0].split()
+    if (b"\r\n" not in response or len(status) < 2
+            or status[0] not in {b"HTTP/1.0", b"HTTP/1.1"}
+            or status[1] not in {b"204", b"418"}):
+        raise RuntimeError(f"Unverified local routing response for {host}: {response[:120]!r}")
+    return status[1] == b"204"
 
 
 def proxy_ready(port):
@@ -173,10 +182,12 @@ def main():
     manifest = read_json(root / "rules/manifest.json")
     work = root / ".work"
     work.mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="mihomo-test-", dir=work) as td, socketserver.ThreadingTCPServer(("127.0.0.1", 0), CaptureProxy) as capture:
-        capture.daemon_threads = True
-        thread = threading.Thread(target=capture.serve_forever, daemon=True)
-        thread.start()
+    with (tempfile.TemporaryDirectory(prefix="mihomo-test-", dir=work) as td,
+          socketserver.ThreadingTCPServer(("127.0.0.1", 0), CaptureProxy) as capture,
+          socketserver.ThreadingTCPServer(("127.0.0.1", 0), NonMatchingProxy) as nonmatch):
+        for outlet in (capture, nonmatch):
+            outlet.daemon_threads = True
+            threading.Thread(target=outlet.serve_forever, daemon=True).start()
         base = Path(td)
         (base / "providers").mkdir()
         providers = {}
@@ -212,9 +223,12 @@ def main():
             "external-controller": f"127.0.0.1:{controller}", "secret": "isolated-local-test",
             "dns": {"enable": False}, "tun": {"enable": False},
             "profile": {"store-selected": False, "store-fake-ip": False},
-            "proxies": [{"name": "LOCAL-CAPTURE", "type": "http", "server": "127.0.0.1", "port": capture.server_address[1]}],
+            "proxies": [
+                {"name": "LOCAL-CAPTURE", "type": "http", "server": "127.0.0.1", "port": capture.server_address[1]},
+                {"name": "LOCAL-NONMATCH", "type": "http", "server": "127.0.0.1", "port": nonmatch.server_address[1]},
+            ],
             "rule-providers": providers,
-            "rules": ["IP-CIDR,127.0.0.1/32,DIRECT,no-resolve"] + [f"RULE-SET,{name},LOCAL-CAPTURE,no-resolve" for name in selected] + [f"RULE-SET,{name},REJECT" for name in providers if name not in selected] + ["MATCH,REJECT"]
+            "rules": ["IP-CIDR,127.0.0.1/32,DIRECT,no-resolve"] + [f"RULE-SET,{name},LOCAL-CAPTURE,no-resolve" for name in selected] + [f"RULE-SET,{name},LOCAL-NONMATCH,no-resolve" for name in providers if name not in selected] + ["MATCH,LOCAL-NONMATCH"]
         }
         config_path = base / "config.json"
         config_path.write_text(json_text(config), encoding="utf-8")
@@ -303,6 +317,7 @@ def main():
                 refresh_report = verify_http_refresh(opener, controller, port, base / "providers", selected[0], positive[0])
                 report = {"engine_label": args.engine_label, "embedded_listener_controller_setup": embedded_listener_started, "http_provider_refresh": refresh_report, "engine": version, "provider_count": len(manifest["bundles"]), "routing_case_count": len(cases), "cases": cases, "result": "PASS", "scope": "Isolated engine and real HTTP provider updates; NOT FlClash UI, Surge runtime or remote AI service connectivity"}
                 report["profile"] = args.profile
+                report["negative_probe_evidence"] = "Explicit alternate local outlet (HTTP 418); transport errors fail validation"
                 report["voice_ip_case_count"] = len(ip_cases)
                 report["synthetic_ipv6_case_count"] = len(synthetic_results)
                 report["synthetic_ipv6_cases"] = synthetic_results
@@ -317,6 +332,7 @@ def main():
                     process.kill()
                     process.wait(timeout=5)
                 capture.shutdown()
+                nonmatch.shutdown()
                 server.shutdown()
                 server.server_close()
 

@@ -19,20 +19,20 @@
     "workoscdn.com": "Shared identity assets",
     "imgix.net": "Shared media CDN",
     "ct.sendgrid.net": "Shared email tracking",
-    "apple.com": "Apple platform services",
-    "s3.us-east-1.amazonaws.com": "Shared regional S3 infrastructure; exact tenant buckets require explicit review"
+    "apple.com": "Apple platform services"
   },
   "official_exclude_exact": {
+    "s3.us-east-1.amazonaws.com": "Shared regional S3 namespace; exact tenant hosts remain eligible for review",
     "cdn.jsdelivr.net": "Shared JavaScript CDN for arbitrary projects",
     "cdn.tailwindcss.com": "Shared CSS tooling CDN",
     "cdnjs.cloudflare.com": "Shared JavaScript CDN",
+    "unpkg.com": "Shared JavaScript CDN for arbitrary npm packages; not a Claude-specific endpoint",
     "code.jquery.com": "Shared JavaScript CDN",
     "fonts.googleapis.com": "Shared web fonts",
     "fonts.gstatic.com": "Shared web fonts",
     "formulae.brew.sh": "General package manager metadata",
     "googlesource.com": "General source code hosting",
     "raw.githubusercontent.com": "General source code hosting",
-    "s3.us-east-1.amazonaws.com": "Shared regional S3 namespace",
     "apihub.googleapis.com": "Shared Google API hub",
     "cloudresourcemanager.googleapis.com": "Shared Google project management",
     "feedback-pa.googleapis.com": "Shared Google feedback service",

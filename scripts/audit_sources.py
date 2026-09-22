@@ -4,7 +4,7 @@
 import os
 from pathlib import Path
 
-from automation import scope_problem
+from automation import scope_problem, vendor_spec
 from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json
 from sync import fetch
 
@@ -26,7 +26,7 @@ SECTION_VENDOR = {
 }
 BLOCK_REASON_LABELS = {
     "outside-explicit-product-select": "上游有该规则，但不在当前显式产品范围",
-    "secondary-source-only": "目前仅 Sukka 证据命中，主上游尚未确认",
+    "primary-source-absent": "当前 V2Fly 快照未收录；官方证据另列，仍需审核生产授权",
     "primary-source-scope-mismatch": "主上游只有相关规则，匹配范围并不等价",
     "evidence-unavailable": "本地主上游证据暂不可用，需要复核",
     "source-not-authorized-by-catalog": "来源没有被当前 catalog 授权",
@@ -49,7 +49,9 @@ def covered(candidate, existing):
     )
 
 
-def analyze(source, content, existing):
+def analyze(source, content, existing, dropped=None):
+    """Compare each product section with its own vendor's core rules."""
+    dropped = dropped or {}
     ignored = set(source.get("ignore_rules", []))
     wanted_sections = set(source.get("sections", []))
     seen_sections = set()
@@ -71,7 +73,7 @@ def analyze(source, content, existing):
         raise ValueError(f"Secondary radar sections changed: {sorted(wanted_sections - seen_sections)}")
     if not active:
         raise ValueError(f"Unexpected empty rule response: {source['id']}")
-    gaps, excluded, already_covered = {}, 0, 0
+    gaps, excluded, already_covered = set(), 0, 0
     for section, line in sorted(set(active), key=lambda row: ((row[0] or ""), row[1])):
         if line in ignored:
             excluded += 1
@@ -81,17 +83,21 @@ def analyze(source, content, existing):
             excluded += 1
             continue
         candidate = Rule.from_text(fields[0] + "," + fields[1].lower())
-        if covered(candidate, existing):
+        vendor = SECTION_VENDOR.get(section, source.get("vendor"))
+        if candidate.text in dropped.get(vendor, {}):
+            excluded += 1
+        elif covered(candidate, existing.get(vendor, ())):
             already_covered += 1
         elif forbidden_core(candidate.value):
             excluded += 1
         else:
-            gaps[candidate.text] = section
+            gaps.add((section, candidate.text))
     pending = [
-        {"source_id": source["id"], "source": source["url"], "section": gaps[rule], "rule": rule,
+        {"source_id": source["id"], "source": source["url"], "section": section, "rule": rule,
+         "vendor": SECTION_VENDOR.get(section, source.get("vendor")),
          "reason": "uncovered-secondary-domain",
          "action": "Radar only: require v2fly, official evidence or an explicit reviewed patch before production"}
-        for rule in sorted(gaps)
+        for section, rule in sorted(gaps, key=lambda row: ((row[0] or ""), row[1]))
     ]
     summary = {
         "active_line_count": len(set(active)), "covered_count": already_covered,
@@ -112,10 +118,6 @@ def rule_relation(candidate, evidence):
     if candidate.kind == "DOMAIN-SUFFIX" and evidence.kind in {"DOMAIN", "DOMAIN-SUFFIX"} and candidate.matches(evidence.value):
         return "candidate-wider-than-evidence"
     return None
-
-
-def vendor_spec(catalog, vendor):
-    return next((row for row in catalog["vendors"] if row["id"] == vendor), None)
 
 
 def impact_outputs(catalog, vendor):
@@ -209,7 +211,7 @@ def enrich_pending(pending, catalog, patches, official_state, data):
     for original in pending:
         row = dict(original)
         candidate = Rule.from_text(row["rule"])
-        vendor = SECTION_VENDOR.get(row.get("section"))
+        vendor = row.get("vendor") or SECTION_VENDOR.get(row.get("section"))
         row["vendor"] = vendor
         row["impact"] = impact_outputs(catalog, vendor)
         if vendor is None:
@@ -227,7 +229,7 @@ def enrich_pending(pending, catalog, patches, official_state, data):
             if upstream.get("status") != "available":
                 block = "evidence-unavailable"
             elif not upstream.get("present"):
-                block = "secondary-source-only"
+                block = "primary-source-absent"
             elif scope["status"] == "outside-explicit-select":
                 block = "outside-explicit-product-select"
             elif not any(match.get("relation") == "exact" for match in upstream.get("matches", [])):
@@ -266,7 +268,7 @@ def format_review_item(row):
         official_ids = sorted({item["source_id"] for item in official.get("matches", [])})
         official_text = official.get("level", "none") + ((" · " + ", ".join(official_ids)) if official_ids else "")
         scope = evidence.get("product_scope", {}).get("status", "unknown")
-        text += f"\n  - 证据：V2Fly {v2fly_text} · 官方 {official_text} · 产品范围 {scope}"
+        text += f"\n  - 快照证据：V2Fly {v2fly_text} · 官方 {official_text} · 产品范围 {scope}"
         text += f"\n  - 拦截：{row.get('block_reason_label', row.get('block_reason', 'unknown'))}"
     return text
 
@@ -321,15 +323,18 @@ def main():
     patches = read_json(ROOT / "sources/patches.json")
     official_state = read_json(ROOT / "sources/official-state.json")
     v2fly_data = ROOT / "sources/snapshot/v2fly"
-    existing = {Rule.from_text(row["rule"]) for row in manifest["provenance"]}
+    existing = {}
+    for row in manifest["provenance"]:
+        if row["tier"] == "core":
+            existing.setdefault(row["vendor"], set()).add(Rule.from_text(row["rule"]))
     report = {
-        "schema": 4, "review_required": [], "sources": {},
+        "schema": 5, "review_required": [], "sources": {},
         "action": "Read-only radar. Covered/ignored changes are silent; uncovered domains never change production automatically.",
     }
     for source in config["sources"]:
         try:
             content = fetch(source["url"]).decode("utf-8-sig")
-            pending, summary = analyze(source, content, existing)
+            pending, summary = analyze(source, content, existing, patches.get("drop", {}))
             report["review_required"].extend(
                 enrich_pending(pending, catalog, patches, official_state, v2fly_data)
             )

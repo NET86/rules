@@ -1,35 +1,55 @@
-# 验证范围
+# 校验与限制
 
-发布由自动校验决定，无需每次人工试用。验证结果说明规则能否按预期生成、匹配和发布，不保证账号或代理节点可用。
+## 检查什么
 
-## 自动检查
-
-| 检查 | 内容 |
+| 检查 | 契约 |
 | --- | --- |
-| 输入与生成 | 语法、路径、类型、来源权限、摘要及可重复生成。 |
-| 跨格式一致性 | 独立解析 Surge/Mihomo 文件，核对数量、重复项、摘要和已声明转换差异。 |
-| 产品语义 | 检查关键正反例与厂商归属；合集必须等于声明成员和功能包的并集。 |
-| 真实内核 | 固定 Mihomo 与 FlClash 内嵌核心加载 HTTP 规则源，执行域名、IP 和刷新恢复探测。 |
-| 发布与恢复 | 回读候选和稳定订阅，验证文件及语义契约；模拟抓取、发布、并发与恢复失败。 |
-| 自动化 | 调度去重、来源异常、Issue 去重、依赖升级身份与提交检查。 |
+| 单元测试 | 来源解析、授权隔离、失败保底、退役、雷达、发布恢复、Issue 与调度 |
+| 确定性重建 | 固定快照、来源完整性、许可摘要、文件集合及内容一致 |
+| 独立产物校验 | 语法、摘要、数量、跨格式差异、合集恰为声明成员与功能包的并集 |
+| 语义契约 | 每个单厂商和合集产物的必命中 / 必不命中，不只检查 manifest 声明 |
+| Mihomo / FlClash 核心 | 真实解析、HTTP provider 加载、三种配置路由、更新、断网保留与恢复 |
+| 发布回读 | 不可变候选及稳定地址的实际下载内容、摘要、语义与核心验证 |
 
-## 关键保护
+固定语义用例独立于生成规则；动态探针补充当前域名及 IP 边界，不能替代语义契约。语音探针按完整网段并集判断首尾与相邻地址；另用不会发布的固定 IPv6 测试段覆盖 IPv6 路径。正反例必须分别收到明确本地出口响应，超时或断连不能判通过。
 
-- 每个产品均有少量独立语义用例。缺失、空用例、相互矛盾或厂商错配会阻止发布；普通域名更新无需逐条增加用例。
-- 同时验证日常合集、海外分包和国内合集。语音网段检查首尾与相邻地址，相邻地址按完整网段并集判断。
-- 日常测试固定加入临时 IPv6 网段 `2001:db8::4/126`，在双内核中检查首尾命中、紧邻地址不命中。四个用例独立统计，不写入订阅，不依赖公网 IPv6。
-- 规则源恢复须证明临时测试规则已移除、原有入口重新命中、缓存字节恢复；空规则源不算恢复成功。
-- 来源失败或结构变化会冻结相关删除观察；语音覆盖骤减时保留有效旧版。仅来源证据变化不轮换发布。
-- 回归测试使用隔离样本，避免真实上游数量或待审项变化误触发失败。
+## 命令
 
-语义用例保存在 [semantic-contracts.json](../sources/semantic-contracts.json)。从生成清单派生的动态探针用于核对内核执行，不能替代这些独立产品用例。
+Python 3.12+、Node；构建 FlClash 核心还需与 [CI](../.github/workflows/ci.yml) 一致的 Go 环境。离线校验现有输入和产物：
 
-## 验证边界
+```sh
+python scripts/check_git_identity.py
+python -m unittest discover -s tests -v
+python scripts/rules.py --check
+python scripts/verify_rules.py
+node --test infra/scheduler/worker.test.mjs
+```
 
-- Surge 文件经过独立解析与跨格式检查；有 Surge CLI 时可额外执行原生检查。CI 未验证 macOS/iOS 运行时、系统网络扩展或客户端缓存。
-- FlClash 验证范围为固定的内嵌路由核心，不包含界面导入、覆写和其他核心版本。
-- 路由探针使用隔离的本地 HTTP 环境，不测试真实账号登录、上传、语音通话、节点地域、IP 声誉或公网 DNS/UDP。
-- 共享域名保护采用已知边界表，不是完整公共后缀数据库。官方地址有效也不等于所有相关流量都应进入 AI 分流。
-- Surge 的一条 OpenAI 通配符转换比原正则更宽，差异见 [格式兼容](COMPATIBILITY.md)。
+联网更新会修改快照和产物；更新后重新执行上面的检查：
 
-Actions 保存来源、发布和内核验证报告及必要日志，不应包含密钥、Cookie 或私人配置。运行命令见 [维护说明](MAINTAINING.md)。
+```sh
+python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt
+python scripts/sync.py
+python scripts/audit_sources.py
+```
+
+完整内核验证（Windows 的 FlClash 二进制路径加 `.exe`）：
+
+```sh
+python scripts/download_mihomo.py
+python scripts/verify_mihomo.py
+python scripts/verify_mihomo.py --profile split
+python scripts/verify_mihomo.py --profile ai-cn
+python scripts/build_flclash_core.py
+python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core
+python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile split
+python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile ai-cn
+```
+
+## 不保证什么
+
+Surge 在 CI 中没有原生运行时，只执行可移植校验；可用 `verify_rules.py --surge-cli <路径>` 补原生解析。FlClash 验证的是锁定的内嵌核心，不是 GUI / IPC。测试仅使用隔离本地 HTTP，不修改系统代理或 TUN，也不证明远端 AI 登录、账号权限、真实语音 UDP 或全部 DNS 行为可用。
+
+HTTP 503 必须保留活动规则和缓存；畸形 YAML 的内核原生保留能力单独记录，可能为 `false`，因此发布前严格语法检查不可删除。报告位于 `.work/`，以本次执行结果为准。
+
+已发布的 schema 1 语义契约仍可被恢复校验读取；新候选必须使用覆盖所有厂商的 schema 2。不要将这项持久数据兼容当成死代码删除。共享根域保护的边界见[来源与策略](SOURCES.md)，Surge 通配符差异见[兼容说明](COMPATIBILITY.md)。

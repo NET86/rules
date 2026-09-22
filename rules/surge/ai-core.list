@@ -75,6 +75,7 @@ DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com
 DOMAIN-SUFFIX,robinfrontend-pa.googleapis.com
 
 # Microsoft Copilot
+DOMAIN,copilot.ai
 DOMAIN-SUFFIX,copilot-stg.com
 DOMAIN-SUFFIX,copilot.cloud.microsoft
 DOMAIN-SUFFIX,copilot.com
@@ -88,6 +89,8 @@ DOMAIN,origin-tracker.githubusercontent.com
 DOMAIN-SUFFIX,githubcopilot.com
 
 # Cursor
+DOMAIN,anysphere-binaries.s3.us-east-1.amazonaws.com
+DOMAIN,cloud-agent-artifacts.s3.us-east-1.amazonaws.com
 DOMAIN-SUFFIX,cursor-cdn.com
 DOMAIN-SUFFIX,cursor.com
 DOMAIN-SUFFIX,cursor.sh

@@ -16,7 +16,7 @@
     {
       "id": "sukka-source-ai",
       "url": "https://raw.githubusercontent.com/SukkaW/Surge/master/Source/non_ip/ai.conf",
-      "role": "仅用于补缺监测，候选需审核后补入",
+      "role": "仅用于补缺监测；候选经审核决定接纳或排除",
       "sections": [
         "OpenAI / ChatGPT",
         "Perplexity",

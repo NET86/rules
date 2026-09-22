@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # 第三方声明：https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
 payload:
+  - "DOMAIN,copilot.ai"
   - "DOMAIN-SUFFIX,copilot-stg.com"
   - "DOMAIN-SUFFIX,copilot.cloud.microsoft"
   - "DOMAIN-SUFFIX,copilot.com"

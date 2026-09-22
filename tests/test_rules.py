@@ -18,9 +18,10 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(rows[1], (rules.Rule("DOMAIN", "api.example.com"), {"@ads"}))
         self.assertEqual(rows[3][0].kind, "DOMAIN-REGEX")
 
-    def test_unknown_prefix_rejected(self):
-        with self.assertRaises(ValueError):
-            list(rules.parse_v2fly("unknown:example.com"))
+    def test_invalid_syntax_uses_the_source_failure_contract(self):
+        for text in ("unknown:example.com", "regexp:[", "regexp:(?P<bad"):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                list(rules.parse_v2fly(text))
 
     def test_filtered_include_not_silently_expanded(self):
         with self.assertRaises(ValueError):
@@ -109,6 +110,30 @@ class PolicyTests(unittest.TestCase):
         selected = ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "selected.example"))
         self.assertEqual(set(entries), {selected})
         self.assertIsNone(automation.scope_problem(selected, entries[selected], catalog, patches))
+
+    def test_select_preserves_rule_union_independent_of_order_and_exclusions(self):
+        exact = "DOMAIN,selected.example"
+        suffix = "DOMAIN-SUFFIX,selected.example"
+        cases = [
+            (["selected.example", "full:selected.example"], {}, {exact, suffix}),
+            (["selected.example @ads", "full:selected.example"], {}, {exact}),
+            (["selected.example", "full:selected.example @ads"], {}, {suffix}),
+            (["selected.example", "full:selected.example"], {suffix: "reviewed"}, {exact}),
+            (["full:selected.example", "full:selected.example @ads"], {}, {exact}),
+        ]
+        catalog = {"vendors": [{"id": "demo", "group": "global",
+                                "select": {"mixed": ["selected.example"]}}]}
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            for lines, dropped, expected in cases:
+                for order in (lines, list(reversed(lines))):
+                    with self.subTest(order=order, dropped=dropped):
+                        (data / "mixed").write_text("\n".join(order) + "\nother.example\n", encoding="utf-8")
+                        patches = {"add": [], "drop": {"demo": dropped}, "surge_regex": {}}
+                        entries = rules.collect(catalog, patches, data, review_mode=True)
+                        self.assertEqual({key[2].text for key in entries}, expected)
+                        self.assertTrue(all(automation.scope_problem(key, origins, catalog, patches) is None
+                                            for key, origins in entries.items()))
 
     def test_whole_cloud_blocked_even_for_explicit_patch(self):
         catalog = {"vendors": [{"id": "test", "group": "global"}]}
