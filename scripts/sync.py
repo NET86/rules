@@ -56,26 +56,23 @@ def voice_change_problem(before, after):
     """Flag large semantic changes, allowing small updates and CIDR consolidation."""
     old = [ipaddress.ip_network(rule.value) for rule in voice_rules(before)]
     new = [ipaddress.ip_network(rule.value) for rule in voice_rules(after)]
-    # Compare covered ranges, so equivalent splits/merges do not require review.
-    merged_new = [net for version in (4, 6) for net in ipaddress.collapse_addresses(
-        net for net in new if net.version == version
-    )]
-    missing = [net for net in old if not any(
-        net.version == current.version and net.subnet_of(current) for current in merged_new
-    )]
-    if len(missing) > max(3, len(old) // 2):
-        return f"Voice lost coverage for {len(missing)}/{len(old)} previous ranges"
+    # Disjoint CIDR unions make splits/merges and overlaps representation-neutral.
     for version in (4, 6):
-        old_family = [net for net in old if net.version == version]
-        new_family = [net for net in new if net.version == version]
+        old_family = list(ipaddress.collapse_addresses(net for net in old if net.version == version))
+        new_family = list(ipaddress.collapse_addresses(net for net in new if net.version == version))
         if new_family and not old_family:
             return f"Voice introduced address family IPv{version}"
-        old_size = sum(net.num_addresses for net in ipaddress.collapse_addresses(old_family))
-        new_size = sum(net.num_addresses for net in ipaddress.collapse_addresses(new_family))
-        if new_size * 2 < old_size:
-            return f"Voice IPv{version} address coverage shrank from {old_size} to {new_size}"
-        if new_size > max(old_size * 4, old_size + 256):
+        old_size = sum(net.num_addresses for net in old_family)
+        new_size = sum(net.num_addresses for net in new_family)
+        if new_size > old_size * 4:
             return f"Voice IPv{version} address coverage expanded from {old_size} to {new_size}"
+        # Overlapping CIDRs are nested; each disjoint pair contributes its smaller
+        # range exactly once. Replacement addresses cannot mask loss of old ones.
+        retained_size = sum(min(previous.num_addresses, current.num_addresses)
+                            for previous in old_family for current in new_family
+                            if previous.overlaps(current))
+        if retained_size * 2 < old_size:
+            return f"Voice IPv{version} retained address coverage shrank from {old_size} to {retained_size}"
     return None
 
 

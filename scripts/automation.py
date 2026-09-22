@@ -89,7 +89,7 @@ def effective_entries(candidates, catalog, patches, state):
 def reconcile(candidates, previous_manifest, catalog, patches, previous_state, policy,
               today=None, allow_removals=False, contracts=None,
               source_observation_healthy=True, unhealthy_vendors=()):
-    """Reconcile only observed changes; retained/failing inputs never age deletions."""
+    """Retire after a calendar grace period and distinct healthy observations."""
     today = today or date.today()
     day = today.isoformat()
     contracts = contracts or {"vendors": {}}
@@ -112,7 +112,12 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
     old_retained = {key_of(row): row for row in previous_state.get("retained", [])}
     retained, removed = [], []
     missing = set(before) - set(accepted)
-    available = set(accepted) | missing
+    # Withdrawn local authority cannot serve as replacement coverage for another
+    # retirement considered earlier in the same pass.
+    available = set(accepted) | {
+        key for key in missing
+        if not scope_problem(key, before[key].get("sources", []), catalog, patches)
+    }
     frozen_vendors = set()
 
     for key in sorted(missing):
@@ -158,6 +163,17 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
             rule.matches(host) and not any(k[2].matches(host) for k in remaining)
             for host in critical_hosts
         ))
+        if tier == "core" and not protected:
+            for profile, spec in catalog.get("profiles", {}).items():
+                members = set(spec["members"])
+                if vendor not in members:
+                    continue
+                profile_hosts = contracts.get("profiles", {}).get(profile, {}).get("must_match", [])
+                profile_remaining = {k for k in available if k != key and k[0] in members and k[1] == "core"}
+                if any(rule.matches(host) and not any(k[2].matches(host) for k in profile_remaining)
+                       for host in profile_hosts):
+                    protected = True
+                    break
         row["protected"] = protected
         ready = (
             observation_healthy
@@ -190,7 +206,7 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
         "deletion_observation_frozen_vendors": sorted(frozen_vendors),
         "action": (
             "Declared direct vendor sources update automatically; mixed/select/patch boundaries remain explicit. "
-            "Only healthy observations age deletions; uncertain changes are retained or quarantined."
+            "Calendar grace and distinct healthy observations are both required; unhealthy runs cannot retire rules."
         ),
     }
     return state, report

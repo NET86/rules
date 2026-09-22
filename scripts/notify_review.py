@@ -14,15 +14,15 @@ REPOSITORY = "NET86/rules"
 def issue_body(channel, report):
     marker = f"<!-- rules-automation:{channel} -->"
     # Omit clock/observation counters: identical exceptions produce identical bodies.
-    visible = {"vendor", "tier", "section", "rule", "reason", "source", "source_id", "error_type", "error_detail", "impact", "evidence", "block_reason", "block_reason_label"}
+    visible = {"vendor", "tier", "section", "rule", "reason", "source", "source_id", "status", "error_type", "error_detail", "impact", "evidence", "block_reason", "block_reason_label"}
     rows = sorted({json.dumps({k: v for k, v in row.items() if k in visible}, ensure_ascii=False, sort_keys=True) for row in report.get("review_required", [])})
     failed = any(row.get("reason") == "workflow-failed" for row in report.get("review_required", []))
     if failed:
         status = "工作流失败，请查看 Actions 日志。未通过校验的规则不会发布。"
     elif channel == "sources":
-        status = "Sukka 补缺检查：以下候选需审核后补入。"
+        status = "Sukka 补缺检查：以下候选或来源异常需要复核；候选不自动进入生产。"
     else:
-        status = "自动更新继续运行；以下项目需要复核，异常来源沿用有效基线。"
+        status = "自动更新继续处理可验证输入；以下项目需要复核。有有效基线时保留旧版，无有效基线时明确报告不可用。"
     return marker + "\n\n" + status + "\n\n```json\n" + json.dumps([json.loads(row) for row in rows], ensure_ascii=False, indent=2) + "\n```\n\n[Actions](https://github.com/NET86/rules/actions) · [维护说明](https://github.com/NET86/rules/blob/main/docs/MAINTAINING.md)。状态不变不重复评论；例外消失后自动关闭。\n"
 
 

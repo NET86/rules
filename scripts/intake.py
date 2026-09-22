@@ -84,9 +84,12 @@ def visible_sections(content, names):
 def extract_document(source, payload):
     if source["format"] == "discovery":
         doc = json.loads(payload)
-        if doc.get("name") != "generativelanguage" or doc.get("kind") != "discovery#restDescription":
+        if not isinstance(doc, dict) or doc.get("name") != "generativelanguage" or doc.get("kind") != "discovery#restDescription":
             raise ValueError("Unexpected Google Discovery document")
-        text = "\n".join(str(doc.get(key, "")) for key in ("rootUrl", "baseUrl", "mtlsRootUrl"))
+        urls = [doc.get(key, "") for key in ("rootUrl", "baseUrl", "mtlsRootUrl")]
+        if any(not isinstance(url, str) for url in urls):
+            raise ValueError("Google Discovery URL fields must be strings")
+        text = "\n".join(urls)
     else:
         text = visible_sections(payload.decode("utf-8-sig"), source["sections"])
     rules = set()
@@ -181,6 +184,7 @@ def refresh_official(root, fetch):
                     "source_id": source["id"],
                     "source": source["url"],
                     "reason": "official-source-unavailable-or-parser-drift",
+                    "status": report["sources"][source["id"]]["status"],
                     "error_type": type(exc).__name__,
                     "error_detail": detail,
                 })
@@ -214,6 +218,7 @@ def analyze_official(root, state, production_entries):
     """Report official gaps without granting them production authority."""
     policy = read_json(root / "sources/intake-policy.json")
     config = read_json(root / "sources/official.json")
+    patches = read_json(root / "sources/patches.json")
     report = {"review_required": [], "decisions": []}
     for source in config["sources"]:
         doc = state["documents"].get(source["id"])
@@ -224,7 +229,13 @@ def analyze_official(root, state, production_entries):
         for text in doc["rules"]:
             rule = Rule.from_text(text)
             reason = official_policy_reason(policy, rule)
-            if reason:
+            dropped = patches.get("drop", {}).get(source["vendor"], {})
+            if text in dropped:
+                report["decisions"].append({
+                    "source_id": source["id"], "vendor": source["vendor"], "rule": text,
+                    "action": "excluded-local-policy", "reason": dropped[text],
+                })
+            elif reason:
                 report["decisions"].append({
                     "source_id": source["id"], "vendor": source["vendor"], "rule": text,
                     "action": "excluded-shared-or-placeholder", "reason": reason,

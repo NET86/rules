@@ -85,9 +85,12 @@ def format_review_item(row):
 
 def render_actions_summary(before, after, sync_report, release_report, limit=SUMMARY_LIMIT):
     added, changed, removed = manifest_changes(before, after)
+    old_bundles, new_bundles = before.get("bundles", {}), after.get("bundles", {})
+    bundle_changes = [name for name in sorted(old_bundles.keys() | new_bundles.keys())
+                      if old_bundles.get(name) != new_bundles.get(name)]
     lines = ["## 规则同步摘要", "", "### 规则变化"]
 
-    if not (added or changed or removed):
+    if not (added or changed or removed or bundle_changes):
         lines.append("- 无变化")
     else:
         def append_group(title, rows, formatter):
@@ -119,6 +122,15 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
             lambda row: f"`{row['vendor']}` · `{row['rule']}` · {row['tier']}",
         )
 
+    if bundle_changes:
+        lines.extend(["", f"#### 订阅文件变化（{len(bundle_changes)}）"])
+        for name in bundle_changes[:limit]:
+            old_count = old_bundles.get(name, {}).get("mihomo", {}).get("count", "无")
+            new_count = new_bundles.get(name, {}).get("mihomo", {}).get("count", "无")
+            lines.append(f"- `{name}`：{old_count} → {new_count} 条；订阅文件记录变化")
+        if len(bundle_changes) > limit:
+            lines.append(f"- 另有 **{len(bundle_changes) - limit}** 个规则集，详见完整提交差异。")
+
     review_required = sync_report.get("review_required", [])
     lines.extend([
         "",
@@ -131,7 +143,7 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
     labels = {
         "fresh": "抓取成功",
         "reviewed-local-input": "采用维护者指定的本地输入",
-        "retained-last-good": "沿用旧版（抓取失败）",
+        "retained-last-good": "沿用最近有效版本（本次来源更新未通过）",
         "retained-suspicious-change": "沿用旧版（变化异常）",
         "unavailable-no-baseline": "不可用（无有效基线）",
     }

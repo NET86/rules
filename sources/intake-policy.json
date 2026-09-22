@@ -26,6 +26,7 @@
     "cdn.jsdelivr.net": "Shared JavaScript CDN for arbitrary projects",
     "cdn.tailwindcss.com": "Shared CSS tooling CDN",
     "cdnjs.cloudflare.com": "Shared JavaScript CDN",
+    "unpkg.com": "Shared JavaScript CDN for arbitrary npm packages; not a Claude-specific endpoint",
     "code.jquery.com": "Shared JavaScript CDN",
     "fonts.googleapis.com": "Shared web fonts",
     "fonts.gstatic.com": "Shared web fonts",

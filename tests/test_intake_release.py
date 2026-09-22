@@ -140,6 +140,7 @@ class IntakeTests(unittest.TestCase):
                 "official_exclude_suffixes": {}, "official_shared_suffixes": {}, "official_exclude_exact": {}
             }))
             (root / "sources/official.json").write_text(json.dumps(config))
+            (root / "sources/patches.json").write_text(json.dumps({"drop": {}}))
             before = copy.deepcopy(production)
             report = intake.analyze_official(root, state, production)
         self.assertEqual(production, before)
@@ -210,10 +211,47 @@ class IntakeTests(unittest.TestCase):
         ):
             intake.fetch_official({"url": "https://help.openai.com/en/articles/9247338"}, denied)
 
+    def test_openai_403_failure_remains_reviewable_with_last_good_baseline(self):
+        sources = rules.read_json(rules.ROOT / "sources/official.json")["sources"]
+        source = next(row for row in sources if row["id"] == "openai-network")
+        state = rules.read_json(rules.ROOT / "sources/official-state.json")
+        baseline = state["documents"][source["id"]]
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "sources").mkdir()
+            (root / "sources/official.json").write_text(json.dumps({"sources": [source]}))
+            (root / "sources/official-state.json").write_text(json.dumps({
+                "schema": 1, "documents": {source["id"]: baseline}
+            }))
+
+            def denied(url, **kwargs):
+                raise urllib.error.HTTPError(url, 403, "Forbidden", {}, None)
+
+            module = types.SimpleNamespace(requests=types.SimpleNamespace(get=denied))
+            with patch.dict(sys.modules, {"curl_cffi": module}):
+                after, report = intake.refresh_official(root, denied)
+
+        self.assertEqual(after["documents"][source["id"]], baseline)
+        self.assertEqual(report["sources"][source["id"]]["status"], "retained-last-good")
+        self.assertEqual(len(report["review_required"]), 1)
+        self.assertEqual(report["review_required"][0]["source_id"], source["id"])
+        self.assertEqual(
+            report["review_required"][0]["reason"],
+            "official-source-unavailable-or-parser-drift",
+        )
+        self.assertIn("403", report["review_required"][0]["error_detail"])
+
     def test_shared_official_dependency_is_excluded_from_gap_report(self):
         policy = rules.read_json(rules.ROOT / "sources/intake-policy.json")
-        reason = intake.official_policy_reason(policy, rules.Rule("DOMAIN", "storage.googleapis.com"))
-        self.assertIsNotNone(reason)
+        self.assertIsNotNone(intake.official_policy_reason(
+            policy, rules.Rule("DOMAIN", "storage.googleapis.com")
+        ))
+        self.assertIsNotNone(intake.official_policy_reason(
+            policy, rules.Rule("DOMAIN", "unpkg.com")
+        ))
+        self.assertIsNone(intake.official_policy_reason(
+            policy, rules.Rule("DOMAIN", "assets.unpkg.com")
+        ))
 
     def test_official_gap_is_evidence_only(self):
         manifest = json.loads(rules.compile_outputs(rules.ROOT)["rules/manifest.json"])
@@ -256,7 +294,7 @@ class ReleaseSummaryTests(unittest.TestCase):
         }}, {"result": "PASS"})
         self.assertIn("V2Fly：抓取成功", text)
         self.assertIn("OpenAI 语音：沿用旧版（变化异常）", text)
-        self.assertIn("`kept`：沿用旧版（抓取失败）", text)
+        self.assertIn("`kept`：沿用最近有效版本（本次来源更新未通过）", text)
         self.assertIn("`absent`：不可用（无有效基线）", text)
         missing = release.render_actions_summary({}, {}, {}, {"result": "PASS"})
         self.assertIn("V2Fly：未知", missing)

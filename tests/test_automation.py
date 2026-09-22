@@ -133,8 +133,8 @@ class ReconciliationTests(unittest.TestCase):
 
 class AuditTests(unittest.TestCase):
     def setUp(self):
-        self.source = {"id": "demo", "url": "https://example.com/rules", "role": "secondary gap radar"}
-        self.existing = {rules.Rule("DOMAIN-SUFFIX", "openai.com")}
+        self.source = {"id": "demo", "url": "https://example.com/rules", "role": "secondary gap radar", "vendor": "openai"}
+        self.existing = {"openai": {rules.Rule("DOMAIN-SUFFIX", "openai.com")}}
 
     def test_covered_changes_are_silent_and_broad_non_domains_are_excluded(self):
         pending, summary = audit_sources.analyze(

@@ -33,7 +33,7 @@ FORBIDDEN_CORE = {
     "com", "net", "ai", "cn", "google.com", "googleapis.com", "gstatic.com",
     "amazonaws.com", "azure.com", "azureedge.net", "azurefd.net", "windows.net",
     "cloudfront.net", "cloudflare.com", "cloudflare.net", "github.com", "githubusercontent.com",
-    "auth0.com", "stripe.com", "sentry.io", "intercom.io", "intercomcdn.com", "livekit.cloud",
+    "auth0.com", "stripe.com", "sentry.io", "intercom.io", "intercomcdn.com", "livekit.cloud", "unpkg.com",
     "storage.googleapis.com", "blob.core.windows.net", "webpubsub.azure.com", "api.github.com",
     "datadoghq.com", "segment.io", "algolia.net", "byteoversea.com", "microsoft.com",
     "s3.amazonaws.com", "s3.amazonaws.com.cn", "azurewebsites.net", "cloudapp.net",
@@ -236,14 +236,22 @@ def voice_rules(payload):
         raise ValueError("Unexpected OpenAI voice JSON schema")
     result = set()
     for entry in payload["prefixes"]:
+        if not isinstance(entry, dict):
+            raise ValueError("Voice prefix entry must be an object")
         keys = set(entry) & {"ipv4Prefix", "ipv6Prefix"}
         if len(keys) != 1:
             raise ValueError(f"Invalid voice prefix entry: {entry}")
         key = next(iter(keys))
+        if not isinstance(entry[key], str):
+            raise ValueError("Voice prefix must be a CIDR string")
         net = ipaddress.ip_network(entry[key], strict=True)
         if net.version != (4 if key == "ipv4Prefix" else 6):
             raise ValueError("Voice address family mismatch")
-        if not net.network_address.is_global or net.prefixlen < (16 if net.version == 4 else 32):
+        endpoints = (net.network_address, net.broadcast_address)
+        if net.prefixlen < (16 if net.version == 4 else 32) or any(
+            not address.is_global or address.is_multicast or address.is_reserved
+            for address in endpoints
+        ):
             raise ValueError(f"Suspicious voice range: {net}")
         result.add(Rule("IP-CIDR" if net.version == 4 else "IP-CIDR6", str(net)))
     if not 1 <= len(result) <= 512:
