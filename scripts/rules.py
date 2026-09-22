@@ -34,6 +34,7 @@ FORBIDDEN_CORE = {
     "amazonaws.com", "azure.com", "azureedge.net", "azurefd.net", "windows.net",
     "cloudfront.net", "cloudflare.com", "cloudflare.net", "github.com", "githubusercontent.com",
     "auth0.com", "stripe.com", "sentry.io", "intercom.io", "intercomcdn.com", "livekit.cloud", "unpkg.com",
+    "workos.com", "workoscdn.com", "imgix.net", "ct.sendgrid.net", "apple.com",
     "storage.googleapis.com", "blob.core.windows.net", "webpubsub.azure.com", "api.github.com",
     "datadoghq.com", "segment.io", "algolia.net", "byteoversea.com", "microsoft.com",
     "s3.amazonaws.com", "s3.amazonaws.com.cn", "azurewebsites.net", "cloudapp.net",

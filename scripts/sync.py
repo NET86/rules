@@ -116,10 +116,12 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
             written.add(name)
         else:
             text = (data / name).read_text(encoding="utf-8")
+        # Validate selected files here too, inside the verified-snapshot fallback.
+        rows = list(parse_v2fly(text))
         if not recurse or name in expanded:
             return
         expanded.add(name)
-        for rule, _ in parse_v2fly(text):
+        for rule, _ in rows:
             if isinstance(rule, str):
                 export(rule, True)
 

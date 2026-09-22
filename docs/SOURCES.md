@@ -1,43 +1,39 @@
-# 数据来源
+# 来源与策略
 
-自动更新来源与补缺参考分开管理。官方网络白名单说明某项功能访问哪些端点，不等于其中所有域名都应进入 AI 分流。
+## 生产授权
 
-## 自动更新来源
+域名主要来自 [V2Fly](https://github.com/v2fly/domain-list-community)：`catalog.sources` 授权专用文件中直接写出的规则，include 不继承授权；混合文件仅采用 `catalog.select` 指定的直接规则。人工补充写入 `patches.add`，必须附 HTTPS 证据和理由。
 
-| 来源 | 用途 | 更新边界 |
-| --- | --- | --- |
-| [V2Fly](https://github.com/v2fly/domain-list-community) | 通用域名来源，固定提交与文件摘要 | 专属分类中的直接规则可自动更新；混合分类仅维护明确选定项。 |
-| [OpenAI 语音数据](https://openai.com/chatgpt-voice.json) | 语音目的 IP | 通过地址、前缀和覆盖变化检查后更新。 |
-| [人工补丁](../sources/patches.json) | 精确补缺、排除及格式适配 | 修改需审核，之后由构建流程统一生成。 |
+语音 IP 来自 [OpenAI 官方 JSON](https://openai.com/chatgpt-voice.json)。更新与失败处理见[维护说明](MAINTAINING.md)，合集成员见[订阅目录](../rules/README.md)。
 
-## 域名范围
+## 发现不等于授权
 
-[catalog.json](../sources/catalog.json) 定义厂商、合集成员和来源权限：
+**官方事实、产品范围、生产授权是三个不同判断。** 网络白名单中的依赖不一定属于 AI 核心。
 
-- `sources`：专属分类直接列出的精确域名和后缀规则可自动更新。读取 `include` 保留上游语义，但被包含文件中的新增规则需另行审核。
-- `select`：仅维护混合分类本层明确选定的域名。选定项消失或移入 `include` 时报告结构变化，并冻结相关删除观察。
-- 整个共享平台根域、已知公共后缀和未审核的宽匹配规则不会自动进入核心规则。厂商专用的精确主机可单独核对。
+官方资料、V2Fly 产品区段和 [Sukka AI 规则](https://github.com/SukkaW/Surge/blob/master/Source/non_ip/ai.conf) 用于发现缺口，不自动授权。候选按厂商区分；另一厂商已覆盖或已 drop，不能替当前厂商作决定。候选持续待审，直到覆盖、明确排除或来源撤回。
 
-Google AI 范围以 Gemini、AI Studio、NotebookLM 为主。完整产品名单见 [订阅目录](../rules/README.md)。
+Source Radar 使用本地快照：`confirmed` 表示证据覆盖候选范围，不表示本次抓取成功或获准生产。exact 不能证明更宽 suffix；更宽证据也不自动授权新的规则表达。读取失败不能推断为 absent。
 
-## 补缺监测
+Google 范围为 Gemini、AI Studio、NotebookLM。Copilot 只解析 `Specific required domains`；共享平台、遥测、实验和报表排除，精确专用端点仍可待审。不解析 GHE、编辑器、语音和云代理的其他访问清单。
 
-| 来源 | 频率 | 检查范围 |
-| --- | --- | --- |
-| [官方资料](../sources/official.json) | 随每 6 小时同步 | OpenAI、Claude Code、Cursor、Google AI、GitHub Copilot 的指定章节或结构化 API。 |
-| [Sukka AI 源文件](https://github.com/SukkaW/Surge/blob/master/Source/non_ip/ai.conf) | 每周 | [watch.json](../sources/watch.json) 指定的产品区段，只比较精确域名与后缀。 |
-| V2Fly 混合分类 | 随每 6 小时同步 | 已维护产品区段中尚未选定的域名。 |
+官方提取仅接受完整主机名及前导 `*.` / `.`；局部通配符不能截成父域。
 
-补缺按单厂商核对覆盖，同一域名出现在不同产品区段时保留各自归属。已覆盖和明确排除的条目静默处理；新候选持续待审，直到被接纳、明确排除或由来源撤回。官方证据、主上游收录与生产授权分开报告。抓取或解析失败会报告异常：有有效基线时保留，无基线时明确标记不可用；其他更新继续使用已验证输入。
+## 文件职责
 
-GitHub Copilot 仅检查 `Specific required domains` 章节。共享 GitHub 服务、遥测、实验及企业用量报告按用途排除；`githubusercontent.com` 下的精确专用主机仍可进入待审。GHE、编辑器、语音模型下载和云端代理的通用访问清单不在检查范围内。
+输入文件位于 [sources/](../sources/)：
 
-官方提取支持完整主机及前导 `*.` / `.` 后缀；主机中间或末尾的通配符不转成父域。共享登录、支付、存储、遥测等端点按 [排除策略](../sources/intake-policy.json) 处理，同厂商的明确排除读取 `patches.json`。
+| 文件 | 职责 |
+| --- | --- |
+| `catalog.json` | 厂商、来源授权、显式选择、合集成员与预算 |
+| `patches.json` | 人工 add、按厂商精确规则 drop、Surge 正则转换 |
+| `semantic-contracts.json` | 独立正反例，不从生成规则反推 |
+| `intake-policy.json` | 官方报告的占位符、共享依赖和范围排除 |
+| `official.json` / `official-state.json` | 官方来源与提取约束 / 最近有效事实 |
+| `watch.json` | 雷达来源、产品区段和仅对雷达生效的忽略项 |
+| `automation.json` / `automation-state.json` | 退役阈值 / 待审与删除观察状态 |
+| `snapshot/lock.json` | 快照版本、文件及许可证摘要 |
+| `engines.json` | FlClash 核心锁定；Mihomo 锁定在 `scripts/download_mihomo.py` |
 
-`unpkg.com` 按共享 CDN 排除补缺候选，并列入生产 core 的共享边界表。排除不删除官方事实，也不新增直连或拦截；相关功能是否可达取决于完整客户端配置。官方用途排除不等于全局生产禁用，两者不能整表互相替代。
+`patches.drop` 撤销该厂商的生产规则并抑制相同候选；intake exclusion 只筛官方报告；`FORBIDDEN_CORE` 拒绝已知共享根边界进入生产。三者不能合并。官方共享后缀的根边界须通过生产保护一致性测试，窄租户仍按来源授权判断；该保护不是完整 Public Suffix List。
 
-## 来源记录
-
-[快照清单](../sources/snapshot/lock.json) 固定实际使用的上游提交、文件摘要和许可摘要；[发布清单](../rules/manifest.json) 记录规则出处、产物摘要及格式差异。官方资料仅保存提取事实和来源链接。
-
-版权与许可见 [第三方声明](../THIRD_PARTY_NOTICES.md)。
+快照、[manifest](../rules/manifest.json) 和订阅由脚本生成，不手改。客户端差异见[兼容说明](COMPATIBILITY.md)，许可与署名见[第三方声明](../THIRD_PARTY_NOTICES.md)。

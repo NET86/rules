@@ -484,19 +484,27 @@ class ReleaseTests(unittest.TestCase):
         self.publisher.run(recovered, lambda *args: None, report)
         self.assertEqual(report["result"], "PASS")
 
-    def test_concurrent_main_edit_is_never_overwritten(self):
+    def assert_main_race_rejected(self, phase):
         other = None
         def validate(ref, label, expected):
             nonlocal other
-            if label == "candidate":
+            if label == phase:
                 other = self.git("commit-tree", self.publisher.tree(self.candidate), "-p", self.candidate, input="independent edit\n")
                 self.git("push", "origin", f"{other}:main")
-                raise ValueError("later validation failure")
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(RuntimeError, "Concurrent main update"):
             self.publisher.run(self.candidate, validate, self.report)
         self.assertEqual(self.publisher.remote_ref("main"), other)
-        self.assertEqual(self.publisher.remote_ref("stable"), self.old)
-        self.assertEqual(self.report["rollback"], "NOT_NEEDED_STABLE_UNCHANGED")
+        stable = self.publisher.remote_ref("stable")
+        self.assertEqual(self.publisher.tree(stable), self.publisher.tree(self.old))
+        self.assertEqual(self.report["result"], "FAILED")
+        self.assertEqual(self.report["rollback"],
+                         "RESTORED_STABLE" if phase == "stable" else "NOT_NEEDED_STABLE_UNCHANGED")
+
+    def test_concurrent_main_edit_is_never_overwritten(self):
+        self.assert_main_race_rejected("candidate")
+
+    def test_main_race_during_stable_readback_cannot_report_success(self):
+        self.assert_main_race_rejected("stable")
 
     def test_missing_lkg_fails_before_publication(self):
         self.git("push", "origin", ":last-known-good")

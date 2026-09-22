@@ -295,7 +295,7 @@ class Publisher:
                 report["stable_noop"] = "UNCHANGED_RELEASE_CONTENT"
             report["stable_revision"] = promoted
             validate_published("stable", "stable", promoted)
-            self.require_refs({"stable": promoted})
+            self.require_refs({"main": candidate, "stable": promoted})
             report.update(result="PASS", stable_remote_validation="PASS")
             return promoted
         except Exception as exc:

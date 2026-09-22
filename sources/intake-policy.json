@@ -33,7 +33,6 @@
     "formulae.brew.sh": "General package manager metadata",
     "googlesource.com": "General source code hosting",
     "raw.githubusercontent.com": "General source code hosting",
-    "s3.us-east-1.amazonaws.com": "Shared regional S3 namespace",
     "apihub.googleapis.com": "Shared Google API hub",
     "cloudresourcemanager.googleapis.com": "Shared Google project management",
     "feedback-pa.googleapis.com": "Shared Google feedback service",

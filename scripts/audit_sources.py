@@ -4,7 +4,7 @@
 import os
 from pathlib import Path
 
-from automation import scope_problem
+from automation import scope_problem, vendor_spec
 from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json
 from sync import fetch
 
@@ -26,7 +26,7 @@ SECTION_VENDOR = {
 }
 BLOCK_REASON_LABELS = {
     "outside-explicit-product-select": "上游有该规则，但不在当前显式产品范围",
-    "primary-source-absent": "当前主上游未收录；官方证据另列，仍需审核生产授权",
+    "primary-source-absent": "当前 V2Fly 快照未收录；官方证据另列，仍需审核生产授权",
     "primary-source-scope-mismatch": "主上游只有相关规则，匹配范围并不等价",
     "evidence-unavailable": "本地主上游证据暂不可用，需要复核",
     "source-not-authorized-by-catalog": "来源没有被当前 catalog 授权",
@@ -118,10 +118,6 @@ def rule_relation(candidate, evidence):
     if candidate.kind == "DOMAIN-SUFFIX" and evidence.kind in {"DOMAIN", "DOMAIN-SUFFIX"} and candidate.matches(evidence.value):
         return "candidate-wider-than-evidence"
     return None
-
-
-def vendor_spec(catalog, vendor):
-    return next((row for row in catalog["vendors"] if row["id"] == vendor), None)
 
 
 def impact_outputs(catalog, vendor):
@@ -272,7 +268,7 @@ def format_review_item(row):
         official_ids = sorted({item["source_id"] for item in official.get("matches", [])})
         official_text = official.get("level", "none") + ((" · " + ", ".join(official_ids)) if official_ids else "")
         scope = evidence.get("product_scope", {}).get("status", "unknown")
-        text += f"\n  - 证据：V2Fly {v2fly_text} · 官方 {official_text} · 产品范围 {scope}"
+        text += f"\n  - 快照证据：V2Fly {v2fly_text} · 官方 {official_text} · 产品范围 {scope}"
         text += f"\n  - 拦截：{row.get('block_reason_label', row.get('block_reason', 'unknown'))}"
     return text
 

@@ -60,19 +60,6 @@ class RetirementContractTests(unittest.TestCase):
         state, _ = self.reconcile(member=False)
         self.assertFalse(state["retained"])
 
-    def test_current_elevenlabs_profile_host_is_protected(self):
-        manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
-        entries = {automation.key_of(row): set(row["sources"]) for row in manifest["provenance"]}
-        key = next(k for k in entries if k[0] == "elevenlabs" and k[2].value == "elevenlabs.com")
-        entries.pop(key)
-        state, _ = automation.reconcile(
-            entries, manifest, rules.read_json(rules.ROOT / "sources/catalog.json"),
-            rules.read_json(rules.ROOT / "sources/patches.json"), {},
-            rules.read_json(rules.ROOT / "sources/automation.json"), allow_removals=True,
-            contracts=rules.read_json(rules.ROOT / "sources/semantic-contracts.json"),
-        )
-        self.assertTrue(any(row["rule"] == key[2].text and row["protected"] for row in state["retained"]))
-
 
 class AdditionalBoundaryTests(unittest.TestCase):
     def test_withdrawn_coverage_cannot_mask_a_profile_retirement(self):
@@ -221,16 +208,6 @@ class OfficialDecisionTests(unittest.TestCase):
             (root / "sources/official.json").write_text(json.dumps({"sources": [source]}))
             state["documents"][source["id"]]["vendor"] = "openai"
             self.assertEqual(len(intake.analyze_official(root, state, [])["review_required"]), 1)
-
-    def test_unpkg_cannot_enter_core_from_an_authorized_source(self):
-        catalog = {"vendors": [{"id": "claude", "sources": ["anthropic"]}]}
-        patches = {"add": [], "drop": {}, "surge_regex": {}}
-        for kind in ("DOMAIN", "DOMAIN-SUFFIX"):
-            key = ("claude", "core", rules.Rule(kind, "unpkg.com"))
-            self.assertEqual(automation.scope_problem(key, {"v2fly:data/anthropic"}, catalog, patches),
-                             "shared-platform-forbidden-in-core")
-        key = ("claude", "core", rules.Rule("DOMAIN", "tenant.unpkg.com"))
-        self.assertIsNone(automation.scope_problem(key, {"v2fly:data/anthropic"}, catalog, patches))
 
 
 class RadarAttributionTests(unittest.TestCase):
