@@ -1,7 +1,7 @@
 {
   "documents": {
     "anthropic-network": {
-      "document_sha256": "fb491106737c0df6d5c793583b0217447b2898b40a99e09ee876018386e43c86",
+      "document_sha256": "34014383eab8e2dbb7feea4dbc0085decb340e768ca32fce42ddb7f35df2c582",
       "extractor": 1,
       "rules": [
         "DOMAIN,api.anthropic.com",
@@ -19,6 +19,7 @@
         "DOMAIN,fonts.googleapis.com",
         "DOMAIN,fonts.gstatic.com",
         "DOMAIN,formulae.brew.sh",
+        "DOMAIN,github.com",
         "DOMAIN,googlesource.com",
         "DOMAIN,http-intake.logs.us5.datadoghq.com",
         "DOMAIN,mcp-proxy.anthropic.com",
