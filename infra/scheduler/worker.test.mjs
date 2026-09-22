@@ -36,12 +36,12 @@ test("a recent GitHub run avoids a duplicate build", async () => {
 });
 
 test("stale or absent history dispatches only the fixed main workflow", async () => {
-  for (const history of [[], [run(6)]]) {
-    const { request, calls } = mock({ login: "NET86" }, { workflow_runs: history }, { state: "active" }, { workflow_run_id: 8 });
+  for (const history of [[], [run(6)], [run(-1)]]) {
+    const { request, calls } = mock({ login: "NET86" }, { workflow_runs: history }, { state: "active" }, { state: "active" }, { workflow_run_id: 8 });
     assert.deepEqual(await trigger(secret, request, now), { result: "dispatched", run_id: 8 });
-    assert.equal(calls[3].url, "https://api.github.com/repos/NET86/rules/actions/workflows/sync.yml/dispatches");
-    assert.deepEqual(JSON.parse(calls[3].options.body), { ref: "main" });
-    assert.equal(calls[3].options.method, "POST");
+    assert.equal(calls[4].url, "https://api.github.com/repos/NET86/rules/actions/workflows/sync.yml/dispatches");
+    assert.deepEqual(JSON.parse(calls[4].options.body), { ref: "main" });
+    assert.equal(calls[4].options.method, "POST");
     for (const { options } of calls) {
       assert.equal(options.redirect, "manual");
       assert.ok(options.signal instanceof AbortSignal);
@@ -51,11 +51,11 @@ test("stale or absent history dispatches only the fixed main workflow", async ()
 
 test("GitHub inactivity disabling is recovered before dispatch", async () => {
   const { request, calls } = mock({ login: "NET86" }, { workflow_runs: [run(60 * 24)] },
-                                { state: "disabled_inactivity" }, 204, { workflow_run_id: 8 });
+                                { state: "disabled_inactivity" }, 204, { state: "active" }, { workflow_run_id: 8 });
   assert.equal((await trigger(secret, request, now)).result, "dispatched");
   assert.equal(calls[3].url, "https://api.github.com/repos/NET86/rules/actions/workflows/sync.yml/enable");
   assert.equal(calls[3].options.method, "PUT");
-  assert.equal(calls[4].options.method, "POST");
+  assert.equal(calls[5].options.method, "POST");
 });
 
 test("an owner's manual disable is respected", async () => {
@@ -68,11 +68,11 @@ test("API and malformed-response failures stay visible and never retry dispatch"
   const scenarios = [
     [401],
     [302],
-    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, 307],
+    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, { state: "active" }, 307],
     [{ login: "NET86" }, {}],
     [{ login: "NET86" }, { workflow_runs: [{ ...run(6), head_branch: "other" }] }],
-    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, 403],
-    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, { workflow_run_id: null }],
+    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, { state: "active" }, 403],
+    [{ login: "NET86" }, { workflow_runs: [] }, { state: "active" }, { state: "active" }, { workflow_run_id: null }],
     [{ login: "NET86" }, { workflow_runs: [] }, { state: "disabled_inactivity" }, 403],
     [{ login: "NET86" }, { workflow_runs: [] }, { state: "unknown" }],
   ];
@@ -80,5 +80,22 @@ test("API and malformed-response failures stay visible and never retry dispatch"
     const { request, calls } = mock(...responses);
     await assert.rejects(trigger(secret, request, now));
     assert.ok(calls.filter(({ options }) => options.method === "POST").length <= 1);
+  }
+});
+
+test("secondary inactivity is repaired but manual disable and failures never block primary", async () => {
+  for (const responses of [[{ state: "disabled_inactivity" }, 204], [{ state: "disabled_manually" }],
+                           [503], [{ state: "disabled_inactivity" }, 403], [{ state: "unknown" }]]) {
+    const { request, calls } = mock({ login: "NET86" }, { workflow_runs: [] }, { state: "active" },
+                                  ...responses, { workflow_run_id: 8 });
+    assert.deepEqual(await trigger(secret, request, now), { result: "dispatched", run_id: 8 });
+    assert.equal(calls[3].url, "https://api.github.com/repos/NET86/rules/actions/workflows/audit.yml");
+    const writes = calls.filter(({ options }) => options.method !== "GET");
+    assert.equal(writes.filter(({ options }) => options.method === "POST").length, 1);
+    if (responses[0].state === "disabled_inactivity") {
+      assert.equal(writes[0].url, "https://api.github.com/repos/NET86/rules/actions/workflows/audit.yml/enable");
+    } else {
+      assert.equal(writes.length, 1);
+    }
   }
 });

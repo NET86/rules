@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import gzip
+import zlib
 import json
 import ipaddress
 import re
@@ -39,7 +41,14 @@ def fetch(url: str, limit=4_000_000, attempts=3) -> bytes:
     for attempt in range(attempts):
         try:
             with urllib.request.urlopen(request, timeout=45) as response:
-                data = response.read(limit + 1)
+                if response.headers.get("Content-Encoding", "").lower() == "gzip":
+                    try:
+                        with gzip.GzipFile(fileobj=response) as decoded:
+                            data = decoded.read(limit + 1)
+                    except (EOFError, zlib.error) as exc:
+                        raise ValueError("Invalid gzip response") from exc
+                else:
+                    data = response.read(limit + 1)
             if not data or len(data) > limit:
                 raise ValueError(f"Empty or oversized upstream response: {url}")
             return data

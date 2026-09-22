@@ -136,6 +136,33 @@
       "url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
       "vendor": "google-ai"
     },
+    "hunyuan-regions": {
+      "document_sha256": "b6f27eb37d4f3a45db58b00a93e3fdd6fe7088953bb9096670cec79b5ace391b",
+      "extractor": 1,
+      "rules": [
+        "DOMAIN,hunyuan.ap-bangkok.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-beijing.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-chengdu.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-chongqing.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-guangzhou.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-hongkong.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-jakarta.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-nanjing.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-seoul.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-shanghai-fsi.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-shanghai.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-shenzhen-fsi.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-singapore.tencentcloudapi.com",
+        "DOMAIN,hunyuan.ap-tokyo.tencentcloudapi.com",
+        "DOMAIN,hunyuan.eu-frankfurt.tencentcloudapi.com",
+        "DOMAIN,hunyuan.na-ashburn.tencentcloudapi.com",
+        "DOMAIN,hunyuan.na-siliconvalley.tencentcloudapi.com",
+        "DOMAIN,hunyuan.sa-saopaulo.tencentcloudapi.com",
+        "DOMAIN,hunyuan.tencentcloudapi.com"
+      ],
+      "url": "https://cloud.tencent.com/document/product/1729/101841",
+      "vendor": "tencent-ai"
+    },
     "openai-network": {
       "document_sha256": "d3f66231c2d77665191f358c7aac38851298cc67cf6691486fb5525c75e621e3",
       "extractor": 1,
@@ -174,6 +201,15 @@
       ],
       "url": "https://help.openai.com/en/articles/9247338",
       "vendor": "openai"
+    },
+    "spark-http": {
+      "document_sha256": "61123f6c7c6a2ec03dba07d14fa5cdcba2d87ef4ebd3522009b7f560a64855d9",
+      "extractor": 1,
+      "rules": [
+        "DOMAIN,spark-api-open.xf-yun.com"
+      ],
+      "url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
+      "vendor": "iflytek-spark"
     }
   },
   "schema": 1

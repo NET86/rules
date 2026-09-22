@@ -36,6 +36,7 @@ BLOCK_REASON_LABELS = {
     "unsupported-or-broad-matching": "匹配类型不支持自动进入生产",
     "unsupported-tier": "规则层级不受当前生产模型支持",
     "radar-read-only": "主来源已收录，等待规则同步",
+    "upstream-advertising-excluded": "上游条目标记为广告或遥测，不会自动进入生产",
     "unmapped-sukka-section": "Sukka 区段尚未对应到本地厂商",
 }
 
@@ -139,12 +140,14 @@ def v2fly_evidence(candidate, vendor, catalog, data):
             for rule, _attrs, origin in load_source(data, entrypoint):
                 relation = rule_relation(candidate, rule)
                 if relation:
-                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation})
+                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation,
+                                    **({"attributes": sorted(_attrs)} if _attrs else {})})
         for entrypoint in sorted(spec.get("select", {})):
             for rule, _attrs, origin in load_explicit_source(data, entrypoint):
                 relation = rule_relation(candidate, rule)
                 if relation:
-                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation})
+                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation,
+                                    **({"attributes": sorted(_attrs)} if _attrs else {})})
     except (OSError, ValueError) as exc:
         return {"status": "unavailable", "present": False, "level": "unknown", "matches": [], "error_type": type(exc).__name__}
     unique = {json_text(row).strip(): row for row in matches}
@@ -195,7 +198,7 @@ def evidence_origins(candidate, vendor, catalog, v2fly):
         return set()
     origins = set()
     for match in v2fly.get("matches", []):
-        if match.get("relation") != "exact":
+        if match.get("relation") != "exact" or "@ads" in match.get("attributes", []):
             continue
         entrypoint, origin = match["entrypoint"], match["source"]
         if entrypoint in spec.get("sources", []) and origin == entrypoint:
@@ -237,6 +240,10 @@ def enrich_pending(pending, catalog, patches, official_state, data):
             else:
                 origins = evidence_origins(candidate, vendor, catalog, upstream)
                 block = scope_problem((vendor, "core", candidate), origins, catalog, patches) or "radar-read-only"
+                if block == "source-not-authorized-by-catalog" and all(
+                    "@ads" in match.get("attributes", []) for match in upstream["matches"] if match["relation"] == "exact"
+                ):
+                    block = "upstream-advertising-excluded"
             row["block_reason"] = block
         row["block_reason_label"] = BLOCK_REASON_LABELS.get(row["block_reason"], row["block_reason"])
         enriched.append(row)

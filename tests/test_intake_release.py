@@ -36,6 +36,21 @@ class IntakeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             intake.extract_document(source, b"<h2>Network</h2><p>access denied</p>")
 
+    def test_api_documents_are_limited_to_network_sections(self):
+        sources = {row["id"]: row for row in rules.read_json(rules.ROOT / "sources/official.json")["sources"]}
+        cases = [
+            ("hunyuan-regions", "1. 服务地址", "hunyuan.tencentcloudapi.com", "hunyuan.ap-guangzhou.tencentcloudapi.com"),
+            ("spark-http", "# 2.1 语言模型", "spark-api-open.xf-yun.com", "spark-api-open.xf-yun.com"),
+        ]
+        for source_id, heading, first, second in cases:
+            with self.subTest(source=source_id):
+                payload = (f"<h2>{heading}</h2><p>https://{first}/v1 https://{second}/v1</p>"
+                           "<h2>Code examples</h2><p>client.chat.completions.create example.org</p>").encode()
+                doc = intake.extract_document(sources[source_id], payload)
+                self.assertEqual(set(doc["rules"]), {"DOMAIN," + first, "DOMAIN," + second})
+                with self.assertRaises(ValueError):
+                    intake.extract_document(sources[source_id], b"<h2>Renamed</h2><p>access denied</p>")
+
     def test_google_discovery_identity_and_endpoints(self):
         source = next(s for s in rules.read_json(rules.ROOT / "sources/official.json")["sources"] if s["format"] == "discovery")
         doc = {"name": "generativelanguage", "kind": "discovery#restDescription",
@@ -146,6 +161,69 @@ class IntakeTests(unittest.TestCase):
         self.assertEqual(production, before)
         self.assertEqual(report["decisions"][0]["action"], "already-covered")
         self.assertEqual(report["review_required"][0]["reason"], "official-uncovered-domain")
+
+    def test_only_valid_current_source_documents_can_be_last_good(self):
+        source = {"id": "fixture", "url": "https://official.test/network", "vendor": "demo",
+                  "format": "html", "sections": ["Network"], "required_hosts": ["api.example.com"], "min_hosts": 1}
+        payload = b"<h2>Network</h2><p>api.example.com</p>"
+        valid = intake.extract_document(source, payload)
+        invalid = [None, {}, dict(valid, vendor="other"), dict(valid, url="https://old.test"),
+                   dict(valid, rules=[]), dict(valid, rules=[None]), dict(valid, rules=["DOMAIN,wrong.example"]),
+                   dict(valid, rules=["IP-CIDR,8.8.8.8/32"]), dict(valid, document_sha256="bad")]
+        def offline(url):
+            raise OSError("offline")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "sources").mkdir()
+            other = dict(source, id="healthy", url="https://healthy.test/network")
+            (root / "sources/official.json").write_text(json.dumps({"sources": [source, other]}))
+            for old in [valid, *invalid]:
+                for recover in (False, True):
+                    with self.subTest(old=old, recover=recover):
+                        state = {"schema": 1, "documents": {"fixture": old, "removed-source": valid}}
+                        path = root / "sources/official-state.json"
+                        path.write_text(json.dumps(state))
+                        def fetch(url):
+                            return payload if recover or url == other["url"] else offline(url)
+                        after, report = intake.refresh_official(root, fetch)
+                        expected = "fresh" if recover else ("retained-last-good" if old == valid else "unavailable-no-baseline")
+                        self.assertEqual(report["sources"]["fixture"]["status"], expected)
+                        self.assertEqual(report["sources"]["healthy"]["status"], "fresh")
+                        self.assertNotIn("removed-source", after["documents"])
+                        self.assertEqual("fixture" in after["documents"], recover or old == valid)
+                        self.assertEqual(rules.read_json(path), state)
+
+    def test_patch_evidence_loss_is_visible_without_revoking_authority(self):
+        source = {"id": "fixture", "url": "https://official.test/network", "vendor": "demo"}
+        exact = "DOMAIN,tenant.shared.example"
+        broad = "DOMAIN-SUFFIX,tenant.shared.example"
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "sources").mkdir()
+            docs = {
+                "official.json": {"sources": [source]},
+                "intake-policy.json": {"official_exclude_exact": {"shared.example": "Shared namespace"},
+                                       "official_exclude_suffixes": {}, "official_shared_suffixes": {}},
+                "patches.json": {"add": [{"vendor": "demo", "tier": "core", "rule": rule,
+                                          "source": source["url"], "reason": "Reviewed"} for rule in (exact, broad)], "drop": {}}
+            }
+            for name, data in docs.items():
+                (root / "sources" / name).write_text(json.dumps(data))
+            production = {("demo", "core", rules.Rule.from_text(rule)): {source["url"]} for rule in (exact, broad)}
+            before = copy.deepcopy(production)
+            for facts, expected in [([exact], [broad]), ([broad], []),
+                                    (["DOMAIN-SUFFIX,shared.example"], [exact, broad]), ([], [exact, broad])]:
+                with self.subTest(facts=facts):
+                    report = intake.analyze_official(root, {"documents": {"fixture": dict(source, rules=facts)}}, production)
+                    missing = [row["rule"] for row in report["review_required"] if row["reason"] == "official-patch-evidence-missing"]
+                    self.assertEqual(sorted(missing), sorted(expected))
+                    self.assertEqual(production, before)
+            # Withdrawn patches and facts cited from another source/vendor are not invented anomalies.
+            self.assertFalse(intake.analyze_official(root, {"documents": {"fixture": dict(source, rules=[])}}, {})["review_required"])
+            docs["patches.json"]["add"][0]["source"] = "https://different.test/network"
+            docs["patches.json"]["add"][1]["vendor"] = "other"
+            (root / "sources/patches.json").write_text(json.dumps(docs["patches.json"]))
+            self.assertFalse(intake.analyze_official(root, {"documents": {"fixture": dict(source, rules=[])}}, production)["review_required"])
 
     def test_all_official_failures_preserve_baselines(self):
         before = rules.read_json(rules.ROOT / "sources/official-state.json")
@@ -286,6 +364,23 @@ class IntakeTests(unittest.TestCase):
 
 
 class ReleaseSummaryTests(unittest.TestCase):
+    def test_recovery_preflight_never_creates_a_publication_receipt(self):
+        for failure in (False, True):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                with patch.object(release, "ROOT", root), patch.object(sys, "argv", ["release.py", "--recover-only"]), \
+                        patch.dict(release.os.environ, GITHUB_REPOSITORY="NET86/rules"), \
+                        patch.object(release, "Publisher") as publisher:
+                    if failure:
+                        publisher.return_value.recover_stable.side_effect = RuntimeError("preflight unavailable")
+                        with self.assertRaises(RuntimeError):
+                            release.main()
+                    else:
+                        release.main()
+                self.assertFalse((root / ".work/release-report.json").exists())
+                report = rules.read_json(root / ".work/recovery-report.json")
+                self.assertEqual(report["result"], "PREVALIDATION_FAILED" if failure else "PASS")
+
     def test_source_health_distinguishes_publication_success_from_freshness(self):
         text = release.render_actions_summary({}, {}, {"source_health": {
             "v2fly": "fresh", "openai_voice": "retained-suspicious-change",

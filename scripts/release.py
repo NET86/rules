@@ -28,6 +28,7 @@ REVIEW_REASON_LABELS = {
     "protected-upstream-removal": "关键规则疑似被上游删除，当前继续保留",
     "selected-upstream-domain-disappeared-or-moved": "选定上游目标消失或结构漂移，需要复核",
     "official-uncovered-domain": "官方资料发现未覆盖域名，需要复核",
+    "official-patch-evidence-missing": "最近有效官方资料不再覆盖人工补丁，保留授权并等待复核",
     "official-source-unavailable-or-parser-drift": "官方来源不可用或解析结构变化",
     "official-voice-fetch-unavailable": "OpenAI 语音官方源不可用，沿用上一有效版本",
     "official-voice-suspicious-change": "OpenAI 语音范围大幅变化，沿用上一有效版本等待核验",
@@ -450,7 +451,8 @@ def main():
             report.update(result="PREVALIDATION_FAILED", rollback="NOT_NEEDED_NO_PUBLICATION")
         raise
     finally:
-        (work / "release-report.json").write_text(json_text(report), encoding="utf-8")
+        name = "recovery-report.json" if args.recover_only else "release-report.json"
+        (work / name).write_text(json_text(report), encoding="utf-8")
         if not args.recover_only:
             current_manifest = json.loads((ROOT / "rules/manifest.json").read_text(encoding="utf-8"))
             sync_report_path = work / "sync-report.json"

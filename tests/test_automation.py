@@ -282,6 +282,23 @@ class AuditTests(unittest.TestCase):
                 self.assertEqual([match["relation"] for match in evidence["matches"]], [relation] if relation else [])
                 self.assertIn("快照证据", audit_sources.format_review_item(row))
 
+    def test_advertising_evidence_does_not_claim_it_will_be_published(self):
+        for mode in ("sources", "select"):
+            for ordinary in (False, True):
+                with self.subTest(mode=mode, ordinary=ordinary), tempfile.TemporaryDirectory() as td:
+                    data = Path(td)
+                    text = "full:ads.example.com @ads\n" + ("full:ads.example.com\n" if ordinary else "")
+                    (data / "demo").write_text(text, encoding="utf-8")
+                    vendor = {"id": "demo", mode: ["demo"] if mode == "sources" else {"demo": ["ads.example.com"]}}
+                    row = audit_sources.enrich_pending([{"vendor": "demo", "rule": "DOMAIN,ads.example.com"}],
+                        {"vendors": [vendor], "profiles": {}}, {"add": [], "drop": {}, "surge_regex": {}},
+                        {"documents": {}}, data)[0]
+                    self.assertTrue(row["evidence"]["v2fly"]["present"])
+                    self.assertEqual(row["evidence"]["v2fly"]["level"], "confirmed")
+                    self.assertEqual(row["block_reason"], "radar-read-only" if ordinary else "upstream-advertising-excluded")
+                    if not ordinary:
+                        self.assertNotIn("等待规则同步", row["block_reason_label"])
+
     def test_actions_summary_lists_scan_counts_and_gap_details(self):
         report = {
             "review_required": [{
@@ -345,6 +362,27 @@ class ResilienceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td, patch.object(sync, "fetch", side_effect=OSError("test outage")):
             with self.assertRaises(OSError):
                 sync.fetch_voice(Path(td))
+
+    def test_http_gzip_is_decoded_with_a_bound_and_archives_remain_raw(self):
+        import gzip
+        import io
+        plain = b"official endpoint " * 100
+        compressed = gzip.compress(plain)
+        for encoding, payload, limit, expected in [
+            ("gzip", compressed, len(plain), plain), ("", compressed, len(plain), compressed),
+            ("gzip", compressed, 10, None), ("gzip", b"broken gzip", 100, None),
+            ("gzip", compressed[:-5], len(plain) + 1, None),
+            ("gzip", compressed[:10] + b"\x07" + compressed[-8:], len(plain) + 1, None),
+        ]:
+            with self.subTest(encoding=encoding, limit=limit):
+                response = io.BytesIO(payload)
+                response.headers = {"Content-Encoding": encoding}
+                with patch.object(sync.urllib.request, "urlopen", return_value=response):
+                    if expected is None:
+                        with self.assertRaises((OSError, ValueError)):
+                            sync.fetch("https://official.example", limit=limit, attempts=1)
+                    else:
+                        self.assertEqual(sync.fetch("https://official.example", limit=limit, attempts=1), expected)
 
     def test_transient_download_retried(self):
         response = Mock()
@@ -431,6 +469,34 @@ class NotificationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaises(OSError):
                 notify_review.load_report(Path(td) / "missing.json")
+
+    def test_large_exception_reports_are_bounded_without_hiding_state_changes(self):
+        rows = [{"rule": f"DOMAIN,candidate-{i:04d}.example", "reason": "review", "error_detail": "detail" * 100}
+                for i in range(500)]
+        report = {"review_required": rows}
+        body = notify_review.issue_body("sync", report)
+        self.assertLess(len(body.encode("utf-8")), 60000)
+        self.assertIn("完整报告", body)
+        self.assertIn("SHA-256", body)
+        self.assertEqual(body, notify_review.issue_body("sync", {"review_required": list(reversed(rows))}))
+        rows[-1]["rule"] = "DOMAIN,candidate-9999.example"
+        changed = notify_review.issue_body("sync", report)
+        self.assertNotEqual(body, changed)
+        self.assertEqual(body.split("```json\n")[1].split("\n```")[0],
+                         changed.split("```json\n")[1].split("\n```")[0])
+        huge = {"review_required": [{"reason": "review", "error_detail": "汉" * 100000}]}
+        self.assertLess(len(notify_review.issue_body("sync", huge).encode("utf-8")), 60000)
+
+    def test_invalid_report_rows_cannot_close_an_issue_or_hide_a_workflow_failure(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "report.json"
+            for row in (None, [], "text", {}, {"reason": None}, {"reason": ""}):
+                with self.subTest(row=row):
+                    path.write_text(json.dumps({"review_required": [row]}), encoding="utf-8")
+                    with self.assertRaises(ValueError):
+                        notify_review.load_report(path)
+                    self.assertEqual(notify_review.load_report(path, failed=True)["review_required"],
+                                     [{"reason": "workflow-failed"}])
 
     def test_invalid_failure_report_is_not_reported_as_success(self):
         with tempfile.TemporaryDirectory() as td:
