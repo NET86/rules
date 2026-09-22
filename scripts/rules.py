@@ -38,6 +38,9 @@ FORBIDDEN_CORE = {
     "storage.googleapis.com", "blob.core.windows.net", "webpubsub.azure.com", "api.github.com",
     "datadoghq.com", "segment.io", "algolia.net", "byteoversea.com", "microsoft.com",
     "s3.amazonaws.com", "s3.amazonaws.com.cn", "azurewebsites.net", "cloudapp.net",
+    "cloudinary.com", "res.cloudinary.com", "api.cloudinary.com", "b-cdn.net", "githubassets.com",
+    "host.livekit.cloud", "turn.livekit.cloud", "tencentcloudapi.com", "cloud.tencent.com",
+    "xf-yun.com", "aliyuncs.com", "baidubce.com", "volces.com",
     "github.io", "workers.dev", "pages.dev", "vercel.app", "netlify.app", "onrender.com",
     "co.uk", "org.uk", "ac.uk", "gov.uk", "com.cn", "net.cn", "org.cn",
     "com.au", "net.au", "org.au", "co.jp", "co.nz", "co.in", "com.br", "com.sg"
@@ -89,7 +92,10 @@ class Rule:
         if self.kind in {"DOMAIN", "DOMAIN-SUFFIX"} and not DOMAIN_RE.fullmatch(self.value):
             raise ValueError(f"Invalid domain: {self.value}")
         if self.kind == "DOMAIN-REGEX":
-            re.compile(self.value)
+            try:
+                re.compile(self.value)
+            except re.error as exc:
+                raise ValueError(f"Invalid domain regex: {self.value}") from exc
         if self.kind in {"IP-CIDR", "IP-CIDR6"}:
             network = ipaddress.ip_network(self.value, strict=True)
             if network.version != (6 if self.kind == "IP-CIDR6" else 4):
@@ -181,7 +187,9 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
                     continue
                 add(vid, "core", rule, f"v2fly:data/{origin}")
         for source, selected in vendor.get("select", {}).items():
-            available = {r.value: (r, attrs, origin) for r, attrs, origin in load_explicit_source(data, source)}
+            available = {}
+            for row in load_explicit_source(data, source):
+                available.setdefault(row[0].value, []).append(row)
             for value in selected:
                 if value not in available:
                     if review_mode:
@@ -190,10 +198,10 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
                                                      "reason": "selected-upstream-domain-disappeared-or-moved"})
                         continue
                     raise ValueError(f"Selected upstream domain disappeared or moved behind include: {vid} {value}")
-                rule, attrs, origin = available[value]
-                if "@ads" in attrs or rule.text in dropped:
-                    continue
-                add(vid, "core", rule, f"v2fly:data/{origin} (selected explicit rule)")
+                for rule, attrs, origin in available[value]:
+                    if "@ads" in attrs or rule.text in dropped:
+                        continue
+                    add(vid, "core", rule, f"v2fly:data/{origin} (selected explicit rule)")
     for patch in patches["add"]:
         if patch["vendor"] not in ids or patch["tier"] != "core":
             raise ValueError(f"Invalid patch target: {patch}")

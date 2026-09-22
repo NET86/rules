@@ -2,7 +2,9 @@
 
 ## 生产授权
 
-域名主要来自 [V2Fly](https://github.com/v2fly/domain-list-community)：`catalog.sources` 授权专用文件中直接写出的规则，include 不继承授权；混合文件仅采用 `catalog.select` 指定的直接规则。人工补充写入 `patches.add`，必须附 HTTPS 证据和理由。
+域名主要来自 [V2Fly](https://github.com/v2fly/domain-list-community)：`catalog.sources` 授权专用文件中直接写出的规则，include 不继承授权；混合文件仅采用 `catalog.select` 指定域名的直接规则，同域名的多种匹配类型按上游并集处理，逐条过滤排除项。人工补充写入 `patches.add`，必须附 HTTPS 证据和理由。
+
+规则按服务归属分组，不保证服务器地域或直连可用。多模型共用的云 API 不按模型名自动归类；专用 API、下载与产物主机可依据官方资料精确补入。
 
 语音 IP 来自 [OpenAI 官方 JSON](https://openai.com/chatgpt-voice.json)。更新与失败处理见[维护说明](MAINTAINING.md)，合集成员见[订阅目录](../rules/README.md)。
 
@@ -14,7 +16,7 @@
 
 Source Radar 使用本地快照：`confirmed` 表示证据覆盖候选范围，不表示本次抓取成功或获准生产。exact 不能证明更宽 suffix；更宽证据也不自动授权新的规则表达。读取失败不能推断为 absent。
 
-Google 范围为 Gemini、AI Studio、NotebookLM。Copilot 只解析 `Specific required domains`；共享平台、遥测、实验和报表排除，精确专用端点仍可待审。不解析 GHE、编辑器、语音和云代理的其他访问清单。
+Google 范围为 Gemini、AI Studio、NotebookLM。GitHub Copilot 只解析 `Specific required domains`；共享平台、遥测、实验和报表排除，精确专用端点仍可待审。不解析 GHE、编辑器、语音和云代理的其他访问清单。
 
 官方提取仅接受完整主机名及前导 `*.` / `.`；局部通配符不能截成父域。
 
@@ -34,6 +36,6 @@ Google 范围为 Gemini、AI Studio、NotebookLM。Copilot 只解析 `Specific r
 | `snapshot/lock.json` | 快照版本、文件及许可证摘要 |
 | `engines.json` | FlClash 核心锁定；Mihomo 锁定在 `scripts/download_mihomo.py` |
 
-`patches.drop` 撤销该厂商的生产规则并抑制相同候选；intake exclusion 只筛官方报告；`FORBIDDEN_CORE` 拒绝已知共享根边界进入生产。三者不能合并。官方共享后缀的根边界须通过生产保护一致性测试，窄租户仍按来源授权判断；该保护不是完整 Public Suffix List。
+`patches.drop` 撤销该厂商的生产规则并抑制相同候选；intake exclusion 只筛官方报告；`FORBIDDEN_CORE` 拒绝已知共享根边界进入生产。三者不能合并。`drop` 和 `@ads` 只过滤对应条目，不生成拒绝或直连规则；其他已授权后缀仍可能命中，必须不命中的边界由语义契约验证。官方共享后缀的根边界须通过生产保护一致性测试，窄租户仍按来源授权判断；该保护不是完整 Public Suffix List。
 
 快照、[manifest](../rules/manifest.json) 和订阅由脚本生成，不手改。客户端差异见[兼容说明](COMPATIBILITY.md)，许可与署名见[第三方声明](../THIRD_PARTY_NOTICES.md)。

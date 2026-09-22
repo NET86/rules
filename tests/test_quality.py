@@ -97,9 +97,10 @@ class SemanticShapeTests(unittest.TestCase):
 class LocalInputHealthTests(unittest.TestCase):
     def test_parser_drift_retains_snapshot_without_blocking_fresh_voice(self):
         catalog = rules.read_json(rules.ROOT / "sources/catalog.json")
-        for mode in ("sources", "select"):
+        for mode, bad_line in ((mode, text) for mode in ("sources", "select")
+                               for text in (b"unknown:parser-drift.test", b"regexp:[")):
             name = next(iter(next(v[mode] for v in catalog["vendors"] if v.get(mode))))
-            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as td:
+            with self.subTest(mode=mode, bad_line=bad_line), tempfile.TemporaryDirectory() as td:
                 root = Path(td)
                 for directory in ("sources", "rules"):
                     shutil.copytree(rules.ROOT / directory, root / directory)
@@ -119,7 +120,7 @@ class LocalInputHealthTests(unittest.TestCase):
                     relative = args[-1].split(":", 1)[1]
                     path = baseline / ("V2FLY-LICENSE" if relative == "LICENSE" else relative.replace("data/", "v2fly/", 1))
                     data = path.read_bytes()
-                    return data + b"\nunknown:parser-drift.test\n" if relative == f"data/{name}" else data
+                    return data + b"\n" + bad_line + b"\n" if relative == f"data/{name}" else data
 
                 with patch.object(sync, "ROOT", root), patch.object(sys, "argv", ["sync.py"]), \
                         patch.object(sync.subprocess, "run"), \
@@ -163,7 +164,11 @@ class ScopeBoundaryTests(unittest.TestCase):
         patches = {"add": [], "drop": {}, "surge_regex": {}}
         origins = {"v2fly:data/demo"}
         boundaries = {"co.uk", "s3.eu-west-2.amazonaws.com", "s3-cn-north-1.amazonaws.com.cn",
-                      "workers.dev", "github.io", "unpkg.com"} | set(rules.read_json(
+                      "workers.dev", "github.io", "unpkg.com", "s3.us-east-1.amazonaws.com",
+                      "cloudinary.com", "res.cloudinary.com", "api.cloudinary.com", "b-cdn.net",
+                      "githubassets.com", "host.livekit.cloud", "turn.livekit.cloud",
+                      "tencentcloudapi.com", "cloud.tencent.com", "xf-yun.com",
+                      "aliyuncs.com", "baidubce.com", "volces.com"} | set(rules.read_json(
                           rules.ROOT / "sources/intake-policy.json")["official_shared_suffixes"])
         for value in sorted(boundaries):
             with self.subTest(boundary=value):
@@ -173,6 +178,29 @@ class ScopeBoundaryTests(unittest.TestCase):
                                      "shared-platform-forbidden-in-core")
                 tenant = ("demo", "core", rules.Rule("DOMAIN", "product." + value))
                 self.assertIsNone(automation.scope_problem(tenant, origins, catalog, patches))
+
+    def test_regional_s3_root_is_excluded_but_tenant_facts_require_review(self):
+        policy = rules.read_json(rules.ROOT / "sources/intake-policy.json")
+        root_domain = "s3.us-east-1.amazonaws.com"
+        tenant = "unreviewed-tenant." + root_domain
+        source = {"id": "fixture", "vendor": "cursor", "url": "https://official.example/network"}
+        state = {"documents": {"fixture": dict(source, rules=[
+            "DOMAIN-SUFFIX," + root_domain, "DOMAIN," + tenant])}}
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "sources").mkdir()
+            for name, content in (("intake-policy.json", policy), ("official.json", {"sources": [source]}),
+                                  ("patches.json", {"drop": {}})):
+                (root / "sources" / name).write_text(rules.json_text(content), encoding="utf-8")
+            entries = {}
+            report = intake.analyze_official(root, state, entries)
+        self.assertEqual([row["rule"] for row in report["review_required"]], ["DOMAIN," + tenant])
+        self.assertEqual([row["rule"] for row in report["decisions"]], ["DOMAIN-SUFFIX," + root_domain])
+        self.assertEqual(entries, {})
+        key = ("cursor", "core", rules.Rule("DOMAIN", tenant))
+        self.assertEqual(automation.scope_problem(key, {source["url"]},
+            {"vendors": [{"id": "cursor", "sources": ["cursor"]}]},
+            {"add": [], "drop": {}, "surge_regex": {}}), "source-not-authorized-by-catalog")
 
 
 class VoiceChangeTests(unittest.TestCase):

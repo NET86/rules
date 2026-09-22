@@ -7,26 +7,26 @@
   "bundles": {
     "ai-cn": {
       "mihomo": {
-        "count": 33,
+        "count": 55,
         "path": "rules/mihomo/ai-cn.yaml",
-        "sha256": "cd8b31807d62bd66a40cbb583c424070a1bea82f3d191074b1358e12799ce6ce"
+        "sha256": "d02242924fe1aa92c6adb3cd51225d549db6ab4d8c70b2bf15dc04748934c901"
       },
       "surge": {
-        "count": 33,
+        "count": 55,
         "path": "rules/surge/ai-cn.list",
-        "sha256": "9e518b9ec29fa164421359fd8dc8ea583163e2fee8406ba94293a116a2a68fe0"
+        "sha256": "910bebc56c383e6d0bc17081a0662b01bd02eb7f7167d7d67c610dc0340ca6d4"
       }
     },
     "ai-core": {
       "mihomo": {
-        "count": 83,
+        "count": 86,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "87c16c78df00a26c34aeee6344bc5735e5fc5a7bd749d2f24f1d9b68b3b6a25a"
+        "sha256": "a1a275931a2c13c7c7d945b13a6e6a6285e59c97851a4fc1ff3b9d1a3dd9fd62"
       },
       "surge": {
-        "count": 83,
+        "count": 86,
         "path": "rules/surge/ai-core.list",
-        "sha256": "c8ce580c9a167abeebea1dba5184965e482f14077656aa833635d10cd53cdd41"
+        "sha256": "679685904e1e5b17538f9cbdf8e7ab1abcd9b5fd3cdbc148a2d8163795706240"
       }
     },
     "ai-daily": {
@@ -67,14 +67,14 @@
     },
     "cursor": {
       "mihomo": {
-        "count": 5,
+        "count": 7,
         "path": "rules/mihomo/cursor.yaml",
-        "sha256": "0bb50a901c3c6d37179ff5c1f6e8370b92221318ec0db6f8c4261ea48e8cdf20"
+        "sha256": "a3a3f9fa313a1260ad7fa8e64934de4785c6a4b8d01d1a8f9097a9d01016f2be"
       },
       "surge": {
-        "count": 5,
+        "count": 7,
         "path": "rules/surge/cursor.list",
-        "sha256": "38e99c99dc55283d308e7708f87ffa07c89a71912d4fd68d5382b5e95942cd80"
+        "sha256": "b8a28a25055e17181be5c10174a54e743551cd0dfac783ec2baedc6f9337e030"
       }
     },
     "deepseek": {
@@ -151,14 +151,14 @@
     },
     "iflytek-spark": {
       "mihomo": {
-        "count": 1,
+        "count": 3,
         "path": "rules/mihomo/iflytek-spark.yaml",
-        "sha256": "84b90329e2752d0b91485023f4dc55e74a21e40bc20548ce9fb06ed8d53a603c"
+        "sha256": "0cd78f11c71888771f0741d5df9a47b27f87f42051decc2f4fd943351e5ac944"
       },
       "surge": {
-        "count": 1,
+        "count": 3,
         "path": "rules/surge/iflytek-spark.list",
-        "sha256": "72eca38fb4d190db85ee231247a3ca566960f7f1b8b2438a6d7d9f61e21a1e5e"
+        "sha256": "1fba308eda317f316a34f351d1d277e3ace37ec5d896cc894376236839bb393a"
       }
     },
     "kimi": {
@@ -187,14 +187,14 @@
     },
     "microsoft-copilot": {
       "mihomo": {
-        "count": 4,
+        "count": 5,
         "path": "rules/mihomo/microsoft-copilot.yaml",
-        "sha256": "339045a8fb6b32a0dbc3fde8acf289481c59cf92c67ba6fe43e6195215332174"
+        "sha256": "b05bfbfc55368397a281363b9752030acfd08e978c6f80f410fdccfa650bcf85"
       },
       "surge": {
-        "count": 4,
+        "count": 5,
         "path": "rules/surge/microsoft-copilot.list",
-        "sha256": "f44844d2308fa755ffb4077021aa12b558ac2785412e852fd4a2fcaf93028c0d"
+        "sha256": "468850b38e67dd607e2f63786dae1cae3f469c1a118e5bbce6118e8b89cab279"
       }
     },
     "midjourney": {
@@ -319,14 +319,14 @@
     },
     "tencent-ai": {
       "mihomo": {
-        "count": 2,
+        "count": 22,
         "path": "rules/mihomo/tencent-ai.yaml",
-        "sha256": "7abcfb02f38e03b3522469f6b66dca1cb74966fc9fa14af1d58ea00249b67724"
+        "sha256": "a3b292e01a9b795faf61d07677af9e9dc3bd5089fc897a4e40ae7cf21a940d19"
       },
       "surge": {
-        "count": 2,
+        "count": 22,
         "path": "rules/surge/tencent-ai.list",
-        "sha256": "ce3abfae8520e7548c6c68380604ba7591c724aed0cb9e1bf7c4ce09c730991d"
+        "sha256": "d382c279ea6d4706f36f7d2b1bec4d5cd22125335e285afa206f57e73ed002f9"
       }
     },
     "zhipu": {
@@ -480,6 +480,22 @@
       ],
       "tier": "core",
       "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN,anysphere-binaries.s3.us-east-1.amazonaws.com",
+      "sources": [
+        "https://cursor.com/docs/enterprise/network-configuration Dedicated Cursor client and extension downloads; exact bucket host, not the regional S3 namespace"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN,cloud-agent-artifacts.s3.us-east-1.amazonaws.com",
+      "sources": [
+        "https://cursor.com/docs/cloud-agent/self-hosted/pool Dedicated Cursor agent artifact uploads; official documentation prefers this exact host over the regional S3 wildcard"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
     },
     {
       "rule": "DOMAIN-SUFFIX,cursor-cdn.com",
@@ -842,6 +858,22 @@
       "vendor": "grok"
     },
     {
+      "rule": "DOMAIN,spark-api-open.xf-yun.com",
+      "sources": [
+        "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html Official Spark HTTP API; does not include unrelated services on xf-yun.com"
+      ],
+      "tier": "core",
+      "vendor": "iflytek-spark"
+    },
+    {
+      "rule": "DOMAIN,spark-api.xf-yun.com",
+      "sources": [
+        "https://www.xfyun.cn/doc/spark/Web.html Official Spark WebSocket API; exact endpoint, not the shared model platform namespace"
+      ],
+      "tier": "core",
+      "vendor": "iflytek-spark"
+    },
+    {
       "rule": "DOMAIN-SUFFIX,xinghuo.xfyun.cn",
       "sources": [
         "v2fly:data/category-ai-cn (selected explicit rule)"
@@ -904,6 +936,14 @@
       ],
       "tier": "core",
       "vendor": "kling"
+    },
+    {
+      "rule": "DOMAIN,copilot.ai",
+      "sources": [
+        "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/termsofuse Official consumer Copilot application entry; exact host only"
+      ],
+      "tier": "core",
+      "vendor": "microsoft-copilot"
     },
     {
       "rule": "DOMAIN-SUFFIX,copilot-stg.com",
@@ -1282,6 +1322,166 @@
       "vendor": "suno"
     },
     {
+      "rule": "DOMAIN,api.hunyuan.cloud.tencent.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/111007 Official Hunyuan OpenAI-compatible API; exact product endpoint, not Tencent Cloud as a whole"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-bangkok.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-beijing.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-chengdu.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-chongqing.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-guangzhou.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-hongkong.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-jakarta.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-nanjing.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-seoul.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-shanghai-fsi.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan financial-region API endpoint; exact host, routing does not grant region access"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-shanghai.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-shenzhen-fsi.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan financial-region API endpoint; exact host, routing does not grant region access"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-singapore.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.ap-tokyo.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.eu-frankfurt.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.na-ashburn.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.na-siliconvalley.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.sa-saopaulo.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan regional API endpoint; exact host, no shared regional suffix"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
+      "rule": "DOMAIN,hunyuan.tencentcloudapi.com",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1729/101841 Official Hunyuan nearest-region API endpoint; exact product host"
+      ],
+      "tier": "core",
+      "vendor": "tencent-ai"
+    },
+    {
       "rule": "DOMAIN-SUFFIX,hunyuan.tencent.com",
       "sources": [
         "v2fly:data/category-ai-cn (selected explicit rule)"
@@ -1341,7 +1541,7 @@
   "schema": 2,
   "semantic_contract": {
     "path": "sources/semantic-contracts.json",
-    "sha256": "c8805b8da86cd2aa72a5a6ee6a141d24b3fa8134a41432462f2ce55ae2e7a8ba"
+    "sha256": "a2bafeeab4fbd0d6e40cae3f2e8d919d62567de5dc18a7df071c8fbd5a9f4400"
   },
   "upstream": {
     "sha256": {

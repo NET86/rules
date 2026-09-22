@@ -22,12 +22,12 @@
       "must_not_match": ["www.google.com", "storage.googleapis.com", "cloudaicompanion.googleapis.com", "antigravity.google.com"]
     },
     "cursor": {
-      "must_match": ["api2.cursor.sh", "vm.cursorvm.com"],
-      "must_not_match": ["anysphere-binaries.s3.us-east-1.amazonaws.com", "cloud-agent-artifacts.s3.us-east-1.amazonaws.com"]
+      "must_match": ["api2.cursor.sh", "vm.cursorvm.com", "anysphere-binaries.s3.us-east-1.amazonaws.com", "cloud-agent-artifacts.s3.us-east-1.amazonaws.com"],
+      "must_not_match": ["s3.us-east-1.amazonaws.com", "unrelated.s3.us-east-1.amazonaws.com", "child.anysphere-binaries.s3.us-east-1.amazonaws.com", "child.cloud-agent-artifacts.s3.us-east-1.amazonaws.com"]
     },
     "microsoft-copilot": {
-      "must_match": ["copilot.microsoft.com", "copilot.cloud.microsoft"],
-      "must_not_match": ["www.microsoft.com", "githubcopilot.com"]
+      "must_match": ["copilot.microsoft.com", "copilot.cloud.microsoft", "copilot.ai"],
+      "must_not_match": ["www.microsoft.com", "githubcopilot.com", "child.copilot.ai", "notcopilot.ai"]
     },
     "github-copilot": {
       "must_match": ["githubcopilot.com", "origin-tracker.githubusercontent.com"],
@@ -90,12 +90,12 @@
       "must_not_match": ["www.baidu.com", "yuanbao.tencent.com"]
     },
     "tencent-ai": {
-      "must_match": ["yuanbao.tencent.com", "hunyuan.tencent.com"],
-      "must_not_match": ["cloud.tencent.com", "yiyan.baidu.com"]
+      "must_match": ["yuanbao.tencent.com", "hunyuan.tencent.com", "api.hunyuan.cloud.tencent.com", "hunyuan.tencentcloudapi.com", "hunyuan.ap-guangzhou.tencentcloudapi.com", "hunyuan.ap-singapore.tencentcloudapi.com", "hunyuan.ap-shenzhen-fsi.tencentcloudapi.com"],
+      "must_not_match": ["cloud.tencent.com", "yiyan.baidu.com", "tencentcloudapi.com", "cvm.ap-guangzhou.tencentcloudapi.com", "child.hunyuan.tencentcloudapi.com", "hunyuan.unreviewed-region.tencentcloudapi.com"]
     },
     "iflytek-spark": {
-      "must_match": ["xinghuo.xfyun.cn"],
-      "must_not_match": ["www.xfyun.cn", "yuanbao.tencent.com"]
+      "must_match": ["xinghuo.xfyun.cn", "spark-api-open.xf-yun.com", "spark-api.xf-yun.com"],
+      "must_not_match": ["www.xfyun.cn", "yuanbao.tencent.com", "xf-yun.com", "child.spark-api-open.xf-yun.com", "maas-api.cn-huabei-1.xf-yun.com"]
     }
   },
   "profiles": {

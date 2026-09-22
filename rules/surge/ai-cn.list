@@ -51,8 +51,30 @@ DOMAIN-SUFFIX,klingai.com
 DOMAIN-SUFFIX,yiyan.baidu.com
 
 # 腾讯元宝 / 混元
+DOMAIN,api.hunyuan.cloud.tencent.com
+DOMAIN,hunyuan.ap-bangkok.tencentcloudapi.com
+DOMAIN,hunyuan.ap-beijing.tencentcloudapi.com
+DOMAIN,hunyuan.ap-chengdu.tencentcloudapi.com
+DOMAIN,hunyuan.ap-chongqing.tencentcloudapi.com
+DOMAIN,hunyuan.ap-guangzhou.tencentcloudapi.com
+DOMAIN,hunyuan.ap-hongkong.tencentcloudapi.com
+DOMAIN,hunyuan.ap-jakarta.tencentcloudapi.com
+DOMAIN,hunyuan.ap-nanjing.tencentcloudapi.com
+DOMAIN,hunyuan.ap-seoul.tencentcloudapi.com
+DOMAIN,hunyuan.ap-shanghai-fsi.tencentcloudapi.com
+DOMAIN,hunyuan.ap-shanghai.tencentcloudapi.com
+DOMAIN,hunyuan.ap-shenzhen-fsi.tencentcloudapi.com
+DOMAIN,hunyuan.ap-singapore.tencentcloudapi.com
+DOMAIN,hunyuan.ap-tokyo.tencentcloudapi.com
+DOMAIN,hunyuan.eu-frankfurt.tencentcloudapi.com
+DOMAIN,hunyuan.na-ashburn.tencentcloudapi.com
+DOMAIN,hunyuan.na-siliconvalley.tencentcloudapi.com
+DOMAIN,hunyuan.sa-saopaulo.tencentcloudapi.com
+DOMAIN,hunyuan.tencentcloudapi.com
 DOMAIN-SUFFIX,hunyuan.tencent.com
 DOMAIN-SUFFIX,yuanbao.tencent.com
 
 # 讯飞星火
+DOMAIN,spark-api-open.xf-yun.com
+DOMAIN,spark-api.xf-yun.com
 DOMAIN-SUFFIX,xinghuo.xfyun.cn
