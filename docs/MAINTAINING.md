@@ -33,7 +33,7 @@ OpenAI 资料的 403 仅对固定公开 URL 尝试锁定的 HTTPS 兼容传输�
 
 ## 调度与异常
 
-同步每 6 小时，官方与混合分类雷达随同步，Sukka 每周；示例客户端每小时拉取订阅。[Cloudflare 主调度与 GitHub 兜底](../infra/scheduler/README.md)负责触发和去重。
+同步每 6 小时，官方与混合分类雷达随同步，Sukka 每周；示例客户端每小时拉取订阅。[Cloudflare 主调度与 GitHub 兜底](../infra/scheduler/README.md)中，Cloudflare 固定触发，GitHub 仅在没有近期健康 `workflow_dispatch` 时执行兜底。
 
 工作流先上传 `.work/` 证据，再更新异常 Issue，最后生成只读摘要。摘要分开报告作业、发布和恢复结果；规则变化比较候选与上次 `stable`，未发布的候选变化不代表生效。恢复预检写 `recovery-report.json`，真正发布写 `release-report.json`。
 
