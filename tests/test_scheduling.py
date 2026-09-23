@@ -31,9 +31,12 @@ class BackupTests(unittest.TestCase):
             with self.subTest(status=status, conclusion=conclusion):
                 self.assertEqual(backup_needed({"workflow_runs": [dict(
                     run, status=status, conclusion=conclusion)]}, now), expected)
-        for age in [5, 6, -1]:
+        for age in [6, 7, -1]:
             run["created_at"] = (now - timedelta(hours=age)).isoformat()
             self.assertTrue(backup_needed({"workflow_runs": [run]}, now))
+        for age in [timedelta(hours=5, minutes=25), timedelta(hours=5, minutes=59, seconds=59)]:
+            run["created_at"] = (now - age).isoformat()
+            self.assertFalse(backup_needed({"workflow_runs": [run]}, now))
         self.assertTrue(backup_needed({"workflow_runs": []}, now))
 
     def test_summary_cannot_change_the_scheduling_output(self):

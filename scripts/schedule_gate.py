@@ -20,7 +20,7 @@ def backup_needed(history, now):
     healthy = latest["conclusion"] == "success" or latest["status"] in {
         "queued", "in_progress", "waiting", "pending", "requested"
     }
-    return not (0 <= age < 5 * 3600 and healthy)
+    return not (0 <= age < 6 * 3600 and healthy)
 
 
 def main():
