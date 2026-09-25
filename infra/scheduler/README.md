@@ -6,14 +6,14 @@ Worker 只负责按 Cloudflare Cron 固定触发 `NET86/rules` 的 `sync.yml`；
 
 | 触发方 | 北京时间 | 行为 |
 | --- | --- | --- |
-| Cloudflare | `00:01 / 06:01 / 12:01 / 18:01` | 固定触发，不因近期自动或人工运行而跳过。 |
-| GitHub 兜底 | 每天 `00:31` | 检查最近 6 小时最后一次带 Cloudflare 标记的 `main` 调度；仅在该次运行已完成且成功时跳过，否则执行完整同步。 |
+| Cloudflare | `00:01 / 06:01 / 12:01 / 18:01` | 每次触发完整同步。 |
+| GitHub 兜底 | 每天 `00:31` | 检查最近 6 小时内最后一次带 Cloudflare 标记的 `main` 运行；已完成且成功则跳过，否则执行完整同步。 |
 
-Cloudflare Worker 发起 `workflow_dispatch` 时传入 `trigger_source=cloudflare`，工作流运行名标为 `Cloudflare scheduled sync`。人工 `workflow_dispatch` 不抑制 GitHub 兜底，也不改变下一次 Cloudflare 固定触发。GitHub 兜底自身的 `schedule` 记录不会抑制 Cloudflare。两者共用发布锁。
+Cloudflare 运行带有 `trigger_source=cloudflare` 标记，运行名为 `Cloudflare scheduled sync`。人工运行不影响定时调度。两个触发方共用发布锁。
 
-每天一次的 GitHub 兜底只检查 `00:31` 前最近一轮主调度，不逐一补跑当天更早时段的失败。将判定窗口扩大到 24 小时会让较早的成功记录掩盖最近一轮缺失，因此保留 6 小时窗口。
+GitHub 兜底只覆盖 `00:31` 前最近一轮主调度。该轮仍在排队或运行、失败、取消、无记录或记录查询失败时，执行完整同步。
 
-触发成功不等于执行成功；GitHub 兜底会对仍在排队或执行、失败、取消、过期、无记录或查询失败进行补跑。GitHub 只读取最近 30 条 `workflow_dispatch`，若其中找不到带 Cloudflare 标记的运行则执行兜底。因长期无活动停用的同步和补缺工作流可恢复，手动停用不恢复。同步状态未知时拒绝触发；补缺恢复失败记日志，不阻断主同步。
+Cloudflare 自动恢复因长期无活动停用的同步与补缺工作流；手动停用的工作流不会自动恢复。同步状态未知时不触发；补缺恢复失败不阻断主同步。
 
 ## 部署
 
@@ -31,7 +31,7 @@ npx --yes wrangler@4.135.0 secret put GITHUB_TOKEN
 npx --yes wrangler@4.135.0 deploy
 ```
 
-调度标记变更后需重新部署 Worker；未重新部署时 GitHub 无法识别旧版 Worker 发起的运行，会在每日检查时执行兜底。以 Cloudflare 日志和 GitHub 运行记录确认生效。仓库测试命令见[验证说明](../../docs/VALIDATION.md)。
+以 Cloudflare 日志和 GitHub 运行记录确认生效。仓库测试命令见[验证说明](../../docs/VALIDATION.md)。
 
 `wrangler dev --test-scheduled` 在配置真实密钥且满足条件时会启动真实同步。停用将 `triggers.crons` 设为空数组并重新部署。
 
