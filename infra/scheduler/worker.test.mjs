@@ -35,7 +35,9 @@ test("every cron invocation dispatches the fixed main workflow without run-histo
     assert.equal(calls.length, 4);
     assert.ok(calls.every(({ url }) => !url.includes("/runs?")));
     assert.equal(calls[3].url, "https://api.github.com/repos/NET86/rules/actions/workflows/sync.yml/dispatches");
-    assert.deepEqual(JSON.parse(calls[3].options.body), { ref: "main" });
+    assert.deepEqual(JSON.parse(calls[3].options.body), {
+      ref: "main", inputs: { trigger_source: "cloudflare" },
+    });
     assert.equal(calls[3].options.method, "POST");
     for (const { options } of calls) {
       assert.equal(options.redirect, "manual");

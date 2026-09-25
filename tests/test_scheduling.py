@@ -18,14 +18,15 @@ import merge_dependencies
 
 
 class BackupTests(unittest.TestCase):
-    def test_recent_success_or_active_skips_but_failure_does_not(self):
+    def test_only_recent_completed_cloudflare_success_skips(self):
         now = datetime(2026, 9, 21, 6, 49, tzinfo=timezone.utc)
         run = {"head_branch": "main", "event": "workflow_dispatch",
+               "display_title": "Cloudflare scheduled sync",
                "created_at": (now - timedelta(minutes=30)).isoformat(),
                "status": "completed", "conclusion": "success"}
         for status, conclusion, expected in [
-            ("completed", "success", False), ("in_progress", None, False),
-            ("queued", None, False), ("completed", "failure", True),
+            ("completed", "success", False), ("in_progress", None, True),
+            ("queued", None, True), ("completed", "failure", True),
             ("completed", "cancelled", True), ("completed", "skipped", True),
         ]:
             with self.subTest(status=status, conclusion=conclusion):
@@ -38,6 +39,23 @@ class BackupTests(unittest.TestCase):
             run["created_at"] = (now - age).isoformat()
             self.assertFalse(backup_needed({"workflow_runs": [run]}, now))
         self.assertTrue(backup_needed({"workflow_runs": []}, now))
+
+    def test_manual_success_cannot_hide_missing_or_failed_cloudflare_run(self):
+        now = datetime(2026, 9, 21, 6, 49, tzinfo=timezone.utc)
+        primary = {"head_branch": "main", "event": "workflow_dispatch",
+                   "display_title": "Cloudflare scheduled sync",
+                   "created_at": (now - timedelta(minutes=40)).isoformat(),
+                   "status": "completed", "conclusion": "success"}
+        manual = dict(primary, display_title="Manual sync",
+                      created_at=(now - timedelta(minutes=5)).isoformat())
+        self.assertFalse(backup_needed({"workflow_runs": [manual, primary]}, now))
+        self.assertTrue(backup_needed({"workflow_runs": [manual]}, now))
+        self.assertTrue(backup_needed({"workflow_runs": [manual, dict(primary, conclusion="failure")]}, now))
+        self.assertTrue(backup_needed({"workflow_runs": [manual, dict(primary, status="in_progress",
+                                                                      conclusion=None)]}, now))
+        older_success = dict(primary, created_at=(now - timedelta(hours=5)).isoformat())
+        self.assertTrue(backup_needed({"workflow_runs": [dict(primary, conclusion="failure"),
+                                                        older_success]}, now))
 
     def test_summary_cannot_change_the_scheduling_output(self):
         import schedule_gate
@@ -61,7 +79,8 @@ class BackupTests(unittest.TestCase):
 
     def test_skipped_backup_cannot_be_mistaken_for_primary(self):
         with self.assertRaises(ValueError):
-            backup_needed({"workflow_runs": [{"head_branch": "main", "event": "schedule"}]},
+            backup_needed({"workflow_runs": [{"display_title": "Cloudflare scheduled sync",
+                                              "head_branch": "main", "event": "schedule"}]},
                           datetime.now(timezone.utc))
 
 

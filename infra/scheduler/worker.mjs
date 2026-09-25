@@ -51,7 +51,9 @@ export async function trigger(env, request = fetch) {
     console.warn("Secondary radar recovery failed:", String(error));
   }
 
-  const dispatched = await api(WORKFLOW + "/dispatches", "POST", { ref: "main" });
+  const dispatched = await api(WORKFLOW + "/dispatches", "POST", {
+    ref: "main", inputs: { trigger_source: "cloudflare" },
+  });
   if (!Number.isSafeInteger(dispatched.workflow_run_id) || dispatched.workflow_run_id <= 0) {
     throw new Error("Invalid workflow dispatch response");
   }

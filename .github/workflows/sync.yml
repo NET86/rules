@@ -1,8 +1,14 @@
 name: 规则同步
+run-name: ${{ github.event_name == 'schedule' && 'GitHub daily fallback' || inputs.trigger_source == 'cloudflare' && 'Cloudflare scheduled sync' || 'Manual sync' }}
 on:
   schedule:
     - cron: '31 16 * * *'
   workflow_dispatch:
+    inputs:
+      trigger_source:
+        description: 调度来源；Cloudflare Worker 使用 cloudflare
+        required: false
+        type: string
 permissions:
   contents: write
   issues: write
@@ -25,7 +31,7 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-      - name: 检查是否需要兜底同步
+      - name: 检查最近一轮 Cloudflare 主调度是否成功
         id: backup
         if: github.event_name == 'schedule'
         run: python scripts/schedule_gate.py
