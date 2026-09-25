@@ -7,7 +7,7 @@ Worker 只负责按 Cloudflare Cron 固定触发 `NET86/rules` 的 `sync.yml`；
 | 触发方 | 北京时间 | 行为 |
 | --- | --- | --- |
 | Cloudflare | `00:01 / 06:01 / 12:01 / 18:01` | 固定触发，不因近期自动或人工运行而跳过。 |
-| GitHub 兜底 | `00:31 / 06:31 / 12:31 / 18:31` | 先检查最近 6 小时最新的 `main` `workflow_dispatch`；成功或仍活跃则结束，否则执行完整同步。 |
+| GitHub 兜底 | 每天 `00:31` | 先检查最近 6 小时最新的 `main` `workflow_dispatch`；成功或仍活跃则结束，否则执行完整同步。 |
 
 人工 `workflow_dispatch` 可以让同一时段的 GitHub 兜底结束，但不会改变下一次 Cloudflare 固定触发。GitHub 兜底自身的 `schedule` 记录不会抑制 Cloudflare。两者共用发布锁。
 
