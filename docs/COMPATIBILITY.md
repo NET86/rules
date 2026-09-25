@@ -1,13 +1,13 @@
 # 客户端兼容
 
-| 规则 | Surge | Mihomo / FlClash |
+| 规则 | Surge | Mihomo |
 | --- | --- | --- |
 | 精确主机 | `DOMAIN` | `DOMAIN` |
 | 根域及子域 | `DOMAIN-SUFFIX` | `DOMAIN-SUFFIX` |
 | 已审核正则 | 转为受限通配符 | `DOMAIN-REGEX` |
 | IPv4 / IPv6 | `IP-CIDR` / `IP-CIDR6`，`no-resolve` | 同左 |
 
-Surge 使用 `RULE-SET`。Mihomo / FlClash 使用 `rule-providers`，配置 `behavior: classical`、`format: yaml`；接入见[示例](../README.md#配置)。
+Surge 使用 `RULE-SET`。Mihomo 使用 `rule-providers`，配置 `behavior: classical`、`format: yaml`；接入见[示例](../README.md#配置)。
 
 ## OpenAI 正则转换
 

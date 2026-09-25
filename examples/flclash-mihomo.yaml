@@ -1,4 +1,4 @@
-# 加入已有 FlClash/Mihomo 配置，不包含代理节点。
+# 加入已有 Mihomo 配置，不包含代理节点。
 # 导入后在 AI 策略组添加并选择可用节点；REJECT 仅为占位。
 proxy-groups:
   - name: AI

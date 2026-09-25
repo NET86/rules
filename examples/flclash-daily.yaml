@@ -1,4 +1,4 @@
-# FlClash/Mihomo 日常规则示例：加入已有配置，不包含代理节点。
+# Mihomo 日常规则示例：加入已有配置，不包含代理节点。
 proxy-groups:
   - name: AI
     type: select
