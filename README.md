@@ -3,7 +3,7 @@
 [![规则校验](https://github.com/NET86/rules/actions/workflows/ci.yml/badge.svg)](https://github.com/NET86/rules/actions/workflows/ci.yml)
 [![规则同步](https://github.com/NET86/rules/actions/workflows/sync.yml/badge.svg)](https://github.com/NET86/rules/actions/workflows/sync.yml)
 
-适用于 Surge、Mihomo，只提供分流规则，不包含代理节点。订阅使用经过校验的 `stable` 分支；`main` 用于开发。
+AI 分流规则，每日自动更新（支持Surge、Mihomo）
 
 ## 订阅
 
