@@ -36,6 +36,21 @@ class IntakeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             intake.extract_document(source, b"<h2>Network</h2><p>access denied</p>")
 
+    def test_api_documents_are_limited_to_network_sections(self):
+        sources = {row["id"]: row for row in rules.read_json(rules.ROOT / "sources/official.json")["sources"]}
+        cases = [
+            ("hunyuan-regions", "1. 服务地址", "hunyuan.tencentcloudapi.com", "hunyuan.ap-guangzhou.tencentcloudapi.com"),
+            ("spark-http", "# 2.1 语言模型", "spark-api-open.xf-yun.com", "spark-api-open.xf-yun.com"),
+        ]
+        for source_id, heading, first, second in cases:
+            with self.subTest(source=source_id):
+                payload = (f"<h2>{heading}</h2><p>https://{first}/v1 https://{second}/v1</p>"
+                           "<h2>Code examples</h2><p>client.chat.completions.create example.org</p>").encode()
+                doc = intake.extract_document(sources[source_id], payload)
+                self.assertEqual(set(doc["rules"]), {"DOMAIN," + first, "DOMAIN," + second})
+                with self.assertRaises(ValueError):
+                    intake.extract_document(sources[source_id], b"<h2>Renamed</h2><p>access denied</p>")
+
     def test_google_discovery_identity_and_endpoints(self):
         source = next(s for s in rules.read_json(rules.ROOT / "sources/official.json")["sources"] if s["format"] == "discovery")
         doc = {"name": "generativelanguage", "kind": "discovery#restDescription",
@@ -146,6 +161,69 @@ class IntakeTests(unittest.TestCase):
         self.assertEqual(production, before)
         self.assertEqual(report["decisions"][0]["action"], "already-covered")
         self.assertEqual(report["review_required"][0]["reason"], "official-uncovered-domain")
+
+    def test_only_valid_current_source_documents_can_be_last_good(self):
+        source = {"id": "fixture", "url": "https://official.test/network", "vendor": "demo",
+                  "format": "html", "sections": ["Network"], "required_hosts": ["api.example.com"], "min_hosts": 1}
+        payload = b"<h2>Network</h2><p>api.example.com</p>"
+        valid = intake.extract_document(source, payload)
+        invalid = [None, {}, dict(valid, vendor="other"), dict(valid, url="https://old.test"),
+                   dict(valid, rules=[]), dict(valid, rules=[None]), dict(valid, rules=["DOMAIN,wrong.example"]),
+                   dict(valid, rules=["IP-CIDR,8.8.8.8/32"]), dict(valid, document_sha256="bad")]
+        def offline(url):
+            raise OSError("offline")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "sources").mkdir()
+            other = dict(source, id="healthy", url="https://healthy.test/network")
+            (root / "sources/official.json").write_text(json.dumps({"sources": [source, other]}))
+            for old in [valid, *invalid]:
+                for recover in (False, True):
+                    with self.subTest(old=old, recover=recover):
+                        state = {"schema": 1, "documents": {"fixture": old, "removed-source": valid}}
+                        path = root / "sources/official-state.json"
+                        path.write_text(json.dumps(state))
+                        def fetch(url):
+                            return payload if recover or url == other["url"] else offline(url)
+                        after, report = intake.refresh_official(root, fetch)
+                        expected = "fresh" if recover else ("retained-last-good" if old == valid else "unavailable-no-baseline")
+                        self.assertEqual(report["sources"]["fixture"]["status"], expected)
+                        self.assertEqual(report["sources"]["healthy"]["status"], "fresh")
+                        self.assertNotIn("removed-source", after["documents"])
+                        self.assertEqual("fixture" in after["documents"], recover or old == valid)
+                        self.assertEqual(rules.read_json(path), state)
+
+    def test_patch_evidence_loss_is_visible_without_revoking_authority(self):
+        source = {"id": "fixture", "url": "https://official.test/network", "vendor": "demo"}
+        exact = "DOMAIN,tenant.shared.example"
+        broad = "DOMAIN-SUFFIX,tenant.shared.example"
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "sources").mkdir()
+            docs = {
+                "official.json": {"sources": [source]},
+                "intake-policy.json": {"official_exclude_exact": {"shared.example": "Shared namespace"},
+                                       "official_exclude_suffixes": {}, "official_shared_suffixes": {}},
+                "patches.json": {"add": [{"vendor": "demo", "tier": "core", "rule": rule,
+                                          "source": source["url"], "reason": "Reviewed"} for rule in (exact, broad)], "drop": {}}
+            }
+            for name, data in docs.items():
+                (root / "sources" / name).write_text(json.dumps(data))
+            production = {("demo", "core", rules.Rule.from_text(rule)): {source["url"]} for rule in (exact, broad)}
+            before = copy.deepcopy(production)
+            for facts, expected in [([exact], [broad]), ([broad], []),
+                                    (["DOMAIN-SUFFIX,shared.example"], [exact, broad]), ([], [exact, broad])]:
+                with self.subTest(facts=facts):
+                    report = intake.analyze_official(root, {"documents": {"fixture": dict(source, rules=facts)}}, production)
+                    missing = [row["rule"] for row in report["review_required"] if row["reason"] == "official-patch-evidence-missing"]
+                    self.assertEqual(sorted(missing), sorted(expected))
+                    self.assertEqual(production, before)
+            # Withdrawn patches and facts cited from another source/vendor are not invented anomalies.
+            self.assertFalse(intake.analyze_official(root, {"documents": {"fixture": dict(source, rules=[])}}, {})["review_required"])
+            docs["patches.json"]["add"][0]["source"] = "https://different.test/network"
+            docs["patches.json"]["add"][1]["vendor"] = "other"
+            (root / "sources/patches.json").write_text(json.dumps(docs["patches.json"]))
+            self.assertFalse(intake.analyze_official(root, {"documents": {"fixture": dict(source, rules=[])}}, production)["review_required"])
 
     def test_all_official_failures_preserve_baselines(self):
         before = rules.read_json(rules.ROOT / "sources/official-state.json")
@@ -286,6 +364,116 @@ class IntakeTests(unittest.TestCase):
 
 
 class ReleaseSummaryTests(unittest.TestCase):
+    def test_final_summary_compares_actual_previous_stable_not_checkout_head(self):
+        before = {"provenance": [{"vendor": "demo", "tier": "core", "rule": "DOMAIN,old.example", "sources": []}]}
+        after = copy.deepcopy(before)
+        after["provenance"].append({"vendor": "demo", "tier": "core", "rule": "DOMAIN,new.example", "sources": []})
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "rules").mkdir()
+            (root / ".work").mkdir()
+            (root / "rules/manifest.json").write_text(json.dumps(after))
+            (root / ".work/release-report.json").write_text(json.dumps({
+                "result": "PASS", "candidate": "b" * 40, "previous_stable": "a" * 40,
+                "stable_revision": "c" * 40, "stable_remote_validation": "PASS"}))
+            with patch.object(release.Publisher, "git", return_value=json.dumps(before)) as git:
+                text = release.render_workflow_summary(root, "sync", "success")
+            git.assert_called_once_with("show", "a" * 40 + ":rules/manifest.json")
+            self.assertIn("new.example", text)
+            self.assertIn("上次 stable", text)
+            self.assertLess(text.index("发布结果"), text.index("规则变化"))
+            self.assertIn("success", text)
+
+    def test_final_summary_distinguishes_early_failure_and_post_publication_failure(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / ".work").mkdir()
+            for channel in ("sync", "ci", "sources", "dependencies"):
+                with self.subTest(channel=channel):
+                    text = release.render_workflow_summary(root, channel, "failure")
+                    self.assertIn("failure", text)
+                    self.assertIn("未", text)
+                    self.assertNotIn("待审核 / 异常：**0**", text)
+                    self.assertNotIn("stable：已更新", text)
+            (root / ".work/release-report.json").write_text(json.dumps({
+                "result": "PASS", "stable_remote_validation": "PASS", "stable_revision": "a" * 40,
+                "stable_noop": "UNCHANGED_RELEASE_CONTENT"}))
+            text = release.render_workflow_summary(root, "sync", "failure")
+            self.assertIn("failure", text)
+            self.assertIn("UNCHANGED_RELEASE_CONTENT", text)
+            (root / ".work/release-report.json").write_text("{broken")
+            text = release.render_workflow_summary(root, "sync", "failure")
+            self.assertIn("报告无效", text)
+
+    def test_summary_reports_rollback_and_cannot_claim_unverified_publication(self):
+        text = release.render_actions_summary(None, None, {}, {
+            "result": "FAILED", "error": "Injected failure", "rollback": "RESTORED_STABLE",
+            "stable_revision": "a" * 40, "stable_after_failure": "b" * 40,
+            "rollback_remote_validation": "PASS"})
+        self.assertIn("RESTORED_STABLE", text)
+        self.assertIn("Injected failure", text)
+        self.assertIn("回读", text)
+        self.assertIn("本次目标 stable：`" + "a" * 40, text)
+        self.assertIn("失败后 stable（观测值）：`" + "b" * 40, text)
+        self.assertNotIn("稳定提交：`" + "a" * 40, text)
+        self.assertIn("恢复异常：`rollback offline`", release.render_actions_summary(None, None, {}, {
+            "result": "FAILED", "rollback": "FAILED_REMOTE_UNAVAILABLE", "rollback_error": "rollback offline"}))
+        text = release.render_actions_summary({}, {}, {}, {"result": "PASS"})
+        self.assertNotIn("stable：已更新并通过远端验证", text)
+        self.assertNotIn("待审核 / 异常：**0**", text)
+
+    def test_summary_only_never_mutates_and_output_failure_does_not_replace_job_result(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            with patch.object(release, "ROOT", root), \
+                    patch.object(sys, "argv", ["release.py", "--summary-only", "ci", "--job-status", "failure"]), \
+                    patch.dict(release.os.environ, GITHUB_STEP_SUMMARY=str(root)), \
+                    patch.object(release, "Publisher") as publisher, patch("builtins.print") as output:
+                release.main()
+            publisher.assert_not_called()
+            self.assertFalse((root / ".work").exists())
+            self.assertIn("failure", output.call_args_list[0].args[0])
+            self.assertIn("summary write failed", output.call_args_list[-1].args[0])
+            import io
+            summary = root / "summary.md"
+            with io.TextIOWrapper(io.BytesIO(), encoding="cp1252") as console, \
+                    patch.object(release.sys, "stdout", console), \
+                    patch.object(release, "render_workflow_summary", return_value="中文摘要\n"), \
+                    patch.dict(release.os.environ, GITHUB_STEP_SUMMARY=str(summary)):
+                release.write_workflow_summary("ci", "success")
+            self.assertEqual(summary.read_text(encoding="utf-8"), "中文摘要\n")
+
+    def test_ci_summary_ignores_alias_reports_and_separates_windows_and_linux(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / ".work").mkdir()
+            (root / ".work/mihomo-validation.json").write_text(json.dumps({"result": "PASS", "routing_case_count": 99999}))
+            (root / ".work/mihomo-validation-ai-daily.json").write_text(json.dumps({"result": "PASS", "routing_case_count": 42}))
+            for os_name in ("Windows", "Linux"):
+                with self.subTest(os=os_name), patch.dict(release.os.environ, RUNNER_OS=os_name):
+                    text = release.render_workflow_summary(root, "ci", "failure")
+                    self.assertIn("| mihomo / ai-daily | PASS | 42 |", text)
+                    self.assertIn("| mihomo / split | 未完成 | 未知 |", text)
+                    self.assertNotIn("99999", text)
+                    self.assertEqual("| flclash-core /" in text, os_name == "Linux")
+
+    def test_recovery_preflight_never_creates_a_publication_receipt(self):
+        for failure in (False, True):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                with patch.object(release, "ROOT", root), patch.object(sys, "argv", ["release.py", "--recover-only"]), \
+                        patch.dict(release.os.environ, GITHUB_REPOSITORY="NET86/rules"), \
+                        patch.object(release, "Publisher") as publisher:
+                    if failure:
+                        publisher.return_value.recover_stable.side_effect = RuntimeError("preflight unavailable")
+                        with self.assertRaises(RuntimeError):
+                            release.main()
+                    else:
+                        release.main()
+                self.assertFalse((root / ".work/release-report.json").exists())
+                report = rules.read_json(root / ".work/recovery-report.json")
+                self.assertEqual(report["result"], "PREVALIDATION_FAILED" if failure else "PASS")
+
     def test_source_health_distinguishes_publication_success_from_freshness(self):
         text = release.render_actions_summary({}, {}, {"source_health": {
             "v2fly": "fresh", "openai_voice": "retained-suspicious-change",
@@ -334,7 +522,7 @@ class ReleaseSummaryTests(unittest.TestCase):
                 "quarantined_count": 2,
                 "retained_count": 3,
             },
-            {"result": "PASS", "candidate": "a" * 40},
+            {"result": "PASS", "candidate": "a" * 40, "stable_remote_validation": "PASS"},
         )
 
         self.assertIn("#### 新增（12）", text)

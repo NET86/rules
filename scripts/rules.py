@@ -338,7 +338,7 @@ def render_members(members, target, patches, catalog):
 def subscription_index(catalog):
     lines = ["# 订阅目录", "", "日常使用推荐 `ai-daily`。以下为 `stable` 规则文件，不包含代理节点。", "",
              "<!-- 本页由 scripts/rules.py 自动生成，请勿手改。 -->", "",
-             "## 合集", "", "| 规则集 | 用途 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |"]
+             "## 合集", "", "| 规则集 | 用途 | Surge | Mihomo |", "| --- | --- | --- | --- |"]
     def row(name, description):
         return f"| {name} | {description} | [订阅]({RAW_URL}/rules/surge/{name}.list) | [订阅]({RAW_URL}/rules/mihomo/{name}.yaml) |"
     for name in ("ai-daily", "ai-core", "ai-cn"):
@@ -348,15 +348,15 @@ def subscription_index(catalog):
               "日常厂商：" + "、".join(daily) + "。", "",
               "## 单厂商", "", "仅含核心域名。需要独立出口时选用，并放在合集前。", ""]
     for group, title in (("global", "海外服务"), ("cn", "国内服务")):
-        lines += [f"### {title}", "", "| 文件 | 服务 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |"]
+        lines += [f"### {title}", "", "| 文件 | 服务 | Surge | Mihomo |", "| --- | --- | --- | --- |"]
         for vendor in catalog["vendors"]:
             if vendor["group"] == group:
                 lines.append(row(vendor["id"], vendor["name"]))
         lines.append("")
-    lines += ["## 可选功能包", "", "| 文件 | 功能 | Surge | Mihomo / FlClash |", "| --- | --- | --- | --- |",
+    lines += ["## 可选功能包", "", "| 文件 | 功能 | Surge | Mihomo |", "| --- | --- | --- | --- |",
               row("openai-voice-ip", BUNDLE_DESCRIPTIONS["openai-voice-ip"]), "",
               "规则范围与客户端差异见 [格式兼容](../docs/COMPATIBILITY.md)。", "",
-              "[返回首页](../README.md) · [Surge 示例](../examples/surge-daily.conf) · [FlClash 示例](../examples/flclash-daily.yaml)", ""]
+              "[返回首页](../README.md) · [Surge 示例](../examples/surge-daily.conf) · [Mihomo 示例](../examples/flclash-daily.yaml)", ""]
     return "\n".join(lines)
 
 
@@ -404,7 +404,7 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
     manifest = {
         "schema": 2, "upstream": lock, "vendor_count": len(catalog["vendors"]),
         "license": "AGPL-3.0-only (retained MIT notices; official facts keep source terms)",
-        "formats": {"surge": "rule-set", "mihomo": "classical/yaml (FlClash)"},
+        "formats": {"surge": "rule-set", "mihomo": "classical/yaml"},
         "conversion_warnings": warnings, "bundles": {},
         "profiles": {name: {"members": list(profiles[name]["members"]), "budget": profiles[name]["budget"]}
                      for name in ("ai-daily", "ai-core", "ai-cn")},

@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
-"""GitHub cron backs up CF dispatches; missing history permits a full validated sync."""
+"""GitHub cron backs up the latest Cloudflare dispatch when it has not succeeded."""
 import json
 import os
 import subprocess
 from datetime import datetime, timezone
+
+PRIMARY_RUN_TITLE = "Cloudflare scheduled sync"
 
 
 def backup_needed(history, now):
     runs = history["workflow_runs"]
     if not isinstance(runs, list):
         raise ValueError("Invalid workflow history")
-    if not runs:
+    primary_runs = [run for run in runs if run["display_title"] == PRIMARY_RUN_TITLE]
+    if not primary_runs:
         return True
-    latest = runs[0]
+    latest = primary_runs[0]
     if latest["head_branch"] != "main" or latest["event"] != "workflow_dispatch":
         raise ValueError("Unexpected workflow history")
     created = datetime.fromisoformat(latest["created_at"].replace("Z", "+00:00"))
     age = (now - created).total_seconds()
-    healthy = latest["conclusion"] == "success" or latest["status"] in {
-        "queued", "in_progress", "waiting", "pending", "requested"
-    }
-    return not (0 <= age < 5 * 3600 and healthy)
+    succeeded = latest["status"] == "completed" and latest["conclusion"] == "success"
+    return not (0 <= age < 6 * 3600 and succeeded)
 
 
 def main():
@@ -29,7 +30,7 @@ def main():
     try:
         raw = subprocess.check_output([
             "gh", "api", "repos/NET86/rules/actions/workflows/sync.yml/runs"
-            "?branch=main&event=workflow_dispatch&per_page=1"
+            "?branch=main&event=workflow_dispatch&per_page=30"
         ], text=True, encoding="utf-8", timeout=45)
         needed = backup_needed(json.loads(raw), datetime.now(timezone.utc))
     except (subprocess.SubprocessError, ValueError, KeyError, TypeError):
@@ -38,7 +39,16 @@ def main():
         needed = True
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
         output.write(f"run_sync={str(needed).lower()}\n")
-    print("Backup sync required." if needed else "Recent primary sync is healthy; skipping backup.")
+    message = ("需要兜底同步：最近一轮 Cloudflare 主调度没有可确认的成功记录。" if needed
+               else "跳过兜底：最近一轮 Cloudflare 主调度已成功；本次没有重复执行生产校验。")
+    print("Backup sync required." if needed else "Latest Cloudflare sync succeeded; skipping backup.")
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        try:
+            with open(path, "a", encoding="utf-8") as output:
+                output.write("## 调度判定\n\n" + message + "\n")
+        except OSError:
+            print("WARNING: summary unavailable; scheduling decision is unchanged")
 
 
 if __name__ == "__main__":

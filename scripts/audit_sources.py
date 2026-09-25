@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """Read-only secondary radar: report uncovered narrow domains, never mutate production."""
 
-import os
-from pathlib import Path
-
 from automation import scope_problem, vendor_spec
 from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json
 from sync import fetch
@@ -36,6 +33,7 @@ BLOCK_REASON_LABELS = {
     "unsupported-or-broad-matching": "匹配类型不支持自动进入生产",
     "unsupported-tier": "规则层级不受当前生产模型支持",
     "radar-read-only": "主来源已收录，等待规则同步",
+    "upstream-advertising-excluded": "上游条目标记为广告或遥测，不会自动进入生产",
     "unmapped-sukka-section": "Sukka 区段尚未对应到本地厂商",
 }
 
@@ -139,12 +137,14 @@ def v2fly_evidence(candidate, vendor, catalog, data):
             for rule, _attrs, origin in load_source(data, entrypoint):
                 relation = rule_relation(candidate, rule)
                 if relation:
-                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation})
+                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation,
+                                    **({"attributes": sorted(_attrs)} if _attrs else {})})
         for entrypoint in sorted(spec.get("select", {})):
             for rule, _attrs, origin in load_explicit_source(data, entrypoint):
                 relation = rule_relation(candidate, rule)
                 if relation:
-                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation})
+                    matches.append({"entrypoint": entrypoint, "source": origin, "rule": rule.text, "relation": relation,
+                                    **({"attributes": sorted(_attrs)} if _attrs else {})})
     except (OSError, ValueError) as exc:
         return {"status": "unavailable", "present": False, "level": "unknown", "matches": [], "error_type": type(exc).__name__}
     unique = {json_text(row).strip(): row for row in matches}
@@ -195,7 +195,7 @@ def evidence_origins(candidate, vendor, catalog, v2fly):
         return set()
     origins = set()
     for match in v2fly.get("matches", []):
-        if match.get("relation") != "exact":
+        if match.get("relation") != "exact" or "@ads" in match.get("attributes", []):
             continue
         entrypoint, origin = match["entrypoint"], match["source"]
         if entrypoint in spec.get("sources", []) and origin == entrypoint:
@@ -237,6 +237,10 @@ def enrich_pending(pending, catalog, patches, official_state, data):
             else:
                 origins = evidence_origins(candidate, vendor, catalog, upstream)
                 block = scope_problem((vendor, "core", candidate), origins, catalog, patches) or "radar-read-only"
+                if block == "source-not-authorized-by-catalog" and all(
+                    "@ads" in match.get("attributes", []) for match in upstream["matches"] if match["relation"] == "exact"
+                ):
+                    block = "upstream-advertising-excluded"
             row["block_reason"] = block
         row["block_reason_label"] = BLOCK_REASON_LABELS.get(row["block_reason"], row["block_reason"])
         enriched.append(row)
@@ -285,6 +289,7 @@ def render_actions_summary(report, limit=SUMMARY_LIMIT):
         "## Sukka 补缺检查",
         "",
         "### 扫描结果",
+        f"- 成功解析来源：**{len(summaries)}**；以下数量仅统计成功来源，失败来源的缺口未知。",
         f"- 有效规则：**{active}**",
         f"- 已覆盖：**{covered_count}**",
         f"- 策略排除：**{excluded}**",
@@ -299,21 +304,6 @@ def render_actions_summary(report, limit=SUMMARY_LIMIT):
         if extra > 0:
             lines.append(f"- 另有 **{extra}** 条，详见异常 Issue 或 source-audit.json。")
     return "\n".join(lines) + "\n"
-
-
-def append_actions_summary(report):
-    path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if not path:
-        return
-    try:
-        text = render_actions_summary(report)
-    except Exception as exc:
-        text = (
-            "## Sukka 补缺检查\n\n"
-            f"- 摘要生成失败：`{type(exc).__name__}`\n"
-        )
-    with Path(path).open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(text)
 
 
 def main():
@@ -347,7 +337,6 @@ def main():
     work = ROOT / ".work"
     work.mkdir(exist_ok=True)
     (work / "source-audit.json").write_text(json_text(report), encoding="utf-8", newline="\n")
-    append_actions_summary(report)
     print(f"OK: checked {len(config['sources'])} read-only radar source(s); {len(report['review_required'])} exception(s)")
     return 0
 

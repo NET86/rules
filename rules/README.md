@@ -6,7 +6,7 @@
 
 ## 合集
 
-| 规则集 | 用途 | Surge | Mihomo / FlClash |
+| 规则集 | 用途 | Surge | Mihomo |
 | --- | --- | --- | --- |
 | ai-daily | 5 家厂商。日常 AI 核心域名，含 OpenAI 官方语音 IP。 | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-daily.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml) |
 | ai-core | 14 家厂商。更多海外 AI 核心域名，不含语音 IP 和共享依赖。 | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-core.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml) |
@@ -22,7 +22,7 @@
 
 ### 海外服务
 
-| 文件 | 服务 | Surge | Mihomo / FlClash |
+| 文件 | 服务 | Surge | Mihomo |
 | --- | --- | --- | --- |
 | openai | OpenAI / ChatGPT / Sora / Prism | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/openai.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/openai.yaml) |
 | claude | Anthropic / Claude / Claude Code | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/claude.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/claude.yaml) |
@@ -41,7 +41,7 @@
 
 ### 国内服务
 
-| 文件 | 服务 | Surge | Mihomo / FlClash |
+| 文件 | 服务 | Surge | Mihomo |
 | --- | --- | --- | --- |
 | deepseek | DeepSeek | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/deepseek.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/deepseek.yaml) |
 | qwen | 通义千问 / Qwen | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/qwen.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/qwen.yaml) |
@@ -56,10 +56,10 @@
 
 ## 可选功能包
 
-| 文件 | 功能 | Surge | Mihomo / FlClash |
+| 文件 | 功能 | Surge | Mihomo |
 | --- | --- | --- | --- |
 | openai-voice-ip | OpenAI 官方语音目的 IP；ai-daily 已包含，单厂商 openai 未包含。 | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/openai-voice-ip.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/openai-voice-ip.yaml) |
 
 规则范围与客户端差异见 [格式兼容](../docs/COMPATIBILITY.md)。
 
-[返回首页](../README.md) · [Surge 示例](../examples/surge-daily.conf) · [FlClash 示例](../examples/flclash-daily.yaml)
+[返回首页](../README.md) · [Surge 示例](../examples/surge-daily.conf) · [Mihomo 示例](../examples/flclash-daily.yaml)

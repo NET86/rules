@@ -3,11 +3,11 @@
 [![规则校验](https://github.com/NET86/rules/actions/workflows/ci.yml/badge.svg)](https://github.com/NET86/rules/actions/workflows/ci.yml)
 [![规则同步](https://github.com/NET86/rules/actions/workflows/sync.yml/badge.svg)](https://github.com/NET86/rules/actions/workflows/sync.yml)
 
-适用于 Surge、Mihomo / FlClash，只提供分流规则，不包含代理节点。订阅使用经过校验的 `stable` 分支；`main` 用于开发。
+适用于 Surge、Mihomo，只提供分流规则，不包含代理节点。订阅使用经过校验的 `stable` 分支；`main` 用于开发。
 
 ## 订阅
 
-| 规则集 | 用途 | Surge | Mihomo / FlClash |
+| 规则集 | 用途 | Surge | Mihomo |
 | --- | --- | --- | --- |
 | `ai-daily` | 日常 AI，含 OpenAI 语音 IP | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-daily.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml) |
 | `ai-core` | 更多海外 AI，不含语音 IP | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-core.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml) |
@@ -19,7 +19,7 @@
 
 将规则绑定到自己的出口策略。单厂商规则放在合集前，AI 规则放在宽泛平台规则和兜底规则前。不要同时添加用途重叠的合集。
 
-[Surge 日常示例](examples/surge-daily.conf) · [FlClash 日常示例](examples/flclash-daily.yaml) · [Surge 分拆示例](examples/surge.conf) · [FlClash 分拆示例](examples/flclash-mihomo.yaml)
+[Surge 日常示例](examples/surge-daily.conf) · [Mihomo 日常示例](examples/flclash-daily.yaml) · [Surge 分拆示例](examples/surge.conf) · [Mihomo 分拆示例](examples/flclash-mihomo.yaml)
 
 ## 说明
 

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import gzip
+import zlib
 import json
 import ipaddress
 import re
@@ -39,7 +41,14 @@ def fetch(url: str, limit=4_000_000, attempts=3) -> bytes:
     for attempt in range(attempts):
         try:
             with urllib.request.urlopen(request, timeout=45) as response:
-                data = response.read(limit + 1)
+                if response.headers.get("Content-Encoding", "").lower() == "gzip":
+                    try:
+                        with gzip.GzipFile(fileobj=response) as decoded:
+                            data = decoded.read(limit + 1)
+                    except (EOFError, zlib.error) as exc:
+                        raise ValueError("Invalid gzip response") from exc
+                else:
+                    data = response.read(limit + 1)
             if not data or len(data) > limit:
                 raise ValueError(f"Empty or oversized upstream response: {url}")
             return data
@@ -106,7 +115,9 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
     explicit_names = {name for vendor in catalog["vendors"] for name in vendor.get("select", {})}
     written, expanded = set(), set()
 
-    def export(name, recurse):
+    def export(name, recurse, stack=()):
+        if name in stack:
+            raise ValueError(f"Include cycle: {stack + (name,)}")
         if not re.fullmatch(r"[a-z0-9!_-]+", name):
             raise ValueError(f"Unsafe source: {name}")
         if name not in written:
@@ -123,7 +134,7 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
         expanded.add(name)
         for rule, _ in rows:
             if isinstance(rule, str):
-                export(rule, True)
+                export(rule, True, stack + (name,))
 
     for name in sorted(recursive_names):
         export(name, True)

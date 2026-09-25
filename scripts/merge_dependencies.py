@@ -88,18 +88,23 @@ def main():
         raise ValueError("Incomplete CI job list")
     # workflow_run.pull_requests can be empty; resolve the live PR by its fixed repo/head.
     query = urlencode({"state": "open", "base": "main", "head": f"NET86:{run['head_branch']}", "per_page": 100})
+    decisions = []
     for link in api(f"repos/{REPO}/pulls?{query}"):
         number = int(link["number"])
         pr = api(f"repos/{REPO}/pulls/{number}")
         files = api(f"repos/{REPO}/pulls/{number}/files?per_page=100")
         if not eligible(pr, run, jobs, files):
-            print(f"PR #{number}: not eligible for automatic merge.")
-            continue
-        if fast_forward(pr["head"]["sha"]):
-            print(f"PR #{number}: fast-forwarded the tested dependency commit.")
+            decisions.append(f"- PR #{number}：不符合自动合并条件，未合并。")
+        elif fast_forward(pr["head"]["sha"]):
+            decisions.append(f"- PR #{number}：已快进到经过测试的 `{pr['head']['sha']}`。")
         else:
-            print(f"PR #{number}: main advanced; awaiting Dependabot rebase and fresh CI.")
+            decisions.append(f"- PR #{number}：main 已前进，未合并；等待 rebase 和重新测试。")
+        print(json.dumps(decisions[-1]))  # Keep redirected legacy Windows consoles safe.
+    return {"decisions": decisions}
 
 
 if __name__ == "__main__":
-    main()
+    report = main()
+    work = Path(__file__).resolve().parents[1] / ".work"
+    work.mkdir(exist_ok=True)
+    (work / "dependency-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

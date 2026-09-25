@@ -14,7 +14,7 @@
 
 ## 官方资料
 
-OpenAI、Anthropic、Cursor、Google 和 GitHub 的网络资料仅用于提取端点事实并保留出处，不分发网页正文。文档来源见 [官方资料配置](sources/official.json)；[OpenAI 语音数据](https://openai.com/chatgpt-voice.json) 的来源记录在 [快照清单](sources/snapshot/lock.json) 中。
+官方网络资料仅用于提取端点事实并保留出处，不分发网页正文。文档来源见 [官方资料配置](sources/official.json)；[OpenAI 语音数据](https://openai.com/chatgpt-voice.json) 的来源记录在 [快照清单](sources/snapshot/lock.json) 中。
 
 官方资料、商标和服务受各自条款约束，不因被引用而改用本项目许可。
 

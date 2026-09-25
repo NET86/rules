@@ -353,7 +353,7 @@
     }
   ],
   "formats": {
-    "mihomo": "classical/yaml (FlClash)",
+    "mihomo": "classical/yaml",
     "surge": "rule-set"
   },
   "license": "AGPL-3.0-only (retained MIT notices; official facts keep source terms)",

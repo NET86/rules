@@ -22,6 +22,7 @@ jobs:
     steps:
       # Privileged workflow: execute only trusted main code, never PR code/artifacts.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: checkout
         with:
           ref: main
           # Git pushes only an existing tested commit; never check out PR code.
@@ -29,3 +30,6 @@ jobs:
       - run: python scripts/merge_dependencies.py
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: 汇总本次执行结果
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+        run: python scripts/release.py --summary-only dependencies --job-status ${{ job.status }}

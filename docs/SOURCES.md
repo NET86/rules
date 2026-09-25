@@ -2,7 +2,7 @@
 
 ## 生产授权
 
-域名主要来自 [V2Fly](https://github.com/v2fly/domain-list-community)：`catalog.sources` 授权专用文件中直接写出的规则，include 不继承授权；混合文件仅采用 `catalog.select` 指定域名的直接规则，同域名的多种匹配类型按上游并集处理，逐条过滤排除项。人工补充写入 `patches.add`，必须附 HTTPS 证据和理由。
+域名主要来自 [V2Fly](https://github.com/v2fly/domain-list-community)：`catalog.sources` 授权专用文件中直接写出的规则，include 不继承授权；混合文件仅采用 `catalog.select` 指定域名的直接规则，同域名的多种匹配类型按上游并集处理，逐条过滤排除项。人工补充写入 `patches.add`，必须附 HTTPS 证据和理由。引用已接入 `official.json` 的补丁会持续核对证据覆盖；失去覆盖仅触发复核，不自动撤销人工授权。未接入的引用仍需人工维护。
 
 规则按服务归属分组，不保证服务器地域或直连可用。多模型共用的云 API 不按模型名自动归类；专用 API、下载与产物主机可依据官方资料精确补入。
 

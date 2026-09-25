@@ -81,6 +81,26 @@ def visible_sections(content, names):
     return "\n".join(sorted(set(selected)))
 
 
+def validate_document(source, doc):
+    """Apply the same identity/shape contract to fresh and retained official facts."""
+    if (not isinstance(doc, dict) or doc.get("url") != source["url"]
+            or doc.get("vendor") != source["vendor"] or doc.get("extractor") != 1
+            or not isinstance(doc.get("document_sha256"), str)
+            or not re.fullmatch(r"[a-f0-9]{64}", doc["document_sha256"])):
+        raise ValueError("Invalid official document identity or digest")
+    rows = doc.get("rules")
+    if (not isinstance(rows, list) or not rows or any(not isinstance(row, str) for row in rows)
+            or len(rows) != len(set(rows))):
+        raise ValueError("Invalid official document rules")
+    parsed = [Rule.from_text(row) for row in rows]
+    hosts = {rule.value for rule in parsed}
+    if (any(rule.kind not in {"DOMAIN", "DOMAIN-SUFFIX"} for rule in parsed)
+            or not set(source["required_hosts"]).issubset(hosts)
+            or not source["min_hosts"] <= len(hosts) <= 512):
+        raise ValueError(f"Official document shape/count guard failed: {source['id']}")
+    return doc
+
+
 def extract_document(source, payload):
     if source["format"] == "discovery":
         doc = json.loads(payload)
@@ -101,16 +121,13 @@ def extract_document(source, payload):
         rule = Rule("DOMAIN-SUFFIX" if token.startswith(("*.", ".")) else "DOMAIN", value)
         rule.validate()
         rules.add(rule.text)
-    hosts = {Rule.from_text(rule).value for rule in rules}
-    if not set(source["required_hosts"]).issubset(hosts) or not source["min_hosts"] <= len(hosts) <= 512:
-        raise ValueError(f"Official document shape/count guard failed: {source['id']}")
-    return {
+    return validate_document(source, {
         "url": source["url"],
         "vendor": source["vendor"],
         "document_sha256": sha256(text.encode()),
         "rules": sorted(rules),
         "extractor": 1,
-    }
+    })
 
 
 def fetch_official(source, fetch):
@@ -146,9 +163,16 @@ def fetch_official(source, fetch):
 def refresh_official(root, fetch):
     """Refresh each official fact source independently; retain last-valid data on failure."""
     state = read_json(root / "sources/official-state.json")
-    updated = {"schema": 1, "documents": dict(state["documents"])}
+    if not isinstance(state, dict) or state.get("schema") != 1 or not isinstance(state.get("documents"), dict):
+        raise ValueError("Invalid official state structure")
+    updated = {"schema": 1, "documents": {}}
     report = {"sources": {}, "review_required": []}
     sources = read_json(root / "sources/official.json")["sources"]
+    for source in sources:
+        try:
+            updated["documents"][source["id"]] = validate_document(source, state["documents"].get(source["id"]))
+        except ValueError:
+            pass  # A fresh response can repair it; an invalid baseline cannot be retained.
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         jobs = {pool.submit(fetch_official, source, fetch): source for source in sources}
         for job in concurrent.futures.as_completed(jobs):
@@ -156,7 +180,7 @@ def refresh_official(root, fetch):
             try:
                 payload, transport = job.result()
                 doc = extract_document(source, payload)
-                old = state["documents"].get(source["id"])
+                old = updated["documents"].get(source["id"])
                 facts_changed = old is None or any(
                     doc.get(key) != old.get(key) for key in ("url", "vendor", "rules")
                 )
@@ -226,6 +250,19 @@ def analyze_official(root, state, production_entries):
             continue
         if doc["url"] != source["url"] or doc["vendor"] != source["vendor"]:
             raise ValueError("Official snapshot identity mismatch")
+        evidence = [(source["vendor"], "core", Rule.from_text(text)) for text in doc["rules"]
+                    if not official_policy_reason(policy, Rule.from_text(text))]
+        for patch in patches.get("add", []):
+            if patch["vendor"] != source["vendor"] or patch["source"] != source["url"]:
+                continue
+            rule = Rule.from_text(patch["rule"])
+            if ((patch["vendor"], patch["tier"], rule) in production_entries
+                    and not covered_by_vendor(rule, patch["vendor"], evidence)):
+                report["review_required"].append({
+                    "source_id": source["id"], "source": source["url"], "vendor": source["vendor"],
+                    "rule": rule.text, "reason": "official-patch-evidence-missing",
+                    "action": "Latest valid source facts no longer cover this patch; retain reviewed authority pending verification",
+                })
         for text in doc["rules"]:
             rule = Rule.from_text(text)
             reason = official_policy_reason(policy, rule)

@@ -27,15 +27,17 @@ OpenAI 资料的 403 仅对固定公开 URL 尝试锁定的 HTTPS 兼容传输�
 
 先验证或恢复 `stable`，再刷新输入，通过单元、产物、语义与双内核检查。候选进入 `main` 后按不可变 SHA 回读；通过后原子更新 `stable` / `last-known-good`，再验证稳定订阅。
 
-远端引用变化时拒绝覆盖并报错。恢复不回退 `main`。产物与产品契约不变时不轮换 `stable`，但证据和观察状态仍可更新到 `main`。
+远端引用变化时拒绝覆盖并报错。恢复不回退 `main`。产物与产品契约不变时不轮换 `stable`，但证据和观察状态仍可更新到 `main`。因此 `main` 上的文案或代码修改不会立即出现在 `stable`；只有产品契约变化并完成整套发布验证后，发布流程才会把当前候选的完整文件树提升到 `stable`。
 
 修改输入后运行 `python scripts/rules.py`，再[完整验证](VALIDATION.md)。固定内核升级必须重跑双内核三种配置，不能只验证下载成功。
 
 ## 调度与异常
 
-同步每 6 小时，官方与混合分类雷达随同步，Sukka 每周；示例客户端每小时拉取订阅。[Cloudflare 主调度与 GitHub 兜底](../infra/scheduler/README.md)负责触发和去重。
+同步每 6 小时，官方与混合分类雷达随同步，Sukka 每周；示例客户端每小时拉取订阅。[Cloudflare 主调度与 GitHub 兜底](../infra/scheduler/README.md)中，Cloudflare 固定触发；GitHub 每天 `00:31` 检查最近一轮带 Cloudflare 标记的运行，只有该次运行已完成且成功才跳过兜底。
 
-工作流先上传 `.work/` 证据再更新异常 Issue：未变不重复写入，重现则重开，消失后关闭。缺失或无效报告不能用于关闭；环境尚未就绪的失败查看 Actions 日志。
+工作流先上传 `.work/` 证据，再更新异常 Issue，最后生成只读摘要。摘要分开报告作业、发布和恢复结果；规则变化比较候选与上次 `stable`，未发布的候选变化不代表生效。恢复预检写 `recovery-report.json`，真正发布写 `release-report.json`。
+
+Issue 未变不重复写入，重现则重开，消失后关闭。过大正文只展示摘要，以完整异常指纹识别变化；完整报告在 artifact。缺失或无效报告不能用于关闭；环境尚未就绪或被取消的运行查看 Actions 日志。
 
 来源健康与发布结果分开读：`fresh` 为本次通过，`retained-last-good` 为旧基线，`unavailable-no-baseline` 为不可用；发布 `PASS` 不代表所有来源抓取成功。
 

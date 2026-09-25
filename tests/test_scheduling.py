@@ -1,5 +1,6 @@
 """Protect primary/backup freshness and privileged dependency merge boundaries."""
 import copy
+import io
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -17,27 +18,69 @@ import merge_dependencies
 
 
 class BackupTests(unittest.TestCase):
-    def test_recent_success_or_active_skips_but_failure_does_not(self):
+    def test_only_recent_completed_cloudflare_success_skips(self):
         now = datetime(2026, 9, 21, 6, 49, tzinfo=timezone.utc)
         run = {"head_branch": "main", "event": "workflow_dispatch",
+               "display_title": "Cloudflare scheduled sync",
                "created_at": (now - timedelta(minutes=30)).isoformat(),
                "status": "completed", "conclusion": "success"}
         for status, conclusion, expected in [
-            ("completed", "success", False), ("in_progress", None, False),
-            ("queued", None, False), ("completed", "failure", True),
+            ("completed", "success", False), ("in_progress", None, True),
+            ("queued", None, True), ("completed", "failure", True),
             ("completed", "cancelled", True), ("completed", "skipped", True),
         ]:
             with self.subTest(status=status, conclusion=conclusion):
                 self.assertEqual(backup_needed({"workflow_runs": [dict(
                     run, status=status, conclusion=conclusion)]}, now), expected)
-        for age in [5, 6, -1]:
+        for age in [6, 7, -1]:
             run["created_at"] = (now - timedelta(hours=age)).isoformat()
             self.assertTrue(backup_needed({"workflow_runs": [run]}, now))
+        for age in [timedelta(hours=5, minutes=25), timedelta(hours=5, minutes=59, seconds=59)]:
+            run["created_at"] = (now - age).isoformat()
+            self.assertFalse(backup_needed({"workflow_runs": [run]}, now))
         self.assertTrue(backup_needed({"workflow_runs": []}, now))
+
+    def test_manual_success_cannot_hide_missing_or_failed_cloudflare_run(self):
+        now = datetime(2026, 9, 21, 6, 49, tzinfo=timezone.utc)
+        primary = {"head_branch": "main", "event": "workflow_dispatch",
+                   "display_title": "Cloudflare scheduled sync",
+                   "created_at": (now - timedelta(minutes=40)).isoformat(),
+                   "status": "completed", "conclusion": "success"}
+        manual = dict(primary, display_title="Manual sync",
+                      created_at=(now - timedelta(minutes=5)).isoformat())
+        self.assertFalse(backup_needed({"workflow_runs": [manual, primary]}, now))
+        self.assertTrue(backup_needed({"workflow_runs": [manual]}, now))
+        self.assertTrue(backup_needed({"workflow_runs": [manual, dict(primary, conclusion="failure")]}, now))
+        self.assertTrue(backup_needed({"workflow_runs": [manual, dict(primary, status="in_progress",
+                                                                      conclusion=None)]}, now))
+        older_success = dict(primary, created_at=(now - timedelta(hours=5)).isoformat())
+        self.assertTrue(backup_needed({"workflow_runs": [dict(primary, conclusion="failure"),
+                                                        older_success]}, now))
+
+    def test_summary_cannot_change_the_scheduling_output(self):
+        import schedule_gate
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for needed in (False, True):
+                for invalid_summary in (False, True):
+                    with self.subTest(needed=needed, invalid_summary=invalid_summary):
+                        output, summary = root / "output", root / "summary"
+                        output.write_text("")
+                        with io.TextIOWrapper(io.BytesIO(), encoding="cp1252") as console, \
+                                patch.object(sys, "stdout", console), \
+                                patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_OUTPUT=str(output),
+                                        GITHUB_STEP_SUMMARY=str(root if invalid_summary else summary)), \
+                                patch.object(schedule_gate.subprocess, "check_output", return_value='{"workflow_runs":[]}'), \
+                                patch.object(schedule_gate, "backup_needed", return_value=needed):
+                            schedule_gate.main()
+                        self.assertEqual(output.read_text().strip(), f"run_sync={str(needed).lower()}")
+                        if not invalid_summary:
+                            self.assertIn("需要兜底" if needed else "本次没有重复执行生产校验", summary.read_text(encoding="utf-8"))
 
     def test_skipped_backup_cannot_be_mistaken_for_primary(self):
         with self.assertRaises(ValueError):
-            backup_needed({"workflow_runs": [{"head_branch": "main", "event": "schedule"}]},
+            backup_needed({"workflow_runs": [{"display_title": "Cloudflare scheduled sync",
+                                              "head_branch": "main", "event": "schedule"}]},
                           datetime.now(timezone.utc))
 
 
@@ -95,11 +138,14 @@ class DependencyMergeTests(unittest.TestCase):
             event_path = Path(directory) / "event.json"
             event_path.write_text(json.dumps({"workflow_run": {"id": 42}}), encoding="utf-8")
             responses = [run, {"jobs": jobs, "total_count": 2}, [{"number": 9}], pr, files]
-            with patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_EVENT_PATH=str(event_path)), \
+            with io.TextIOWrapper(io.BytesIO(), encoding="cp1252") as console, \
+                    patch.object(sys, "stdout", console), \
+                    patch.dict(os.environ, GITHUB_REPOSITORY="NET86/rules", GITHUB_EVENT_PATH=str(event_path)), \
                     patch.object(merge_dependencies, "api", side_effect=responses) as api, \
                     patch.object(merge_dependencies, "git", return_value="git@github-net86:NET86/rules.git"), \
                     patch.object(merge_dependencies, "fast_forward", return_value=True) as publish:
-                merge_dependencies.main()
+                result = merge_dependencies.main()
+                self.assertIn("已快进", result["decisions"][0])
                 self.assertIn("head=NET86%3Adependabot%2Fpip%2F", api.call_args_list[2].args[0])
                 publish.assert_called_once_with("abc")
 

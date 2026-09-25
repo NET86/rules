@@ -38,3 +38,6 @@ jobs:
         run: python scripts/notify_review.py sources .work/source-audit.json ${{ job.status == 'failure' && '--failed' || '' }}
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: 汇总本次执行结果
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
+        run: python scripts/release.py --summary-only sources --job-status ${{ job.status }}
