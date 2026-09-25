@@ -48,9 +48,11 @@
       "vendor": "cursor"
     },
     "cursor-network": {
-      "document_sha256": "46311828800e6eb303f7ccc4ff80daea72dabd14ec7ae003ca3aea021f76b224",
+      "document_sha256": "c6af4130fa31decb6d200d3a7c40b313b87a7c6172a2cc0b542993dfb51dec7d",
       "extractor": 1,
       "rules": [
+        "DOMAIN,accounts.spacex.ai",
+        "DOMAIN,accounts.x.ai",
         "DOMAIN,adminportal42.cursor.sh",
         "DOMAIN,agent.api5.cursor.sh",
         "DOMAIN,agent.global.api5.cursor.sh",
