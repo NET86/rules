@@ -1,7 +1,7 @@
 {
   "documents": {
     "anthropic-network": {
-      "document_sha256": "34014383eab8e2dbb7feea4dbc0085decb340e768ca32fce42ddb7f35df2c582",
+      "document_sha256": "1ef584afea3428ef997546fd1ffcf633560191a493ed1d25808f5509829cc9ce",
       "extractor": 1,
       "rules": [
         "DOMAIN,api.anthropic.com",
@@ -13,6 +13,7 @@
         "DOMAIN,cdnjs.cloudflare.com",
         "DOMAIN,claude.ai",
         "DOMAIN,claude.com",
+        "DOMAIN,claudemcpcontent.com",
         "DOMAIN,code.claude.com",
         "DOMAIN,code.jquery.com",
         "DOMAIN,downloads.claude.ai",
@@ -28,6 +29,7 @@
         "DOMAIN,registry.npmjs.org",
         "DOMAIN,storage.googleapis.com",
         "DOMAIN,unpkg.com",
+        "DOMAIN-SUFFIX,claudemcpcontent.com",
         "DOMAIN-SUFFIX,claudeusercontent.com",
         "DOMAIN-SUFFIX,frame.claudeusercontent.com"
       ],
