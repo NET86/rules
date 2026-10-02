@@ -100,8 +100,8 @@
   },
   "profiles": {
     "ai-daily": {
-      "must_match": ["api.openai.com", "gemini.google.com", "claude.ai", "grok.com", "perplexity.ai"],
-      "must_not_match": ["openrouter.ai", "groq.com", "huggingface.co", "storage.googleapis.com", "www.google.com", "unrelated.s3.us-east-1.amazonaws.com", "unrelated.co.uk"]
+      "must_match": ["api.openai.com", "gemini.google.com", "claude.ai", "grok.com", "perplexity.ai", "copilot.microsoft.com", "copilot.cloud.microsoft", "copilot.ai", "githubcopilot.com", "api.githubcopilot.com", "copilot-proxy.githubusercontent.com", "copilot-workspace.githubnext.com", "copilotprodattachments.blob.core.windows.net", "origin-tracker.githubusercontent.com"],
+      "must_not_match": ["openrouter.ai", "groq.com", "huggingface.co", "storage.googleapis.com", "www.google.com", "unrelated.s3.us-east-1.amazonaws.com", "unrelated.co.uk", "www.microsoft.com", "api.github.com", "raw.githubusercontent.com", "collector.github.com", "copilot-telemetry.githubusercontent.com", "default.exp-tas.com", "copilot-reports.github.com", "child.copilot.ai", "notcopilot.ai", "child.origin-tracker.githubusercontent.com", "not-origin-tracker.githubusercontent.com"]
     },
     "ai-core": {
       "must_match": ["api.openai.com", "gemini.google.com", "claude.ai", "grok.com", "perplexity.ai", "copilot.microsoft.com", "githubcopilot.com", "api2.cursor.sh", "mistral.ai", "poe.com", "midjourney.com", "runway.com", "suno.com", "elevenlabs.com"],

@@ -315,13 +315,24 @@ class RepositoryTests(unittest.TestCase):
         def lines(name):
             return {line for line in self.files[f"rules/surge/{name}.list"].splitlines() if line and not line.startswith("#")}
         profiles = self.manifest["profiles"]
-        self.assertEqual(len(profiles["ai-daily"]["members"]), 5)
+        self.assertEqual(set(profiles["ai-daily"]["members"]), {
+            "openai", "google-ai", "claude", "grok", "perplexity",
+            "microsoft-copilot", "github-copilot",
+        })
+        self.assertEqual(profiles["ai-daily"]["budget"], 7)
+        self.assertTrue((lines("microsoft-copilot") | lines("github-copilot")).issubset(lines("ai-daily")))
         self.assertEqual(len(profiles["ai-core"]["members"]), 14)
         self.assertEqual(len(profiles["ai-cn"]["members"]), 10)
         self.assertTrue(set(profiles["ai-daily"]["members"]).issubset(profiles["ai-core"]["members"]))
         self.assertNotEqual(lines("ai-daily"), lines("ai-core") | lines("openai-voice-ip"))
         self.assertTrue(lines("ai-daily").isdisjoint(lines("ai-cn")))
         self.assertEqual(self.manifest["profile_features"], {"ai-daily": ["openai-voice-ip"]})
+
+    def test_daily_budget_rejects_an_eighth_vendor(self):
+        catalog = rules.read_json(rules.ROOT / "sources/catalog.json")
+        catalog["profiles"]["ai-daily"]["members"].append("cursor")
+        with self.assertRaisesRegex(ValueError, "budget"):
+            rules.validate_profiles(catalog)
 
     def test_snapshot_tampering_fails(self):
         with tempfile.TemporaryDirectory() as td:
