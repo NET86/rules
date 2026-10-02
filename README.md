@@ -13,7 +13,7 @@
 | `ai-core` | 更多海外 AI，不含语音 IP | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-core.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml) |
 | `ai-cn` | 国内 AI，出口策略自行选择 | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-cn.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-cn.yaml) |
 
-日常推荐 `ai-daily`。使用 `ai-core` 或单厂商 `openai` 且需要语音时，另加 `openai-voice-ip` 并设置相同策略。全部厂商和功能包见[订阅目录](rules/README.md)。
+日常推荐 `ai-daily`，涵盖 OpenAI、Google AI、Claude、Grok、Perplexity、Microsoft Copilot 和 GitHub Copilot。使用 `ai-core` 或单厂商 `openai` 且需要语音时，另加 `openai-voice-ip` 并设置相同策略。全部厂商和功能包见[订阅目录](rules/README.md)。
 
 ## 配置
 
