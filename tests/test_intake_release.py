@@ -719,6 +719,70 @@ class ReleaseTests(unittest.TestCase):
             self.publisher.recover_stable(fail, self.report)
         self.assertEqual(self.publisher.remote_ref("stable"), self.old)
 
+    def unverified_revision(self, parent):
+        return self.git("commit-tree", self.publisher.tree(self.candidate), "-p", parent,
+                        input="unverified external publication\n")
+
+    def assert_preflight_drift_blocks_all_publication(self, branch):
+        self.publisher.recover_stable(lambda *args: None, self.report)
+        bad = self.unverified_revision(self.old)
+        self.git("push", "origin", f"{bad}:{branch}")
+        with self.assertRaisesRegex(RuntimeError, f"Concurrent {branch} update"):
+            self.publisher.run(self.candidate, lambda *args: None, self.report)
+        self.assertEqual(self.publisher.remote_ref("main"), self.old)
+        self.assertEqual(self.publisher.remote_ref("stable"), bad if branch == "stable" else self.old)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), bad if branch == "last-known-good" else self.old)
+
+    def test_stable_drift_between_preflight_and_run_never_enters_lkg(self):
+        self.assert_preflight_drift_blocks_all_publication("stable")
+
+    def test_lkg_drift_between_preflight_and_run_blocks_main_push(self):
+        self.assert_preflight_drift_blocks_all_publication("last-known-good")
+
+    def test_preflight_cannot_accept_stale_cdn_after_ref_moves(self):
+        bad = self.unverified_revision(self.old)
+        def stale_readback(ref, expected):
+            self.git("push", "origin", f"{bad}:stable")
+            # Simulate CDN still returning the expected old bytes.
+        with self.assertRaisesRegex(RuntimeError, "Concurrent stable update"):
+            self.publisher.recover_stable(stale_readback, self.report)
+        self.assertEqual(self.publisher.remote_ref("stable"), bad)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
+
+    def test_recovery_readback_rechecks_restored_refs(self):
+        self.git("push", "origin", f"{self.candidate}:stable")
+        calls = []
+        bad = None
+        def stale_readback(ref, expected):
+            nonlocal bad
+            calls.append(ref)
+            if len(calls) == 1:
+                raise ValueError("stable is invalid")
+            if len(calls) == 3:
+                bad = self.unverified_revision(self.publisher.remote_ref("stable"))
+                self.git("push", "origin", f"{bad}:stable")
+        with self.assertRaisesRegex(RuntimeError, "Concurrent stable update"):
+            self.publisher.recover_stable(stale_readback, self.report)
+        self.assertEqual(self.publisher.remote_ref("stable"), bad)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
+        self.assertNotEqual(self.report.get("stable_preflight"), "AUTOMATICALLY_RECOVERED")
+
+    def test_rollback_readback_cannot_report_stale_cdn_as_restored(self):
+        self.publisher.recover_stable(lambda *args: None, self.report)
+        bad = None
+        def validate(ref, label, expected):
+            nonlocal bad
+            if label == "stable":
+                raise ValueError("postpromotion failure")
+            if label == "rollback":
+                bad = self.unverified_revision(self.publisher.remote_ref("stable"))
+                self.git("push", "origin", f"{bad}:stable")
+        with self.assertRaisesRegex(ValueError, "postpromotion failure"):
+            self.publisher.run(self.candidate, validate, self.report)
+        self.assertEqual(self.publisher.remote_ref("stable"), bad)
+        self.assertNotIn("rollback_remote_validation", self.report)
+        self.assertNotEqual(self.report["rollback"], "RESTORED_STABLE")
+
     def test_download_hash_mismatch_is_rejected(self):
         manifest = {"bundles": {}}
         with self.assertRaises(ValueError):

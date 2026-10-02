@@ -534,6 +534,39 @@ class NotificationTests(unittest.TestCase):
         notify_review.notify("sync", {"review_required": []}, call)
         self.assertEqual(call.call_count, 1)
 
+    def automation_issue(self, number, login):
+        return {"number": number, "title": "[rules automation] sync exceptions", "state": "OPEN",
+                "body": "<!-- rules-automation:sync -->\nold findings",
+                "author": {"login": login, "is_bot": login.endswith("[bot]")}}
+
+    @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
+    def test_forged_issues_cannot_block_a_real_bot_issue(self):
+        rows = [self.automation_issue(2, "outside-user"), self.automation_issue(3, "another-user"),
+                self.automation_issue(1, "github-actions[bot]")]
+        call = Mock(return_value=json.dumps(rows))
+        notify_review.notify("sync", self.report, call)
+        self.assertIn("author", call.call_args_list[0].args[-1].split(","))
+        self.assertEqual(call.call_args.args[:3], ("issue", "edit", "1"))
+
+    @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
+    def test_single_forged_issue_is_never_edited_reopened_or_closed(self):
+        for findings in (self.report, {"review_required": []}):
+            for login in ("outside-user", "untrusted-app[bot]"):
+                with self.subTest(findings=bool(findings["review_required"]), login=login):
+                    call = Mock(return_value=json.dumps([self.automation_issue(2, login)]))
+                    notify_review.notify("sync", findings, call)
+                    if findings["review_required"]:
+                        self.assertEqual(call.call_args.args[:2], ("issue", "create"))
+                    else:
+                        self.assertEqual(call.call_count, 1)
+
+    @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
+    def test_multiple_real_bot_issues_still_require_review(self):
+        call = Mock(return_value=json.dumps([self.automation_issue(i, "github-actions[bot]") for i in (1, 2)]))
+        with self.assertRaisesRegex(ValueError, "Duplicate automation issues"):
+            notify_review.notify("sync", self.report, call)
+        self.assertEqual(call.call_count, 1)
+
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "example/other-repo"})
     def test_wrong_owner_refused(self):
         with self.assertRaises(ValueError):
