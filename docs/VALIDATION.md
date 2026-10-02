@@ -9,6 +9,7 @@
 | 独立产物校验 | 语法、摘要、数量、跨格式差异、合集恰为声明成员与功能包的并集 |
 | 语义契约 | 每个单厂商和合集产物的必命中 / 必不命中，不只检查 manifest 声明 |
 | Mihomo 规则的内核兼容 | 真实解析、HTTP provider 加载、三种配置路由、更新、断网保留与恢复 |
+| 实际 Mihomo 示例 | 两份示例原 YAML 的解析、provider 加载与出口路由；行为拼错、provider 不存在及规则顺序错误必须被拒绝 |
 | 发布回读 | 不可变候选及稳定地址的实际下载内容、摘要、语义与核心验证 |
 
 固定语义用例独立于生成规则；动态探针补充当前域名及 IP 边界，不能替代语义契约。语音探针按完整网段并集判断首尾与相邻地址；另用不会发布的固定 IPv6 测试段覆盖 IPv6 路径。正反例必须分别收到明确本地出口响应，超时或断连不能判通过。
@@ -40,13 +41,17 @@ python scripts/download_mihomo.py
 python scripts/verify_mihomo.py
 python scripts/verify_mihomo.py --profile split
 python scripts/verify_mihomo.py --profile ai-cn
+python scripts/verify_mihomo_examples.py
 python scripts/build_flclash_core.py
 python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core
 python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile split
 python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile ai-cn
+python scripts/verify_mihomo_examples.py --binary .work/bin/flclash-core --engine-label flclash-core
 ```
 
 ## 不保证什么
+
+示例验收将 stable provider URL 换为本地 HTTP 服务，补齐隔离监听、虚拟节点和示例要求的兜底规则，并通过控制器选择节点。保留原 provider 属性、策略组引用及规则顺序；在 OpenAI 组追加虚拟节点，分别用 HTTP 205 / 204 标识 OpenAI / AI 出口，兜底为 HTTP 418。负例只有内核解析拒绝或明确出口不符才算被拒绝，启动失败及传输错误会使 CI 失败。
 
 Surge 在 CI 中没有原生运行时，只执行可移植校验；可用 `verify_rules.py --surge-cli <路径>` 补原生解析。FlClash 验证的是锁定的内嵌核心，不是 GUI / IPC。测试仅使用隔离本地 HTTP，不修改系统代理或 TUN，也不证明远端 AI 登录、账号权限、真实语音 UDP 或全部 DNS 行为可用。
 
