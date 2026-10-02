@@ -51,7 +51,7 @@ python scripts/verify_mihomo_examples.py --binary .work/bin/flclash-core --engin
 
 ## 不保证什么
 
-示例验收将 stable provider URL 换为本地 HTTP 服务，补齐隔离监听、虚拟节点和示例要求的兜底规则，并通过控制器选择节点。保留原 provider 属性、策略组引用及规则顺序；在 OpenAI 组追加虚拟节点，分别用 HTTP 205 / 204 标识 OpenAI / AI 出口，兜底为 HTTP 418。负例只有内核解析拒绝或明确出口不符才算被拒绝，启动失败及传输错误会使 CI 失败。
+示例验收将 stable provider URL 换为本地 HTTP 服务，补齐隔离监听、虚拟节点、仅限 `127.0.0.1` 的测试服务直连及示例要求的兜底规则，并通过控制器选择节点。保留原 provider 属性、策略组引用及规则相对顺序；在 OpenAI 组追加虚拟节点，分别用 HTTP 205 / 204 标识 OpenAI / AI 出口，兜底为 HTTP 418。负例只有内核解析拒绝或明确出口不符才算被拒绝，启动失败及传输错误会使 CI 失败。
 
 Surge 在 CI 中没有原生运行时，只执行可移植校验；可用 `verify_rules.py --surge-cli <路径>` 补原生解析。FlClash 验证的是锁定的内嵌核心，不是 GUI / IPC。测试仅使用隔离本地 HTTP，不修改系统代理或 TUN，也不证明远端 AI 登录、账号权限、真实语音 UDP 或全部 DNS 行为可用。
 

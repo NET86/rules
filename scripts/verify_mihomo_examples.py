@@ -66,6 +66,12 @@ def isolated_config(text, manifest, server_port, port, controller, outlets):
     # Add a distinguishable virtual node to OpenAI while retaining its AI entry.
     # AI's include-all exposes the other injected nodes without rewriting it.
     text = text.replace("proxies: [AI]", "proxies: [AI, LOCAL-OPENAI]")
+    # Provider downloads use the same rule router. Bypass only the local fixture
+    # server so fallback cannot intercept it; preserve original relative order.
+    text, rule_lists = re.subn(r"^rules:$", "rules:\n  - IP-CIDR,127.0.0.1/32,DIRECT,no-resolve",
+                              text, flags=re.MULTILINE)
+    if rule_lists != 1:
+        raise ValueError("Expected one example rules list")
     # Both snippets end in their rules list. Add the documented fallback only.
     text = text.rstrip() + "\n  - MATCH,LOCAL-NONMATCH\n"
     runtime = {
