@@ -8,13 +8,13 @@
 
 | 规则集 | 用途 | Surge | Mihomo |
 | --- | --- | --- | --- |
-| ai-daily | 5 家厂商。日常 AI 核心域名，含 OpenAI 官方语音 IP。 | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-daily.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml) |
+| ai-daily | 7 家厂商。日常 AI 核心域名，含 OpenAI 官方语音 IP。 | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-daily.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-daily.yaml) |
 | ai-core | 14 家厂商。更多海外 AI 核心域名，不含语音 IP 和共享依赖。 | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-core.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-core.yaml) |
 | ai-cn | 10 家厂商。国内 AI 服务分类，出口策略自行选择。 | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/surge/ai-cn.list) | [订阅](https://raw.githubusercontent.com/NET86/rules/stable/rules/mihomo/ai-cn.yaml) |
 
 使用 `ai-core` 或单厂商 `openai` 且需要语音时，另加 `openai-voice-ip` 并设置相同策略。
 
-日常厂商：openai、google-ai、claude、grok、perplexity。
+日常厂商：openai、google-ai、claude、grok、perplexity、microsoft-copilot、github-copilot。
 
 ## 单厂商
 

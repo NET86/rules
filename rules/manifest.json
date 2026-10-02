@@ -31,14 +31,14 @@
     },
     "ai-daily": {
       "mihomo": {
-        "count": 83,
+        "count": 93,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "23ba9524d807803f6dc5d99e39ccbf7cbf4a278f130914333cf9b25c2853988c"
+        "sha256": "222f9f09bb59d80744d07a2d1db68fbc8461531aee00c9b713a984b9d7ef7813"
       },
       "surge": {
-        "count": 83,
+        "count": 93,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "9c54ba1f5cfe63a3b3fd778f5a6cfe86a7d365a3d528dae52f8e527ce2df3e06"
+        "sha256": "1d846484057b50e3b4cc22702ffd1a7c59faac65ad850d491be096b33a3c5662"
       }
     },
     "baidu-wenxin": {
@@ -398,13 +398,15 @@
       ]
     },
     "ai-daily": {
-      "budget": 5,
+      "budget": 7,
       "members": [
         "openai",
         "google-ai",
         "claude",
         "grok",
-        "perplexity"
+        "perplexity",
+        "microsoft-copilot",
+        "github-copilot"
       ]
     }
   },
@@ -1549,7 +1551,7 @@
   "schema": 2,
   "semantic_contract": {
     "path": "sources/semantic-contracts.json",
-    "sha256": "a2bafeeab4fbd0d6e40cae3f2e8d919d62567de5dc18a7df071c8fbd5a9f4400"
+    "sha256": "0f5d299b5af318ff0ad116d50a5e5edeeff37e545c1fe3a31c14ecccc8982c71"
   },
   "upstream": {
     "sha256": {

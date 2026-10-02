@@ -75,6 +75,11 @@ class SemanticShapeTests(unittest.TestCase):
             (root / "sources/semantic-contracts.json").write_bytes(data)
             manifest = rules.read_json(rules.ROOT / "rules/manifest.json")
             manifest["semantic_contract"]["sha256"] = rules.sha256(data)
+            # A published schema 1 release retains its original daily profile,
+            # independent of later catalog membership changes.
+            manifest["profiles"]["ai-daily"] = {
+                "budget": 5, "members": ["openai", "google-ai", "claude", "grok", "perplexity"]
+            }
             self.assertEqual(verify_rules.load_contracts(root, manifest)["schema"], 1)
             with self.assertRaisesRegex(ValueError, "schema 2 contracts"):
                 rules.compile_outputs(root)

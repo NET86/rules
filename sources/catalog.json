@@ -2,8 +2,8 @@
   "schema": 1,
   "profiles": {
     "ai-daily": {
-      "budget": 5,
-      "members": ["openai", "google-ai", "claude", "grok", "perplexity"]
+      "budget": 7,
+      "members": ["openai", "google-ai", "claude", "grok", "perplexity", "microsoft-copilot", "github-copilot"]
     },
     "ai-core": {
       "budget": 15,

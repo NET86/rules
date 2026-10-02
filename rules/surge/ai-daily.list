@@ -75,6 +75,20 @@ DOMAIN-SUFFIX,notebooklm.google.com
 DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com
 DOMAIN-SUFFIX,robinfrontend-pa.googleapis.com
 
+# Microsoft Copilot
+DOMAIN,copilot.ai
+DOMAIN-SUFFIX,copilot-stg.com
+DOMAIN-SUFFIX,copilot.cloud.microsoft
+DOMAIN-SUFFIX,copilot.com
+DOMAIN-SUFFIX,copilot.microsoft.com
+
+# GitHub Copilot
+DOMAIN,copilot-proxy.githubusercontent.com
+DOMAIN,copilot-workspace.githubnext.com
+DOMAIN,copilotprodattachments.blob.core.windows.net
+DOMAIN,origin-tracker.githubusercontent.com
+DOMAIN-SUFFIX,githubcopilot.com
+
 # OpenAI / ChatGPT / Sora / Prism 语音
 IP-CIDR,102.37.57.54/32,no-resolve
 IP-CIDR,13.71.25.29/32,no-resolve
