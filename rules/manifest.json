@@ -19,26 +19,26 @@
     },
     "ai-core": {
       "mihomo": {
-        "count": 86,
+        "count": 87,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "a1a275931a2c13c7c7d945b13a6e6a6285e59c97851a4fc1ff3b9d1a3dd9fd62"
+        "sha256": "d197920d58f75553b40446a22a73aaabf8f89a249f158db7186cf6430edd4a05"
       },
       "surge": {
-        "count": 86,
+        "count": 87,
         "path": "rules/surge/ai-core.list",
-        "sha256": "679685904e1e5b17538f9cbdf8e7ab1abcd9b5fd3cdbc148a2d8163795706240"
+        "sha256": "057bd976d21c8bb1f66aa56db93909ecb1174a81697d43a2f23f2b563c229674"
       }
     },
     "ai-daily": {
       "mihomo": {
-        "count": 82,
+        "count": 83,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "c850ce0bdac05007a806eaa02b134ae0b3f96a5fadf4b43c76addbdc8cbc8e8b"
+        "sha256": "23ba9524d807803f6dc5d99e39ccbf7cbf4a278f130914333cf9b25c2853988c"
       },
       "surge": {
-        "count": 82,
+        "count": 83,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "16b1067501535c4a3e60d45ed554a0360da3bd085cd779f58f93c7959b70af6c"
+        "sha256": "9c54ba1f5cfe63a3b3fd778f5a6cfe86a7d365a3d528dae52f8e527ce2df3e06"
       }
     },
     "baidu-wenxin": {
@@ -55,14 +55,14 @@
     },
     "claude": {
       "mihomo": {
-        "count": 8,
+        "count": 9,
         "path": "rules/mihomo/claude.yaml",
-        "sha256": "4a8870ed810687887952cf15079694ec3d179dad86f1bf8b3c10a9ce9a1efb8d"
+        "sha256": "cfc9cf9cff02b2161db9743e667274510dfaafef814645c499c55bae8937ee28"
       },
       "surge": {
-        "count": 8,
+        "count": 9,
         "path": "rules/surge/claude.list",
-        "sha256": "a21072a6859abf5aadcd8ced3c4501ee32afd17c03a54a68158ce62661c549c7"
+        "sha256": "c632b734983d7a88c5dee43f4491fef2f8fbef859f4259a185232f574f8be6b7"
       }
     },
     "cursor": {
@@ -451,6 +451,14 @@
     },
     {
       "rule": "DOMAIN-SUFFIX,claude.com",
+      "sources": [
+        "v2fly:data/anthropic"
+      ],
+      "tier": "core",
+      "vendor": "claude"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,claude.dev",
       "sources": [
         "v2fly:data/anthropic"
       ],
@@ -1547,7 +1555,7 @@
     "sha256": {
       "V2FLY-LICENSE": "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c84011479244bf7d2",
       "openai-voice.json": "89e961ec1ad6b0f1d457002a48b1bd81df8cb2144754ad6e1811c934bb97686a",
-      "v2fly/anthropic": "3d0e231009271bad865131381da71b489b18ca699f38afe3a0ebef00011f1b88",
+      "v2fly/anthropic": "bf48dc1b342bbfd06f2a93ee8ce180fc424d9c041dafd2d182ffb3f4186698b4",
       "v2fly/category-ai-!cn": "ec83c8da097425fd45bd947d4d6e6ef5cf5993f448e826e200a41046223a8cf1",
       "v2fly/category-ai-cn": "974632a81e170c53052d8014e9fa150b8a87331b64482276389c4fc935ed806f",
       "v2fly/cursor": "963a78363ff86e87ae10859baa5f2dc7e3184efce13ac6e158bb2e698228bf5d",
@@ -1562,7 +1570,7 @@
       "v2fly/xai": "1e15c6018174f58f6a2f3710c84566909eee45a8092247280d244cf8ea7cd928"
     },
     "v2fly_repository": "https://github.com/v2fly/domain-list-community",
-    "v2fly_revision": "2d71342eea1720da57261b55663c9d55619e9b1c",
+    "v2fly_revision": "2c892a618f4e23c549d28edd0f3f75407521b1aa",
     "voice_url": "https://openai.com/chatgpt-voice.json"
   },
   "vendor_count": 24
