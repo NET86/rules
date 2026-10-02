@@ -9,7 +9,8 @@ from pathlib import Path
 from rules import read_json, sha256
 
 REPOSITORY = "NET86/rules"
-TRUSTED_ISSUE_AUTHORS = {"github-actions[bot]"}
+# gh JSON and older CLI versions use these two names for the same Actions bot.
+TRUSTED_ISSUE_AUTHORS = {"app/github-actions", "github-actions[bot]"}
 
 
 def issue_body(channel, report):
@@ -63,7 +64,7 @@ def notify(channel, report, call=gh):
         raise ValueError("Issue automation is restricted to NET86/rules")
     title = f"[rules automation] {channel} exceptions"
     marker = f"<!-- rules-automation:{channel} -->"
-    results = json.loads(call("issue", "list", "--repo", REPOSITORY, "--state", "all", "--limit", "100", "--search", f'in:title "{title}"', "--json", "number,title,body,state,author"))
+    results = json.loads(call("issue", "list", "--repo", REPOSITORY, "--state", "all", "--app", "github-actions", "--limit", "100", "--search", f'in:title "{title}"', "--json", "number,title,body,state,author"))
     owned = [row for row in results if isinstance(row.get("author"), dict)
              and row["author"].get("login") in TRUSTED_ISSUE_AUTHORS
              and row["title"] == title and (row.get("body") or "").startswith(marker)]

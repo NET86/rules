@@ -538,7 +538,7 @@ class NotificationTests(unittest.TestCase):
     def automation_issue(self, number, login):
         return {"number": number, "title": "[rules automation] sync exceptions", "state": "OPEN",
                 "body": "<!-- rules-automation:sync -->\nold findings",
-                "author": {"login": login, "is_bot": login.endswith("[bot]")}}
+                "author": {"login": login, "is_bot": login.endswith("[bot]") or login.startswith("app/")}}
 
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
     def test_forged_issues_cannot_block_a_real_bot_issue(self):
@@ -552,7 +552,7 @@ class NotificationTests(unittest.TestCase):
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
     def test_single_forged_issue_is_never_edited_reopened_or_closed(self):
         for findings in (self.report, {"review_required": []}):
-            for login in ("outside-user", "untrusted-app[bot]"):
+            for login in ("outside-user", "untrusted-app[bot]", "app/untrusted-app"):
                 with self.subTest(findings=bool(findings["review_required"]), login=login):
                     call = Mock(return_value=json.dumps([self.automation_issue(2, login)]))
                     notify_review.notify("sync", findings, call)
@@ -571,20 +571,22 @@ class NotificationTests(unittest.TestCase):
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
     def test_forged_issue_page_cannot_hide_existing_bot_issue(self):
         forged = [self.automation_issue(i, "outside-user") for i in range(2, 102)]
-        existing = self.automation_issue(1, "github-actions[bot]")
-        existing["body"] = notify_review.issue_body("sync", self.report)
+        for login in ("github-actions[bot]", "app/github-actions"):
+            with self.subTest(login=login):
+                existing = self.automation_issue(1, login)
+                existing["body"] = notify_review.issue_body("sync", self.report)
 
-        def paginated_query(*args, **kwargs):
-            if args[:2] != ("issue", "list"):
-                self.fail(f"Existing bot issue must not be duplicated or mutated: {args[:2]}")
-            rows = forged + [existing]
-            if "--app" in args and args[args.index("--app") + 1] == "github-actions":
-                rows = [existing]
-            return json.dumps(rows[:int(args[args.index("--limit") + 1])])
+                def paginated_query(*args, **kwargs):
+                    if args[:2] != ("issue", "list"):
+                        self.fail(f"Existing bot issue must not be duplicated or mutated: {args[:2]}")
+                    rows = forged + [existing]
+                    if "--app" in args and args[args.index("--app") + 1] == "github-actions":
+                        rows = [existing]
+                    return json.dumps(rows[:int(args[args.index("--limit") + 1])])
 
-        call = Mock(side_effect=paginated_query)
-        notify_review.notify("sync", self.report, call)
-        self.assertEqual(call.call_count, 1)
+                call = Mock(side_effect=paginated_query)
+                notify_review.notify("sync", self.report, call)
+                self.assertEqual(call.call_count, 1)
 
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "example/other-repo"})
     def test_wrong_owner_refused(self):

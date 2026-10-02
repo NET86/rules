@@ -397,6 +397,8 @@ class Publisher:
                 try:
                     current = self.remote_ref("stable")
                     if current == promoted:
+                        # The atomic push may have succeeded before its acknowledgement was lost.
+                        active_lkg = old_stable
                         self.require_refs({"stable": promoted, "last-known-good": active_lkg})
                         rollback = self.commit_tree(
                             self.tree(old_stable), [promoted],
