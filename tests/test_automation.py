@@ -520,7 +520,8 @@ class NotificationTests(unittest.TestCase):
         for state in ("OPEN", "CLOSED"):
             with self.subTest(state=state):
                 row = {"number": 1, "title": "[rules automation] sync exceptions",
-                       "body": notify_review.issue_body("sync", self.report), "state": state}
+                       "body": notify_review.issue_body("sync", self.report), "state": state,
+                       "author": {"login": "github-actions[bot]", "is_bot": True}}
                 call = Mock(return_value=json.dumps([row]))
                 notify_review.notify("sync", self.report, call)
                 self.assertEqual(call.call_count, 1 if state == "OPEN" else 2)

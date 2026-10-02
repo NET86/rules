@@ -327,10 +327,13 @@ class Publisher:
         self.obtain(lkg)
         try:
             validate("stable", stable)
-            report["stable_preflight"] = "PASS"
-            return
         except Exception as exc:
             report["stable_preflight_error"] = str(exc)
+        else:
+            verified_refs = {"stable": stable, "last-known-good": lkg}
+            self.require_refs(verified_refs)
+            report["stable_preflight"] = "PASS"
+            return verified_refs
         # Never replace one unverified version with another. A widespread raw
         # service outage will fail here and leave the branch untouched.
         validate(lkg, lkg)
@@ -338,19 +341,29 @@ class Publisher:
         recovered = self.commit_tree(self.tree(lkg), [stable], f"recover: last verified release {lkg}")
         self.git("push", self.remote, f"{recovered}:refs/heads/stable")
         validate("stable", lkg)
+        verified_refs = {"stable": recovered, "last-known-good": lkg}
+        self.require_refs(verified_refs)
         report["stable_preflight"] = "AUTOMATICALLY_RECOVERED"
+        return verified_refs
 
-    def run(self, candidate, validate_published, report):
+    def run(self, candidate, validate_published, report, verified_refs):
         """Publish main as candidate; only stable is rolled back if promotion fails."""
+        if (not isinstance(verified_refs, dict) or set(verified_refs) != {"stable", "last-known-good"}
+                or any(not isinstance(ref, str) or not re.fullmatch(r"[a-f0-9]{40}", ref)
+                       for ref in verified_refs.values())):
+            raise RuntimeError("Verified stable/LKG preflight is required before publication")
+        verified_refs = dict(verified_refs)
         old_main = self.remote_ref("main")
-        old_stable = self.remote_ref("stable")
-        old_lkg = self.remote_ref("last-known-good")
-        if not old_stable or not old_lkg:
-            raise RuntimeError("Bootstrap stable and last-known-good from a verified commit first")
+        old_stable = verified_refs["stable"]
+        old_lkg = verified_refs["last-known-good"]
+        # Bind the long runtime gate to the exact preflight identities. Never
+        # substitute whatever versions happen to be current after validation.
+        self.require_refs(verified_refs)
         self.obtain(old_stable)
         self.obtain(old_lkg)
         report.update(candidate=candidate, previous_stable=old_stable, previous_main=old_main)
         promoted = old_stable
+        active_lkg = old_lkg
         try:
             self.require_refs({"main": old_main, "stable": old_stable, "last-known-good": old_lkg})
             # Main is intentionally the development/candidate branch. It remains
@@ -370,11 +383,12 @@ class Publisher:
                     f"{old_stable}:refs/heads/last-known-good",
                     f"{promoted}:refs/heads/stable",
                 )
+                active_lkg = old_stable
             else:
                 report["stable_noop"] = "UNCHANGED_RELEASE_CONTENT"
             report["stable_revision"] = promoted
             validate_published("stable", "stable", promoted)
-            self.require_refs({"main": candidate, "stable": promoted})
+            self.require_refs({"main": candidate, "stable": promoted, "last-known-good": active_lkg})
             report.update(result="PASS", stable_remote_validation="PASS")
             return promoted
         except Exception as exc:
@@ -383,21 +397,27 @@ class Publisher:
                 try:
                     current = self.remote_ref("stable")
                     if current == promoted:
+                        self.require_refs({"stable": promoted, "last-known-good": active_lkg})
                         rollback = self.commit_tree(
                             self.tree(old_stable), [promoted],
                             f"rollback: restore verified {old_stable}",
                         )
                         self.git("push", self.remote, f"{rollback}:refs/heads/stable")
                         report["rollback_refs_restored"] = True
-                        report["rollback"] = "RESTORED_STABLE"
+                        report["rollback"] = "RESTORED_VERIFICATION_PENDING"
+                        restored = rollback
                     elif current == old_stable:
                         report["rollback"] = "NOT_NEEDED_STABLE_UNCHANGED"
+                        restored = old_stable
                     else:
                         report["rollback"] = "SKIPPED_CONCURRENT_STABLE_UPDATE"
                         report["rollback_conflicts"] = ["stable"]
                     report["stable_after_failure"] = self.remote_ref("stable")
                     if report["rollback"] != "SKIPPED_CONCURRENT_STABLE_UPDATE":
                         validate_published("stable", "rollback", old_stable)
+                        self.require_refs({"stable": restored, "last-known-good": active_lkg})
+                        if report.get("rollback_refs_restored"):
+                            report["rollback"] = "RESTORED_STABLE"
                         report["rollback_remote_validation"] = "PASS"
                 except Exception as rollback_error:
                     report["rollback"] = "RESTORED_VERIFICATION_PENDING" if report.get("rollback_refs_restored") else "FAILED_REMOTE_UNAVAILABLE"
@@ -505,7 +525,7 @@ def main():
                 downloaded_rules(target, ref, expected)
                 runtime_gate(target, binaries)
 
-        publisher.recover_stable(healthcheck, report)
+        verified_refs = publisher.recover_stable(healthcheck, report)
         subprocess.run([sys.executable, "scripts/rules.py", "--check"], cwd=ROOT, check=True)
         for profile in ("ai-daily", "split", "ai-cn"):
             runtime_gate(ROOT, binaries, profile)
@@ -525,7 +545,7 @@ def main():
                 for path in (target / ".work").glob("*validation*.json"):
                     (work / f"published-{label}-{path.name}").write_bytes(path.read_bytes())
 
-        publisher.run(candidate, postvalidate, report)
+        publisher.run(candidate, postvalidate, report, verified_refs)
     except Exception as exc:
         report.setdefault("error", str(exc))
         if report["result"] in {"PREVALIDATING", "RECOVERY_PREFLIGHT"}:
