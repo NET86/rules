@@ -568,6 +568,24 @@ class NotificationTests(unittest.TestCase):
             notify_review.notify("sync", self.report, call)
         self.assertEqual(call.call_count, 1)
 
+    @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
+    def test_forged_issue_page_cannot_hide_existing_bot_issue(self):
+        forged = [self.automation_issue(i, "outside-user") for i in range(2, 102)]
+        existing = self.automation_issue(1, "github-actions[bot]")
+        existing["body"] = notify_review.issue_body("sync", self.report)
+
+        def paginated_query(*args, **kwargs):
+            if args[:2] != ("issue", "list"):
+                self.fail(f"Existing bot issue must not be duplicated or mutated: {args[:2]}")
+            rows = forged + [existing]
+            if "--app" in args and args[args.index("--app") + 1] == "github-actions":
+                rows = [existing]
+            return json.dumps(rows[:int(args[args.index("--limit") + 1])])
+
+        call = Mock(side_effect=paginated_query)
+        notify_review.notify("sync", self.report, call)
+        self.assertEqual(call.call_count, 1)
+
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "example/other-repo"})
     def test_wrong_owner_refused(self):
         with self.assertRaises(ValueError):

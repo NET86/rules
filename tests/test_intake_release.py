@@ -615,6 +615,73 @@ class ReleaseTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def distinct_verified_stable(self):
+        stable = self.publisher.commit_tree(self.publisher.tree(self.old), [self.old], "verified stable after LKG")
+        self.git("push", "origin", f"{stable}:refs/heads/stable")
+        self.verified_refs = self.publisher.recover_stable(lambda *args: None, self.report)
+        self.assertNotEqual(stable, self.verified_refs["last-known-good"])
+        return stable
+
+    def test_atomic_push_accepted_before_timeout_rolls_back_with_distinct_lkg(self):
+        stable = self.distinct_verified_stable()
+        called = []
+
+        def lost_ack(*args, **kwargs):
+            result = self.git(*args, **kwargs)
+            if args[0] == "push" and "--atomic" in args:
+                raise subprocess.TimeoutExpired(["git", *args], 120)
+            return result
+
+        with patch.object(self.publisher, "git", side_effect=lost_ack):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                self.publisher.run(self.candidate, lambda ref, label, expected: called.append((label, expected)),
+                                   self.report, self.verified_refs)
+        restored = self.publisher.remote_ref("stable")
+        self.assertNotEqual(restored, stable)
+        self.assertEqual(self.publisher.tree(restored), self.publisher.tree(stable))
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), stable)
+        self.assertEqual(self.publisher.remote_ref("main"), self.candidate)
+        self.assertEqual(self.report["rollback"], "RESTORED_STABLE")
+        self.assertEqual(self.report["rollback_remote_validation"], "PASS")
+        self.assertEqual(called, [("candidate", self.candidate), ("rollback", stable)])
+
+    def test_atomic_push_timeout_before_acceptance_preserves_distinct_lkg(self):
+        stable = self.distinct_verified_stable()
+
+        def rejected_push(*args, **kwargs):
+            if args[0] == "push" and "--atomic" in args:
+                raise subprocess.TimeoutExpired(["git", *args], 120)
+            return self.git(*args, **kwargs)
+
+        with patch.object(self.publisher, "git", side_effect=rejected_push):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                self.publisher.run(self.candidate, lambda *args: None, self.report, self.verified_refs)
+        self.assertEqual(self.publisher.remote_ref("stable"), stable)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
+        self.assertEqual(self.report["rollback"], "NOT_NEEDED_STABLE_UNCHANGED")
+        self.assertEqual(self.report["rollback_remote_validation"], "PASS")
+
+    def test_accepted_atomic_timeout_does_not_overwrite_concurrent_lkg(self):
+        stable = self.distinct_verified_stable()
+        concurrent = self.publisher.commit_tree(self.publisher.tree(self.candidate), [stable], "concurrent LKG")
+        promoted = []
+
+        def concurrent_lkg(*args, **kwargs):
+            result = self.git(*args, **kwargs)
+            if args[0] == "push" and "--atomic" in args:
+                promoted.append(next(arg.split(":", 1)[0] for arg in args if arg.endswith(":refs/heads/stable")))
+                self.git("push", "origin", f"{concurrent}:refs/heads/last-known-good")
+                raise subprocess.TimeoutExpired(["git", *args], 120)
+            return result
+
+        with patch.object(self.publisher, "git", side_effect=concurrent_lkg):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                self.publisher.run(self.candidate, lambda *args: None, self.report, self.verified_refs)
+        self.assertEqual(self.publisher.remote_ref("stable"), promoted[0])
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), concurrent)
+        self.assertNotIn("rollback_refs_restored", self.report)
+        self.assertNotIn("rollback_remote_validation", self.report)
+
     def test_success_updates_stable_and_retains_previous_verified_release(self):
         called = []
         self.publisher.run(self.candidate, lambda ref, label, expected: called.append(label), self.report, self.verified_refs)
