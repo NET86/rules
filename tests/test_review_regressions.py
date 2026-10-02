@@ -269,7 +269,8 @@ class ReportingTests(unittest.TestCase):
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
     def test_recovery_closes_issue_only_with_an_empty_exception_report(self):
         existing = {"number": 1, "title": "[rules automation] sync exceptions", "state": "OPEN",
-                    "body": notify_review.issue_body("sync", {"review_required": [{"reason": "outage"}]})}
+                    "body": notify_review.issue_body("sync", {"review_required": [{"reason": "outage"}]}),
+                    "author": {"login": "github-actions[bot]", "is_bot": True}}
         call = Mock(side_effect=[json.dumps([existing]), ""])
         notify_review.notify("sync", {"review_required": []}, call)
         self.assertEqual(call.call_args.args, ("issue", "close", "1", "--repo", "NET86/rules", "--reason", "completed"))

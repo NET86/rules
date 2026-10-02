@@ -610,13 +610,81 @@ class ReleaseTests(unittest.TestCase):
         self.git("commit", "-m", "candidate")
         self.candidate = self.git("rev-parse", "HEAD")
         self.report = {}
+        self.verified_refs = self.publisher.recover_stable(lambda *args: None, self.report)
 
     def tearDown(self):
         self.temp.cleanup()
 
+    def distinct_verified_stable(self):
+        stable = self.publisher.commit_tree(self.publisher.tree(self.old), [self.old], "verified stable after LKG")
+        self.git("push", "origin", f"{stable}:refs/heads/stable")
+        self.verified_refs = self.publisher.recover_stable(lambda *args: None, self.report)
+        self.assertNotEqual(stable, self.verified_refs["last-known-good"])
+        return stable
+
+    def test_atomic_push_accepted_before_timeout_rolls_back_with_distinct_lkg(self):
+        stable = self.distinct_verified_stable()
+        called = []
+
+        def lost_ack(*args, **kwargs):
+            result = self.git(*args, **kwargs)
+            if args[0] == "push" and "--atomic" in args:
+                raise subprocess.TimeoutExpired(["git", *args], 120)
+            return result
+
+        with patch.object(self.publisher, "git", side_effect=lost_ack):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                self.publisher.run(self.candidate, lambda ref, label, expected: called.append((label, expected)),
+                                   self.report, self.verified_refs)
+        restored = self.publisher.remote_ref("stable")
+        self.assertNotEqual(restored, stable)
+        self.assertEqual(self.publisher.tree(restored), self.publisher.tree(stable))
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), stable)
+        self.assertEqual(self.publisher.remote_ref("main"), self.candidate)
+        self.assertEqual(self.report["rollback"], "RESTORED_STABLE")
+        self.assertEqual(self.report["rollback_remote_validation"], "PASS")
+        self.assertEqual(called, [("candidate", self.candidate), ("rollback", stable)])
+
+    def test_atomic_push_timeout_before_acceptance_preserves_distinct_lkg(self):
+        stable = self.distinct_verified_stable()
+
+        def rejected_push(*args, **kwargs):
+            if args[0] == "push" and "--atomic" in args:
+                raise subprocess.TimeoutExpired(["git", *args], 120)
+            return self.git(*args, **kwargs)
+
+        with patch.object(self.publisher, "git", side_effect=rejected_push):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                self.publisher.run(self.candidate, lambda *args: None, self.report, self.verified_refs)
+        self.assertEqual(self.publisher.remote_ref("stable"), stable)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
+        self.assertEqual(self.report["rollback"], "NOT_NEEDED_STABLE_UNCHANGED")
+        self.assertEqual(self.report["rollback_remote_validation"], "PASS")
+
+    def test_accepted_atomic_timeout_does_not_overwrite_concurrent_lkg(self):
+        stable = self.distinct_verified_stable()
+        concurrent = self.publisher.commit_tree(self.publisher.tree(self.candidate), [stable], "concurrent LKG")
+        promoted = []
+
+        def concurrent_lkg(*args, **kwargs):
+            result = self.git(*args, **kwargs)
+            if args[0] == "push" and "--atomic" in args:
+                promoted.append(next(arg.split(":", 1)[0] for arg in args if arg.endswith(":refs/heads/stable")))
+                self.git("push", "origin", f"{concurrent}:refs/heads/last-known-good")
+                raise subprocess.TimeoutExpired(["git", *args], 120)
+            return result
+
+        with patch.object(self.publisher, "git", side_effect=concurrent_lkg):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                self.publisher.run(self.candidate, lambda *args: None, self.report, self.verified_refs)
+        self.assertEqual(self.publisher.remote_ref("stable"), promoted[0])
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), concurrent)
+        self.assertNotIn("rollback_refs_restored", self.report)
+        self.assertNotIn("rollback_remote_validation", self.report)
+
     def test_success_updates_stable_and_retains_previous_verified_release(self):
         called = []
-        self.publisher.run(self.candidate, lambda ref, label, expected: called.append(label), self.report)
+        self.publisher.run(self.candidate, lambda ref, label, expected: called.append(label), self.report, self.verified_refs)
         stable = self.publisher.remote_ref("stable")
         self.assertEqual(self.publisher.tree(stable), self.publisher.tree(self.candidate))
         self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
@@ -635,7 +703,7 @@ class ReleaseTests(unittest.TestCase):
         candidate = self.git("rev-parse", "HEAD")
         called = []
         report = {}
-        self.publisher.run(candidate, lambda ref, label, expected: called.append((label, expected)), report)
+        self.publisher.run(candidate, lambda ref, label, expected: called.append((label, expected)), report, self.verified_refs)
         self.assertEqual(self.publisher.remote_ref("main"), candidate)
         self.assertEqual(self.publisher.remote_ref("stable"), self.old)
         self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
@@ -647,7 +715,7 @@ class ReleaseTests(unittest.TestCase):
             if label == "candidate":
                 raise ValueError("bad downloaded bytes")
         with self.assertRaises(ValueError):
-            self.publisher.run(self.candidate, validate, self.report)
+            self.publisher.run(self.candidate, validate, self.report, self.verified_refs)
         self.assertEqual(self.publisher.remote_ref("stable"), self.old)
         self.assertEqual(self.publisher.remote_ref("main"), self.candidate)
         self.assertEqual(self.git("show", f"{self.candidate}:rules/data"), "candidate")
@@ -659,7 +727,7 @@ class ReleaseTests(unittest.TestCase):
             if label == "stable":
                 raise ValueError("postpublication failure")
         with self.assertRaises(ValueError):
-            self.publisher.run(self.candidate, validate, self.report)
+            self.publisher.run(self.candidate, validate, self.report, self.verified_refs)
         stable = self.publisher.remote_ref("stable")
         self.assertNotEqual(stable, self.old)
         self.assertEqual(self.publisher.tree(stable), self.publisher.tree(self.old))
@@ -669,7 +737,8 @@ class ReleaseTests(unittest.TestCase):
         recovered = self.git("commit-tree", self.publisher.tree(self.candidate), "-p",
                              self.publisher.remote_ref("main"), input="retry\n")
         report = {}
-        self.publisher.run(recovered, lambda *args: None, report)
+        verified_refs = self.publisher.recover_stable(lambda *args: None, report)
+        self.publisher.run(recovered, lambda *args: None, report, verified_refs)
         self.assertEqual(report["result"], "PASS")
 
     def assert_main_race_rejected(self, phase):
@@ -680,7 +749,7 @@ class ReleaseTests(unittest.TestCase):
                 other = self.git("commit-tree", self.publisher.tree(self.candidate), "-p", self.candidate, input="independent edit\n")
                 self.git("push", "origin", f"{other}:main")
         with self.assertRaisesRegex(RuntimeError, "Concurrent main update"):
-            self.publisher.run(self.candidate, validate, self.report)
+            self.publisher.run(self.candidate, validate, self.report, self.verified_refs)
         self.assertEqual(self.publisher.remote_ref("main"), other)
         stable = self.publisher.remote_ref("stable")
         self.assertEqual(self.publisher.tree(stable), self.publisher.tree(self.old))
@@ -697,8 +766,16 @@ class ReleaseTests(unittest.TestCase):
     def test_missing_lkg_fails_before_publication(self):
         self.git("push", "origin", ":last-known-good")
         with self.assertRaises(RuntimeError):
-            self.publisher.run(self.candidate, lambda *args: None, self.report)
+            self.publisher.run(self.candidate, lambda *args: None, self.report, self.verified_refs)
         self.assertEqual(self.publisher.remote_ref("main"), self.old)
+
+    def test_missing_or_mutable_preflight_identity_never_pushes(self):
+        for refs in (None, {}, {"stable": "stable", "last-known-good": self.old}):
+            with self.subTest(refs=refs), self.assertRaisesRegex(RuntimeError, "Verified stable/LKG preflight"):
+                self.publisher.run(self.candidate, lambda *args: None, self.report, refs)
+        self.assertEqual(self.publisher.remote_ref("main"), self.old)
+        self.assertEqual(self.publisher.remote_ref("stable"), self.old)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
 
     def test_next_run_recovers_interrupted_rollback(self):
         self.git("push", "origin", f"{self.candidate}:stable")
@@ -707,8 +784,9 @@ class ReleaseTests(unittest.TestCase):
             called.append((ref, expected))
             if len(called) == 1:
                 raise ValueError("invalid or interrupted stable publication")
-        self.publisher.recover_stable(validate, self.report)
+        verified_refs = self.publisher.recover_stable(validate, self.report)
         self.assertEqual(self.publisher.tree(self.publisher.remote_ref("stable")), self.publisher.tree(self.old))
+        self.assertEqual(verified_refs, {"stable": self.publisher.remote_ref("stable"), "last-known-good": self.old})
         self.assertEqual(self.report["stable_preflight"], "AUTOMATICALLY_RECOVERED")
         self.assertEqual(called[1], (self.old, self.old))
 
@@ -718,6 +796,79 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(OSError):
             self.publisher.recover_stable(fail, self.report)
         self.assertEqual(self.publisher.remote_ref("stable"), self.old)
+
+    def unverified_revision(self, parent):
+        return self.git("commit-tree", self.publisher.tree(self.candidate), "-p", parent,
+                        input="unverified external publication\n")
+
+    def assert_preflight_drift_blocks_all_publication(self, branch):
+        verified_refs = self.publisher.recover_stable(lambda *args: None, self.report)
+        bad = self.unverified_revision(self.old)
+        self.git("push", "origin", f"{bad}:{branch}")
+        with self.assertRaisesRegex(RuntimeError, f"Concurrent {branch} update"):
+            self.publisher.run(self.candidate, lambda *args: None, self.report, verified_refs)
+        self.assertEqual(self.publisher.remote_ref("main"), self.old)
+        self.assertEqual(self.publisher.remote_ref("stable"), bad if branch == "stable" else self.old)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), bad if branch == "last-known-good" else self.old)
+
+    def test_stable_drift_between_preflight_and_run_never_enters_lkg(self):
+        self.assert_preflight_drift_blocks_all_publication("stable")
+
+    def test_lkg_drift_between_preflight_and_run_blocks_main_push(self):
+        self.assert_preflight_drift_blocks_all_publication("last-known-good")
+
+    def test_preflight_cannot_accept_stale_cdn_after_ref_moves(self):
+        bad = self.unverified_revision(self.old)
+        def stale_readback(ref, expected):
+            self.git("push", "origin", f"{bad}:stable")
+            # Simulate CDN still returning the expected old bytes.
+        with self.assertRaisesRegex(RuntimeError, "Concurrent stable update"):
+            self.publisher.recover_stable(stale_readback, self.report)
+        self.assertEqual(self.publisher.remote_ref("stable"), bad)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
+
+    def test_preflight_cannot_accept_lkg_movement(self):
+        bad = self.unverified_revision(self.old)
+        def stale_readback(ref, expected):
+            self.git("push", "origin", f"{bad}:last-known-good")
+        with self.assertRaisesRegex(RuntimeError, "Concurrent last-known-good update"):
+            self.publisher.recover_stable(stale_readback, self.report)
+        self.assertEqual(self.publisher.remote_ref("stable"), self.old)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), bad)
+
+    def test_recovery_readback_rechecks_restored_refs(self):
+        self.git("push", "origin", f"{self.candidate}:stable")
+        calls = []
+        bad = None
+        def stale_readback(ref, expected):
+            nonlocal bad
+            calls.append(ref)
+            if len(calls) == 1:
+                raise ValueError("stable is invalid")
+            if len(calls) == 3:
+                bad = self.unverified_revision(self.publisher.remote_ref("stable"))
+                self.git("push", "origin", f"{bad}:stable")
+        with self.assertRaisesRegex(RuntimeError, "Concurrent stable update"):
+            self.publisher.recover_stable(stale_readback, self.report)
+        self.assertEqual(self.publisher.remote_ref("stable"), bad)
+        self.assertEqual(self.publisher.remote_ref("last-known-good"), self.old)
+        self.assertNotEqual(self.report.get("stable_preflight"), "AUTOMATICALLY_RECOVERED")
+
+    def test_rollback_readback_cannot_report_stale_cdn_as_restored(self):
+        verified_refs = self.publisher.recover_stable(lambda *args: None, self.report)
+        bad = None
+        def validate(ref, label, expected):
+            nonlocal bad
+            if label == "stable":
+                raise ValueError("postpromotion failure")
+            if label == "rollback":
+                bad = self.unverified_revision(self.publisher.remote_ref("stable"))
+                self.git("push", "origin", f"{bad}:stable")
+        with self.assertRaisesRegex(ValueError, "postpromotion failure"):
+            self.publisher.run(self.candidate, validate, self.report, verified_refs)
+        self.assertEqual(self.publisher.remote_ref("stable"), bad)
+        self.assertNotIn("rollback_remote_validation", self.report)
+        self.assertNotEqual(self.report["rollback"], "RESTORED_STABLE")
 
     def test_download_hash_mismatch_is_rejected(self):
         manifest = {"bundles": {}}
