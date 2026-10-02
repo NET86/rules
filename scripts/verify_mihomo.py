@@ -53,7 +53,7 @@ def free_port():
         return sock.getsockname()[1]
 
 
-def probe(port, host):
+def probe(port, host, *, expected_status=b"204"):
     """Require evidence from a known local outlet; transport failure is not a pass."""
     with socket.create_connection(("127.0.0.1", port), timeout=4) as sock:
         authority = f"[{host}]" if ":" in host else host
@@ -68,9 +68,9 @@ def probe(port, host):
     status = response.split(b"\r\n", 1)[0].split()
     if (b"\r\n" not in response or len(status) < 2
             or status[0] not in {b"HTTP/1.0", b"HTTP/1.1"}
-            or status[1] not in {b"204", b"418"}):
+            or status[1] not in {b"204", b"205", b"418"}):
         raise RuntimeError(f"Unverified local routing response for {host}: {response[:120]!r}")
-    return status[1] == b"204"
+    return status[1] == expected_status
 
 
 def proxy_ready(port):

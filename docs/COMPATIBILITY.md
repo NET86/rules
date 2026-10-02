@@ -8,6 +8,7 @@
 | IPv4 / IPv6 | `IP-CIDR` / `IP-CIDR6`，`no-resolve` | 同左 |
 
 Surge 使用 `RULE-SET`。Mihomo 使用 `rule-providers`，配置 `behavior: classical`、`format: yaml`；接入见[示例](../README.md#配置)。
+使用 Mihomo 内核的客户端可采用该格式。
 
 ## OpenAI 正则转换
 
