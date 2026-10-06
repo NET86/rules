@@ -28,6 +28,44 @@ class IntakeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             intake.visible_sections("<h2>Changed title</h2>api.test", ["Network"])
 
+    def test_idna_final_label_survives_intake_and_independent_verifier(self):
+        source = {
+            "id": "idna-fixture",
+            "url": "https://official.test/idna",
+            "vendor": "fixture",
+            "format": "html",
+            "sections": ["Network"],
+            "required_hosts": ["service.xn--p1ai"],
+            "min_hosts": 1,
+        }
+        doc = intake.extract_document(
+            source,
+            b"<h2>Network</h2><p>service.xn--p1ai</p>",
+        )
+        self.assertEqual(doc["rules"], ["DOMAIN,service.xn--p1ai"])
+        self.assertEqual(
+            verify_rules.parse_artifact(
+                'payload:\n  - "DOMAIN,service.xn--p1ai"\n'.encode(),
+                "mihomo",
+            ),
+            ["DOMAIN,service.xn--p1ai"],
+        )
+        self.assertEqual(
+            verify_rules.parse_artifact(
+                "DOMAIN-SUFFIX,service.xn--p1ai\n".encode(),
+                "surge",
+            ),
+            ["DOMAIN-SUFFIX,service.xn--p1ai"],
+        )
+        for invalid in (
+            "service.-xn--p1ai",
+            "service.xn--p1ai-",
+            "service." + "a" * 64,
+            "service.123",
+        ):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                verify_rules.parse_artifact(f"DOMAIN,{invalid}\n".encode(), "surge")
+
     def test_official_shape_guard(self):
         source = {"id": "fixture", "url": "https://official.test", "vendor": "fixture",
                   "format": "html", "sections": ["Network"], "required_hosts": ["api.example.com"], "min_hosts": 1}
