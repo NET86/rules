@@ -121,7 +121,7 @@ def load_contracts(root, manifest):
         for field in ("must_match", "must_not_match"):
             hosts = contract.get(field)
             if not isinstance(hosts, list) or not hosts or any(
-                not isinstance(host, str) or not HOST.fullmatch(host) for host in hosts
+                not isinstance(host, str) or not valid_host(host) for host in hosts
             ) or len(hosts) != len(set(hosts)):
                 raise ValueError(f"Empty/invalid semantic cases: {label}/{field}")
         if set(contract["must_match"]) & set(contract["must_not_match"]):
