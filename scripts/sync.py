@@ -121,6 +121,27 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
     total_bytes = 0
     total_rules = 0
 
+    def read_blob(object_ref: str, label: str) -> bytes:
+        nonlocal total_bytes
+        size_text = subprocess.check_output(
+            ["git", "-C", str(repo), "cat-file", "-s", object_ref],
+            text=True,
+        ).strip()
+        try:
+            blob_size = int(size_text)
+        except ValueError as exc:
+            raise ValueError(f"Invalid source blob size for {label}: {size_text!r}") from exc
+        if blob_size < 0 or blob_size > MAX_SOURCE_BYTES - total_bytes:
+            raise ValueError(f"Source byte budget exceeds {MAX_SOURCE_BYTES}")
+        content = subprocess.check_output(["git", "-C", str(repo), "show", object_ref])
+        if len(content) != blob_size:
+            raise RuntimeError(
+                f"Source blob size changed while exporting {label}: "
+                f"expected {blob_size}, read {len(content)}"
+            )
+        total_bytes += blob_size
+        return content
+
     def export(name, recurse, stack=()):
         nonlocal total_bytes, total_rules
         if name in stack:
@@ -132,10 +153,8 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
         if name not in written:
             if len(written) >= MAX_SOURCE_FILES:
                 raise ValueError(f"Source file budget exceeds {MAX_SOURCE_FILES}")
-            content = subprocess.check_output(["git", "-C", str(repo), "show", f"{revision}:data/{name}"])
-            total_bytes += len(content)
-            if total_bytes > MAX_SOURCE_BYTES:
-                raise ValueError(f"Source byte budget exceeds {MAX_SOURCE_BYTES}")
+            object_ref = f"{revision}:data/{name}"
+            content = read_blob(object_ref, name)
             text = content.decode("utf-8")
             rows = list(parse_v2fly(text))
             total_rules += sum(not isinstance(rule, str) for rule, _ in rows)
@@ -158,7 +177,7 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
     for name in sorted(explicit_names):
         export(name, False)
 
-    license_text = subprocess.check_output(["git", "-C", str(repo), "show", f"{revision}:LICENSE"])
+    license_text = read_blob(f"{revision}:LICENSE", "LICENSE")
     (snapshot / "V2FLY-LICENSE").write_bytes(license_text)
     voice_rules(json.loads(voice))
     (snapshot / "openai-voice.json").write_text(json_text(json.loads(voice)), encoding="utf-8", newline="\n")

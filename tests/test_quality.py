@@ -128,7 +128,11 @@ class LocalInputHealthTests(unittest.TestCase):
                     relative = args[-1].split(":", 1)[1]
                     path = baseline / ("V2FLY-LICENSE" if relative == "LICENSE" else relative.replace("data/", "v2fly/", 1))
                     data = path.read_bytes()
-                    return data + b"\n" + bad_line + b"\n" if relative == f"data/{name}" else data
+                    if relative == f"data/{name}":
+                        data = data + b"\n" + bad_line + b"\n"
+                    if "cat-file" in args:
+                        return str(len(data))
+                    return data
 
                 with patch.object(sync, "ROOT", root), patch.object(sys, "argv", ["sync.py"]), \
                         patch.object(sync.subprocess, "run"), \
@@ -151,18 +155,27 @@ class LocalInputHealthTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as td:
                 snapshot = Path(td) / "snapshot"
 
+                shown = []
+
                 def upstream_git(args, **kwargs):
                     if args[-2:] == ["rev-parse", "HEAD"]:
                         return "f" * 40
                     relative = args[-1].split(":", 1)[1]
                     if relative == "LICENSE":
-                        return b"fixture license"
-                    return files[relative.removeprefix("data/")]
+                        data = b"fixture license"
+                    else:
+                        data = files[relative.removeprefix("data/")]
+                    if "cat-file" in args:
+                        return str(len(data))
+                    shown.append(relative)
+                    return data
 
                 with patch.object(sync.subprocess, "check_output", side_effect=upstream_git), \
                         patch.object(sync, constant, value):
                     with self.assertRaisesRegex(ValueError, message):
                         sync.snapshot_from_repo(Path("fixture"), snapshot, catalog, voice)
+                if constant == "MAX_SOURCE_BYTES":
+                    self.assertEqual(shown, [], "oversized blob must be rejected before git show")
 
         run_case(
             {"n0": b"include:n1\n", "n1": b"include:n2\n", "n2": b"leaf.example.com\n"},
