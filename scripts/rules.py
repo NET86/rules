@@ -19,6 +19,10 @@ sys.modules.setdefault("rules", sys.modules[__name__])
 ROOT = Path(__file__).resolve().parents[1]
 # A changed upstream license is a review gate, not an ordinary data update.
 REVIEWED_V2FLY_LICENSE = "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c84011479244bf7d2"
+MAX_INCLUDE_DEPTH = 32
+MAX_SOURCE_FILES = 512
+MAX_SOURCE_BYTES = 8 * 1024 * 1024
+MAX_SOURCE_RULES = 100_000
 PROJECT_URL = "https://github.com/NET86/rules"
 RAW_URL = "https://raw.githubusercontent.com/NET86/rules/stable"
 BUNDLE_DESCRIPTIONS = {
@@ -144,15 +148,46 @@ def parse_v2fly(text: str):
         yield rule, set(attrs)
 
 
-def load_source(data: Path, name: str, stack=()):
+def load_source(data: Path, name: str, stack=(), _state=None):
+    """Expand one include graph once, with deterministic resource limits."""
+    if _state is None:
+        _state = {
+            "seen": set(),
+            "yielded": set(),
+            "files": 0,
+            "bytes": 0,
+            "rules": 0,
+        }
     if not re.fullmatch(r"[a-z0-9!_-]+", name):
         raise ValueError(f"Unsafe source name: {name}")
     if name in stack:
         raise ValueError(f"Include cycle: {stack + (name,)}")
-    for rule, attrs in parse_v2fly((data / name).read_text(encoding="utf-8")):
+    if len(stack) >= MAX_INCLUDE_DEPTH:
+        raise ValueError(f"Include depth exceeds {MAX_INCLUDE_DEPTH}: {stack + (name,)}")
+    if name in _state["seen"]:
+        return
+
+    _state["seen"].add(name)
+    _state["files"] += 1
+    if _state["files"] > MAX_SOURCE_FILES:
+        raise ValueError(f"Source file budget exceeds {MAX_SOURCE_FILES}")
+
+    raw = (data / name).read_bytes()
+    _state["bytes"] += len(raw)
+    if _state["bytes"] > MAX_SOURCE_BYTES:
+        raise ValueError(f"Source byte budget exceeds {MAX_SOURCE_BYTES}")
+
+    for rule, attrs in parse_v2fly(raw.decode("utf-8")):
         if isinstance(rule, str):
-            yield from load_source(data, rule, stack + (name,))
+            yield from load_source(data, rule, stack + (name,), _state)
         else:
+            _state["rules"] += 1
+            if _state["rules"] > MAX_SOURCE_RULES:
+                raise ValueError(f"Source rule budget exceeds {MAX_SOURCE_RULES}")
+            key = (rule, frozenset(attrs), name)
+            if key in _state["yielded"]:
+                continue
+            _state["yielded"].add(key)
             yield rule, attrs, name
 
 

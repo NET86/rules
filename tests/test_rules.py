@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import automation
@@ -47,6 +48,44 @@ class ParserTests(unittest.TestCase):
             (path / "b").write_text("full:api.example.com @ads")
             result = list(rules.load_source(path, "a"))
             self.assertEqual(result, [(rules.Rule("DOMAIN", "api.example.com"), {"@ads"}, "b")])
+
+    def test_repeated_include_graph_is_expanded_once(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td)
+            for index in range(14):
+                (path / f"n{index}").write_text(
+                    f"include:n{index + 1}\ninclude:n{index + 1}\n",
+                    encoding="utf-8",
+                )
+            (path / "n14").write_text("leaf.example.com\n", encoding="utf-8")
+            result = list(rules.load_source(path, "n0"))
+            self.assertEqual(
+                result,
+                [(rules.Rule("DOMAIN-SUFFIX", "leaf.example.com"), set(), "n14")],
+            )
+
+    def test_include_resource_budgets_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td)
+            (path / "a").write_text("include:b\n", encoding="utf-8")
+            (path / "b").write_text("include:c\n", encoding="utf-8")
+            (path / "c").write_text("one.example.com\ntwo.example.com\n", encoding="utf-8")
+
+            with patch.object(rules, "MAX_INCLUDE_DEPTH", 2):
+                with self.assertRaisesRegex(ValueError, "Include depth"):
+                    list(rules.load_source(path, "a"))
+
+            with patch.object(rules, "MAX_SOURCE_FILES", 2):
+                with self.assertRaisesRegex(ValueError, "Source file budget"):
+                    list(rules.load_source(path, "a"))
+
+            with patch.object(rules, "MAX_SOURCE_BYTES", 8):
+                with self.assertRaisesRegex(ValueError, "Source byte budget"):
+                    list(rules.load_source(path, "a"))
+
+            with patch.object(rules, "MAX_SOURCE_RULES", 1):
+                with self.assertRaisesRegex(ValueError, "Source rule budget"):
+                    list(rules.load_source(path, "c"))
 
     def test_select_mode_never_inherits_includes(self):
         with tempfile.TemporaryDirectory() as td:
