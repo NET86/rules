@@ -27,7 +27,11 @@ BUNDLE_DESCRIPTIONS = {
     "ai-cn": "国内 AI 服务分类，出口策略自行选择。",
     "openai-voice-ip": "OpenAI 官方语音目的 IP；ai-daily 已包含，单厂商 openai 未包含。",
 }
-DOMAIN_RE = re.compile(r"(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z")
+# Portable ASCII host contract. Keep verification independently implemented.
+DOMAIN_RE = re.compile(
+    r"(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
+    r"(?:[a-z]{2,63}|xn--[a-z0-9](?:[a-z0-9-]{0,57}[a-z0-9])?)\Z"
+)
 TYPES = {"full": "DOMAIN", "domain": "DOMAIN-SUFFIX", "regexp": "DOMAIN-REGEX", "keyword": "DOMAIN-KEYWORD"}
 FORBIDDEN_CORE = {
     "com", "net", "ai", "cn", "google.com", "googleapis.com", "gstatic.com",
