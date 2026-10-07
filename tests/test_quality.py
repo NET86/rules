@@ -143,6 +143,44 @@ class LocalInputHealthTests(unittest.TestCase):
                 self.assertEqual(rules.verify_snapshot(baseline)["v2fly_revision"], lock["v2fly_revision"])
                 self.assertEqual(verify_rules.verify(root)["result"], "PASS")
 
+    def test_snapshot_export_enforces_include_resource_budgets(self):
+        voice = (rules.ROOT / "sources/snapshot/openai-voice.json").read_bytes()
+        catalog = {"vendors": [{"id": "demo", "sources": ["n0"], "select": {}}]}
+
+        def run_case(files, constant, value, message):
+            with tempfile.TemporaryDirectory() as td:
+                snapshot = Path(td) / "snapshot"
+
+                def upstream_git(args, **kwargs):
+                    if args[-2:] == ["rev-parse", "HEAD"]:
+                        return "f" * 40
+                    relative = args[-1].split(":", 1)[1]
+                    if relative == "LICENSE":
+                        return b"fixture license"
+                    return files[relative.removeprefix("data/")]
+
+                with patch.object(sync.subprocess, "check_output", side_effect=upstream_git), \
+                        patch.object(sync, constant, value):
+                    with self.assertRaisesRegex(ValueError, message):
+                        sync.snapshot_from_repo(Path("fixture"), snapshot, catalog, voice)
+
+        run_case(
+            {"n0": b"include:n1\n", "n1": b"include:n2\n", "n2": b"leaf.example.com\n"},
+            "MAX_INCLUDE_DEPTH", 2, "Include depth",
+        )
+        run_case(
+            {"n0": b"include:n1\n", "n1": b"leaf.example.com\n"},
+            "MAX_SOURCE_FILES", 1, "Source file budget",
+        )
+        run_case(
+            {"n0": b"leaf.example.com\n"},
+            "MAX_SOURCE_BYTES", 4, "Source byte budget",
+        )
+        run_case(
+            {"n0": b"one.example.com\ntwo.example.com\n"},
+            "MAX_SOURCE_RULES", 1, "Source rule budget",
+        )
+
     def test_explicit_local_inputs_are_not_reported_as_live_fetches_or_outages(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
