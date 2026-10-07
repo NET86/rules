@@ -132,10 +132,22 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
         if name not in written:
             if len(written) >= MAX_SOURCE_FILES:
                 raise ValueError(f"Source file budget exceeds {MAX_SOURCE_FILES}")
-            content = subprocess.check_output(["git", "-C", str(repo), "show", f"{revision}:data/{name}"])
-            total_bytes += len(content)
-            if total_bytes > MAX_SOURCE_BYTES:
+            blob = f"{revision}:data/{name}"
+            try:
+                blob_size = int(
+                    subprocess.check_output(
+                        ["git", "-C", str(repo), "cat-file", "-s", blob],
+                        text=True,
+                    ).strip()
+                )
+            except ValueError as exc:
+                raise ValueError(f"Invalid git blob size for source {name}") from exc
+            if blob_size < 0 or total_bytes + blob_size > MAX_SOURCE_BYTES:
                 raise ValueError(f"Source byte budget exceeds {MAX_SOURCE_BYTES}")
+            content = subprocess.check_output(["git", "-C", str(repo), "show", blob])
+            if len(content) != blob_size:
+                raise ValueError(f"Source blob size changed while exporting {name}")
+            total_bytes += blob_size
             text = content.decode("utf-8")
             rows = list(parse_v2fly(text))
             total_rules += sum(not isinstance(rule, str) for rule, _ in rows)
