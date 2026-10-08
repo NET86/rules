@@ -18,12 +18,12 @@
       "must_not_match": ["other-bucket.s3.amazonaws.com"]
     },
     "google-ai": {
-      "must_match": ["gemini.google.com", "generativelanguage.googleapis.com", "aistudio.google.com", "notebooklm.google.com", "notebook.google"],
-      "must_not_match": ["www.google.com", "storage.googleapis.com", "cloudaicompanion.googleapis.com", "antigravity.google.com"]
+      "must_match": ["gemini.google.com", "generativelanguage.googleapis.com", "aistudio.google.com", "notebooklm.google.com", "notebook.google", "geminiweb-pa.clients.google.com", "geminiweb-pa.clients6.google.com", "labstailwind.pa.googleapis.com"],
+      "must_not_match": ["www.google.com", "storage.googleapis.com", "cloudaicompanion.googleapis.com", "antigravity.google.com", "clients.google.com", "clients6.google.com", "other.clients6.google.com", "child.geminiweb-pa.clients6.google.com", "googleapis.com"]
     },
     "cursor": {
-      "must_match": ["api2.cursor.sh", "vm.cursorvm.com", "anysphere-binaries.s3.us-east-1.amazonaws.com", "cloud-agent-artifacts.s3.us-east-1.amazonaws.com"],
-      "must_not_match": ["s3.us-east-1.amazonaws.com", "unrelated.s3.us-east-1.amazonaws.com", "child.anysphere-binaries.s3.us-east-1.amazonaws.com", "child.cloud-agent-artifacts.s3.us-east-1.amazonaws.com"]
+      "must_match": ["api2.cursor.sh", "vm.cursorvm.com", "anysphere-binaries.s3.us-east-1.amazonaws.com", "cloud-agent-artifacts.s3.us-east-1.amazonaws.com", "accounts.spacex.ai", "accounts.x.ai"],
+      "must_not_match": ["s3.us-east-1.amazonaws.com", "unrelated.s3.us-east-1.amazonaws.com", "child.anysphere-binaries.s3.us-east-1.amazonaws.com", "child.cloud-agent-artifacts.s3.us-east-1.amazonaws.com", "spacex.ai", "x.ai", "child.accounts.spacex.ai", "child.accounts.x.ai"]
     },
     "microsoft-copilot": {
       "must_match": ["copilot.microsoft.com", "copilot.cloud.microsoft", "copilot.ai"],
@@ -100,11 +100,11 @@
   },
   "profiles": {
     "ai-daily": {
-      "must_match": ["api.openai.com", "gemini.google.com", "claude.ai", "grok.com", "perplexity.ai", "copilot.microsoft.com", "copilot.cloud.microsoft", "copilot.ai", "githubcopilot.com", "api.githubcopilot.com", "copilot-proxy.githubusercontent.com", "copilot-workspace.githubnext.com", "copilotprodattachments.blob.core.windows.net", "origin-tracker.githubusercontent.com"],
+      "must_match": ["api.openai.com", "gemini.google.com", "geminiweb-pa.clients6.google.com", "labstailwind.pa.googleapis.com", "claude.ai", "grok.com", "perplexity.ai", "copilot.microsoft.com", "copilot.cloud.microsoft", "copilot.ai", "githubcopilot.com", "api.githubcopilot.com", "copilot-proxy.githubusercontent.com", "copilot-workspace.githubnext.com", "copilotprodattachments.blob.core.windows.net", "origin-tracker.githubusercontent.com"],
       "must_not_match": ["openrouter.ai", "groq.com", "huggingface.co", "storage.googleapis.com", "www.google.com", "unrelated.s3.us-east-1.amazonaws.com", "unrelated.co.uk", "www.microsoft.com", "api.github.com", "raw.githubusercontent.com", "collector.github.com", "copilot-telemetry.githubusercontent.com", "default.exp-tas.com", "copilot-reports.github.com", "child.copilot.ai", "notcopilot.ai", "child.origin-tracker.githubusercontent.com", "not-origin-tracker.githubusercontent.com"]
     },
     "ai-core": {
-      "must_match": ["api.openai.com", "gemini.google.com", "claude.ai", "grok.com", "perplexity.ai", "copilot.microsoft.com", "githubcopilot.com", "api2.cursor.sh", "mistral.ai", "poe.com", "midjourney.com", "runway.com", "suno.com", "elevenlabs.com"],
+      "must_match": ["api.openai.com", "gemini.google.com", "claude.ai", "grok.com", "perplexity.ai", "copilot.microsoft.com", "githubcopilot.com", "api2.cursor.sh", "accounts.x.ai", "accounts.spacex.ai", "mistral.ai", "poe.com", "midjourney.com", "runway.com", "suno.com", "elevenlabs.com"],
       "must_not_match": ["openrouter.ai", "groq.com", "huggingface.co", "meta.ai", "windsurf.com", "dify.ai", "www.microsoft.com", "unrelated.s3.us-east-1.amazonaws.com", "unrelated.co.uk"]
     },
     "ai-cn": {

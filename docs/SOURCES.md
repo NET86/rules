@@ -18,6 +18,8 @@ Source Radar 使用本地快照：`confirmed` 表示证据覆盖候选范围，�
 
 Google 范围为 Gemini、AI Studio、NotebookLM。GitHub Copilot 只解析 `Specific required domains`；共享平台、遥测、实验和报表排除，精确专用端点仍可待审。不解析 GHE、编辑器、语音和云代理的其他访问清单。
 
+经复核，Cursor 新登录端点只加入官方明确列出的两个精确主机，不扩大 `x.ai` / `spacex.ai`；Google 混合来源只选 AI Studio、NotebookLM 区段的三条具体规则，保留上游 `full:` 与后缀匹配差异，不扩大公共 Google 域名。OpenAI 官方资料若暂时不可验证，仍保留可信旧数据和待审异常。
+
 官方提取仅接受完整主机名及前导 `*.` / `.`；局部通配符不能截成父域。
 
 ## 文件职责
