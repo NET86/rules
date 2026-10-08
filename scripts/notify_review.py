@@ -16,7 +16,7 @@ TRUSTED_ISSUE_AUTHORS = {"app/github-actions", "github-actions[bot]"}
 def issue_body(channel, report):
     marker = f"<!-- rules-automation:{channel} -->"
     # Omit clock/observation counters: identical exceptions produce identical bodies.
-    visible = {"vendor", "tier", "section", "rule", "value", "reason", "source", "source_id", "status", "error_type", "error_detail", "impact", "evidence", "block_reason", "block_reason_label"}
+    visible = {"vendor", "tier", "section", "rule", "value", "attributes", "entrypoint", "reason", "source", "source_id", "status", "error_type", "error_detail", "impact", "evidence", "block_reason", "block_reason_label"}
     rows = sorted({json.dumps({k: v for k, v in row.items() if k in visible}, ensure_ascii=False, sort_keys=True) for row in report.get("review_required", [])})
     failed = any(row.get("reason") == "workflow-failed" for row in report.get("review_required", []))
     if failed:

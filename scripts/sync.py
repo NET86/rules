@@ -269,9 +269,10 @@ def main():
                 })
             stabilize_lock(ROOT, snapshot)
 
-            selection_issues = []
-            entries = collect(catalog, patches, snapshot / "v2fly", review_mode=True, selection_issues=selection_issues)
-            unhealthy_vendors = {row["vendor"] for row in selection_issues}
+            selection_issues, attribute_issues = [], []
+            entries = collect(catalog, patches, snapshot / "v2fly", review_mode=True,
+                              selection_issues=selection_issues, attribute_issues=attribute_issues)
+            unhealthy_vendors = {row["vendor"] for row in selection_issues + attribute_issues}
             previous = read_json(ROOT / "rules/manifest.json") if (ROOT / "rules/manifest.json").exists() else {}
             previous_state = read_json(ROOT / "sources/automation-state.json")
             state, report = reconcile(
@@ -283,6 +284,9 @@ def main():
                 source_observation_healthy=v2fly_fresh,
                 unhealthy_vendors=unhealthy_vendors,
             )
+            # Excluded attributes never become candidates/pending; count their
+            # individually reported quarantine decisions as well.
+            report["quarantined_count"] += len(attribute_issues)
 
             effective = effective_entries(entries, catalog, patches, state)
             official_radar = analyze_official(ROOT, official_state, effective)
@@ -300,7 +304,8 @@ def main():
                     "action": "Verified last-good IPs retained; domain updates continue; clears on a normal response or a reviewed --voice-file baseline",
                 })
             report["review_required"].extend(
-                official_fetch_report["review_required"] + v2fly_errors + selection_issues + official_radar["review_required"] + report["selection_radar"]
+                official_fetch_report["review_required"] + v2fly_errors + selection_issues + attribute_issues
+                + official_radar["review_required"] + report["selection_radar"]
             )
             (work / "sync-report.json").write_text(json_text(report), encoding="utf-8", newline="\n")
 
