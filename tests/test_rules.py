@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import automation
@@ -17,6 +18,41 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(rows[0][0], rules.Rule("DOMAIN-SUFFIX", "example.com"))
         self.assertEqual(rows[1], (rules.Rule("DOMAIN", "api.example.com"), {"@ads"}))
         self.assertEqual(rows[3][0].kind, "DOMAIN-REGEX")
+
+    def test_upstream_telemetry_change_is_excluded_from_sources_and_explicit_select(self):
+        # V2Fly changed Copilot's tracking endpoints from @ads to @telemetry.
+        # Both attributes must be excluded even when other hosts are valid.
+        data_text = (
+            "githubcopilot.com\n"
+            "full:copilot-proxy.githubusercontent.com\n"
+            "full:copilot-telemetry.githubusercontent.com @telemetry\n"
+            "full:copilot-telemetry-service.githubusercontent.com @telemetry\n"
+            "full:old-tracker.githubusercontent.com @ads\n"
+        )
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "github-copilot").write_text(data_text, encoding="utf-8")
+            for mode in ("sources", "select"):
+                vendor = {"id": "github-copilot", "group": "global"}
+                if mode == "sources":
+                    vendor["sources"] = ["github-copilot"]
+                else:
+                    vendor["select"] = {"github-copilot": [
+                        "githubcopilot.com",
+                        "copilot-proxy.githubusercontent.com",
+                        "copilot-telemetry.githubusercontent.com",
+                        "copilot-telemetry-service.githubusercontent.com",
+                        "old-tracker.githubusercontent.com",
+                    ]}
+                entries = rules.collect({"vendors": [vendor]},
+                                        {"add": [], "drop": {}}, data)
+                self.assertEqual({key[2].text for key in entries}, {
+                    "DOMAIN-SUFFIX,githubcopilot.com",
+                    "DOMAIN,copilot-proxy.githubusercontent.com",
+                }, mode)
+                self.assertTrue(rules.excluded_by_source_metadata({"@telemetry"}))
+                self.assertTrue(rules.excluded_by_source_metadata({"@ads"}))
+                self.assertFalse(rules.excluded_by_source_metadata({"@cn"}))
 
     def test_invalid_syntax_uses_the_source_failure_contract(self):
         for text in ("unknown:example.com", "regexp:[", "regexp:(?P<bad"):
@@ -47,6 +83,44 @@ class ParserTests(unittest.TestCase):
             (path / "b").write_text("full:api.example.com @ads")
             result = list(rules.load_source(path, "a"))
             self.assertEqual(result, [(rules.Rule("DOMAIN", "api.example.com"), {"@ads"}, "b")])
+
+    def test_repeated_include_graph_is_expanded_once(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td)
+            for index in range(14):
+                (path / f"n{index}").write_text(
+                    f"include:n{index + 1}\ninclude:n{index + 1}\n",
+                    encoding="utf-8",
+                )
+            (path / "n14").write_text("leaf.example.com\n", encoding="utf-8")
+            result = list(rules.load_source(path, "n0"))
+            self.assertEqual(
+                result,
+                [(rules.Rule("DOMAIN-SUFFIX", "leaf.example.com"), set(), "n14")],
+            )
+
+    def test_include_resource_budgets_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td)
+            (path / "a").write_text("include:b\n", encoding="utf-8")
+            (path / "b").write_text("include:c\n", encoding="utf-8")
+            (path / "c").write_text("one.example.com\ntwo.example.com\n", encoding="utf-8")
+
+            with patch.object(rules, "MAX_INCLUDE_DEPTH", 2):
+                with self.assertRaisesRegex(ValueError, "Include depth"):
+                    list(rules.load_source(path, "a"))
+
+            with patch.object(rules, "MAX_SOURCE_FILES", 2):
+                with self.assertRaisesRegex(ValueError, "Source file budget"):
+                    list(rules.load_source(path, "a"))
+
+            with patch.object(rules, "MAX_SOURCE_BYTES", 8):
+                with self.assertRaisesRegex(ValueError, "Source byte budget"):
+                    list(rules.load_source(path, "a"))
+
+            with patch.object(rules, "MAX_SOURCE_RULES", 1):
+                with self.assertRaisesRegex(ValueError, "Source rule budget"):
+                    list(rules.load_source(path, "c"))
 
     def test_select_mode_never_inherits_includes(self):
         with tempfile.TemporaryDirectory() as td:

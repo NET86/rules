@@ -21,6 +21,10 @@ from pathlib import Path
 from automation import effective_entries, reconcile
 from intake import analyze_official, analyze_selected_sources, refresh_official
 from rules import (
+    MAX_INCLUDE_DEPTH,
+    MAX_SOURCE_BYTES,
+    MAX_SOURCE_FILES,
+    MAX_SOURCE_RULES,
     ROOT,
     collect,
     compile_outputs,
@@ -113,22 +117,54 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
     data.mkdir(parents=True)
     recursive_names = {name for vendor in catalog["vendors"] for name in vendor.get("sources", [])}
     explicit_names = {name for vendor in catalog["vendors"] for name in vendor.get("select", {})}
-    written, expanded = set(), set()
+    written, expanded, rows_by_name = set(), set(), {}
+    total_bytes = 0
+    total_rules = 0
+
+    def read_blob(object_ref: str, label: str) -> bytes:
+        nonlocal total_bytes
+        size_text = subprocess.check_output(
+            ["git", "-C", str(repo), "cat-file", "-s", object_ref],
+            text=True,
+        ).strip()
+        try:
+            blob_size = int(size_text)
+        except ValueError as exc:
+            raise ValueError(f"Invalid source blob size for {label}: {size_text!r}") from exc
+        if blob_size < 0 or blob_size > MAX_SOURCE_BYTES - total_bytes:
+            raise ValueError(f"Source byte budget exceeds {MAX_SOURCE_BYTES}")
+        content = subprocess.check_output(["git", "-C", str(repo), "show", object_ref])
+        if len(content) != blob_size:
+            raise RuntimeError(
+                f"Source blob size changed while exporting {label}: "
+                f"expected {blob_size}, read {len(content)}"
+            )
+        total_bytes += blob_size
+        return content
 
     def export(name, recurse, stack=()):
+        nonlocal total_bytes, total_rules
         if name in stack:
             raise ValueError(f"Include cycle: {stack + (name,)}")
+        if len(stack) >= MAX_INCLUDE_DEPTH:
+            raise ValueError(f"Include depth exceeds {MAX_INCLUDE_DEPTH}: {stack + (name,)}")
         if not re.fullmatch(r"[a-z0-9!_-]+", name):
             raise ValueError(f"Unsafe source: {name}")
         if name not in written:
-            content = subprocess.check_output(["git", "-C", str(repo), "show", f"{revision}:data/{name}"])
+            if len(written) >= MAX_SOURCE_FILES:
+                raise ValueError(f"Source file budget exceeds {MAX_SOURCE_FILES}")
+            object_ref = f"{revision}:data/{name}"
+            content = read_blob(object_ref, name)
             text = content.decode("utf-8")
+            rows = list(parse_v2fly(text))
+            total_rules += sum(not isinstance(rule, str) for rule, _ in rows)
+            if total_rules > MAX_SOURCE_RULES:
+                raise ValueError(f"Source rule budget exceeds {MAX_SOURCE_RULES}")
             (data / name).write_text(text, encoding="utf-8", newline="\n")
             written.add(name)
+            rows_by_name[name] = rows
         else:
-            text = (data / name).read_text(encoding="utf-8")
-        # Validate selected files here too, inside the verified-snapshot fallback.
-        rows = list(parse_v2fly(text))
+            rows = rows_by_name[name]
         if not recurse or name in expanded:
             return
         expanded.add(name)
@@ -141,7 +177,7 @@ def snapshot_from_repo(repo: Path, snapshot: Path, catalog, voice: bytes):
     for name in sorted(explicit_names):
         export(name, False)
 
-    license_text = subprocess.check_output(["git", "-C", str(repo), "show", f"{revision}:LICENSE"])
+    license_text = read_blob(f"{revision}:LICENSE", "LICENSE")
     (snapshot / "V2FLY-LICENSE").write_bytes(license_text)
     voice_rules(json.loads(voice))
     (snapshot / "openai-voice.json").write_text(json_text(json.loads(voice)), encoding="utf-8", newline="\n")

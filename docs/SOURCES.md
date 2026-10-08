@@ -4,7 +4,7 @@
 
 域名主要来自 [V2Fly](https://github.com/v2fly/domain-list-community)：`catalog.sources` 授权专用文件中直接写出的规则，include 不继承授权；混合文件仅采用 `catalog.select` 指定域名的直接规则，同域名的多种匹配类型按上游并集处理，逐条过滤排除项。人工补充写入 `patches.add`，必须附 HTTPS 证据和理由。引用已接入 `official.json` 的补丁会持续核对证据覆盖；失去覆盖仅触发复核，不自动撤销人工授权。未接入的引用仍需人工维护。
 
-规则按服务归属分组，不保证服务器地域或直连可用。多模型共用的云 API 不按模型名自动归类；专用 API、下载与产物主机可依据官方资料精确补入。
+规则按服务归属分组，不保证服务器地域或直连可用。V2Fly 标记为 `@ads` 或 `@telemetry` 的条目不进入生产或作为授权证据；多模型共用的云 API 不按模型名自动归类，专用 API、下载与产物主机须按官方资料精确补入。
 
 语音 IP 来自 [OpenAI 官方 JSON](https://openai.com/chatgpt-voice.json)。更新与失败处理见[维护说明](MAINTAINING.md)，合集成员见[订阅目录](../rules/README.md)。
 
@@ -17,6 +17,8 @@
 Source Radar 使用本地快照：`confirmed` 表示证据覆盖候选范围，不表示本次抓取成功或获准生产。exact 不能证明更宽 suffix；更宽证据也不自动授权新的规则表达。读取失败不能推断为 absent。
 
 Google 范围为 Gemini、AI Studio、NotebookLM。GitHub Copilot 只解析 `Specific required domains`；共享平台、遥测、实验和报表排除，精确专用端点仍可待审。不解析 GHE、编辑器、语音和云代理的其他访问清单。
+
+经复核，Cursor 新登录端点只加入官方明确列出的两个精确主机，不扩大 `x.ai` / `spacex.ai`；Google 混合来源只选 AI Studio、NotebookLM 区段的三条具体规则，保留上游 `full:` 与后缀匹配差异，不扩大公共 Google 域名。OpenAI 官方资料若暂时不可验证，仍保留可信旧数据和待审异常。
 
 官方提取仅接受完整主机名及前导 `*.` / `.`；局部通配符不能截成父域。
 

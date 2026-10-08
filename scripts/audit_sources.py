@@ -2,7 +2,7 @@
 """Read-only secondary radar: report uncovered narrow domains, never mutate production."""
 
 from automation import scope_problem, vendor_spec
-from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json
+from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json, excluded_by_source_metadata
 from sync import fetch
 
 
@@ -14,7 +14,8 @@ REVIEW_REASON_LABELS = {
 SECTION_VENDOR = {
     "OpenAI / ChatGPT": "openai",
     "Perplexity": "perplexity",
-    "Claude": "claude",
+    "Claude": "claude",  # Historical fixture compatibility
+    "Anthropic / Claude": "claude",  # Current Sukka heading
     "Google": "google-ai",
     "POE": "poe",
     "GitHub Copilot": "github-copilot",
@@ -33,7 +34,7 @@ BLOCK_REASON_LABELS = {
     "unsupported-or-broad-matching": "匹配类型不支持自动进入生产",
     "unsupported-tier": "规则层级不受当前生产模型支持",
     "radar-read-only": "主来源已收录，等待规则同步",
-    "upstream-advertising-excluded": "上游条目标记为广告或遥测，不会自动进入生产",
+    "upstream-nonproduction-excluded": "上游条目标记为广告或遥测，不会自动进入生产",
     "unmapped-sukka-section": "Sukka 区段尚未对应到本地厂商",
 }
 
@@ -195,7 +196,7 @@ def evidence_origins(candidate, vendor, catalog, v2fly):
         return set()
     origins = set()
     for match in v2fly.get("matches", []):
-        if match.get("relation") != "exact" or "@ads" in match.get("attributes", []):
+        if match.get("relation") != "exact" or excluded_by_source_metadata(match.get("attributes", [])):
             continue
         entrypoint, origin = match["entrypoint"], match["source"]
         if entrypoint in spec.get("sources", []) and origin == entrypoint:
@@ -238,9 +239,9 @@ def enrich_pending(pending, catalog, patches, official_state, data):
                 origins = evidence_origins(candidate, vendor, catalog, upstream)
                 block = scope_problem((vendor, "core", candidate), origins, catalog, patches) or "radar-read-only"
                 if block == "source-not-authorized-by-catalog" and all(
-                    "@ads" in match.get("attributes", []) for match in upstream["matches"] if match["relation"] == "exact"
+                    excluded_by_source_metadata(match.get("attributes", [])) for match in upstream["matches"] if match["relation"] == "exact"
                 ):
-                    block = "upstream-advertising-excluded"
+                    block = "upstream-nonproduction-excluded"
             row["block_reason"] = block
         row["block_reason_label"] = BLOCK_REASON_LABELS.get(row["block_reason"], row["block_reason"])
         enriched.append(row)

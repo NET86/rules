@@ -54,6 +54,8 @@ DOMAIN-SUFFIX,pplx.ai
 DOMAIN,ai.google.dev
 DOMAIN,alkalicore-pa.clients6.google.com
 DOMAIN,alkalimakersuite-pa.clients6.google.com
+DOMAIN,geminiweb-pa.clients.google.com
+DOMAIN,geminiweb-pa.clients6.google.com
 DOMAIN,generativelanguage.mtls.googleapis.com
 DOMAIN,notebooklm-pa.googleapis.com
 DOMAIN,notebooklm.googleapis.com
@@ -67,6 +69,7 @@ DOMAIN-SUFFIX,gemini.google.com
 DOMAIN-SUFFIX,gemini.gstatic.com
 DOMAIN-SUFFIX,generativeai.google
 DOMAIN-SUFFIX,generativelanguage.googleapis.com
+DOMAIN-SUFFIX,labstailwind.pa.googleapis.com
 DOMAIN-SUFFIX,makersuite.google.com
 DOMAIN-SUFFIX,notebook.google
 DOMAIN-SUFFIX,notebook.google.com
@@ -90,6 +93,8 @@ DOMAIN,origin-tracker.githubusercontent.com
 DOMAIN-SUFFIX,githubcopilot.com
 
 # Cursor
+DOMAIN,accounts.spacex.ai
+DOMAIN,accounts.x.ai
 DOMAIN,anysphere-binaries.s3.us-east-1.amazonaws.com
 DOMAIN,cloud-agent-artifacts.s3.us-east-1.amazonaws.com
 DOMAIN-SUFFIX,cursor-cdn.com

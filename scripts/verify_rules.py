@@ -12,7 +12,19 @@ from pathlib import Path
 
 from rules import ROOT, sha256, read_json, json_text
 
-HOST = re.compile(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
+HOST_LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z")
+FINAL_LABEL = re.compile(r"(?:[a-z]{2,63}|xn--[a-z0-9](?:[a-z0-9-]{0,57}[a-z0-9])?)\Z")
+
+
+def valid_host(value):
+    """Independent LDH-label oracle; accepts DNS A-labels without widening TLD syntax."""
+    if not 1 <= len(value) <= 253 or "." not in value:
+        return False
+    labels = value.split(".")
+    return (
+        bool(FINAL_LABEL.fullmatch(labels[-1]))
+        and all(1 <= len(label) <= 63 and HOST_LABEL.fullmatch(label) for label in labels)
+    )
 
 
 def parse_artifact(data, target):
@@ -37,7 +49,7 @@ def parse_artifact(data, target):
         elif len(fields) != 2:
             raise ValueError("Unexpected domain rule options")
         elif kind in {"DOMAIN", "DOMAIN-SUFFIX"}:
-            if not HOST.fullmatch(value):
+            if not valid_host(value):
                 raise ValueError("Invalid domain syntax")
         elif kind == "DOMAIN-REGEX" and target == "mihomo":
             re.compile(value)
@@ -109,7 +121,7 @@ def load_contracts(root, manifest):
         for field in ("must_match", "must_not_match"):
             hosts = contract.get(field)
             if not isinstance(hosts, list) or not hosts or any(
-                not isinstance(host, str) or not HOST.fullmatch(host) for host in hosts
+                not isinstance(host, str) or not valid_host(host) for host in hosts
             ) or len(hosts) != len(set(hosts)):
                 raise ValueError(f"Empty/invalid semantic cases: {label}/{field}")
         if set(contract["must_match"]) & set(contract["must_not_match"]):
