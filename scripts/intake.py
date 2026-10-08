@@ -9,7 +9,7 @@ import re
 import urllib.error
 from html.parser import HTMLParser
 
-from rules import ROOT, Rule, read_json, json_text, sha256, parse_v2fly
+from rules import ROOT, Rule, read_json, json_text, sha256, parse_v2fly, excluded_by_source_metadata
 
 # Partial-label wildcards must not be truncated into broader parent domains.
 DOMAIN_TOKEN = re.compile(
@@ -316,7 +316,7 @@ def analyze_selected_sources(root, data, production_entries):
                     seen.add(section)
             if section in wanted:
                 for rule, attrs in parse_v2fly(line):
-                    if isinstance(rule, Rule) and "@ads" not in attrs:
+                    if isinstance(rule, Rule) and not excluded_by_source_metadata(attrs):
                         found.add((section, rule))
         for section, rule in sorted(found):
             if rule.text in patches.get("drop", {}).get(vendor, {}):

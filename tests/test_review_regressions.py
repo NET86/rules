@@ -215,6 +215,22 @@ class RadarAttributionTests(unittest.TestCase):
               "sections": ["OpenAI / ChatGPT", "Claude"]}
     content = "# >> OpenAI / ChatGPT\nDOMAIN,shared-product.net\n# >> Claude\nDOMAIN,shared-product.net\n"
 
+    def test_current_sukka_anthropic_heading_is_mapped_and_complete(self):
+        source = rules.read_json(rules.ROOT / "sources/watch.json")["sources"][0]
+        self.assertIn("Anthropic / Claude", source["sections"])
+        # Keep every required heading present; a missing/renamed one must still fail closed.
+        content = "\n".join(
+            f"# >> {section}\nDOMAIN,service{index}.example.com"
+            for index, section in enumerate(source["sections"])
+        )
+        pending, summary = audit_sources.analyze(source, content, {})
+        self.assertEqual(summary["gap_count"], len(source["sections"]))
+        self.assertIn(("Anthropic / Claude", "claude"),
+                      {(row["section"], row["vendor"]) for row in pending})
+        missing = content.replace("# >> Anthropic / Claude", "# >> Unknown product")
+        with self.assertRaisesRegex(ValueError, "sections changed"):
+            audit_sources.analyze(source, missing, {})
+
     def test_coverage_in_another_vendor_cannot_hide_a_gap(self):
         pending, summary = audit_sources.analyze(
             self.source, self.content, {"openai": {rules.Rule("DOMAIN", "shared-product.net")}})

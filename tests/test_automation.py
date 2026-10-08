@@ -282,22 +282,23 @@ class AuditTests(unittest.TestCase):
                 self.assertEqual([match["relation"] for match in evidence["matches"]], [relation] if relation else [])
                 self.assertIn("快照证据", audit_sources.format_review_item(row))
 
-    def test_advertising_evidence_does_not_claim_it_will_be_published(self):
+    def test_nonproduction_source_evidence_never_claims_promotion(self):
         for mode in ("sources", "select"):
-            for ordinary in (False, True):
-                with self.subTest(mode=mode, ordinary=ordinary), tempfile.TemporaryDirectory() as td:
-                    data = Path(td)
-                    text = "full:ads.example.com @ads\n" + ("full:ads.example.com\n" if ordinary else "")
-                    (data / "demo").write_text(text, encoding="utf-8")
-                    vendor = {"id": "demo", mode: ["demo"] if mode == "sources" else {"demo": ["ads.example.com"]}}
-                    row = audit_sources.enrich_pending([{"vendor": "demo", "rule": "DOMAIN,ads.example.com"}],
-                        {"vendors": [vendor], "profiles": {}}, {"add": [], "drop": {}, "surge_regex": {}},
-                        {"documents": {}}, data)[0]
-                    self.assertTrue(row["evidence"]["v2fly"]["present"])
-                    self.assertEqual(row["evidence"]["v2fly"]["level"], "confirmed")
-                    self.assertEqual(row["block_reason"], "radar-read-only" if ordinary else "upstream-advertising-excluded")
-                    if not ordinary:
-                        self.assertNotIn("等待规则同步", row["block_reason_label"])
+            for marker in ("@ads", "@telemetry"):
+                for ordinary in (False, True):
+                    with self.subTest(mode=mode, marker=marker, ordinary=ordinary), tempfile.TemporaryDirectory() as td:
+                        data = Path(td)
+                        text = f"full:ads.example.com {marker}\n" + ("full:ads.example.com\n" if ordinary else "")
+                        (data / "demo").write_text(text, encoding="utf-8")
+                        vendor = {"id": "demo", mode: ["demo"] if mode == "sources" else {"demo": ["ads.example.com"]}}
+                        row = audit_sources.enrich_pending([{"vendor": "demo", "rule": "DOMAIN,ads.example.com"}],
+                            {"vendors": [vendor], "profiles": {}}, {"add": [], "drop": {}, "surge_regex": {}},
+                            {"documents": {}}, data)[0]
+                        self.assertTrue(row["evidence"]["v2fly"]["present"])
+                        self.assertEqual(row["evidence"]["v2fly"]["level"], "confirmed")
+                        self.assertEqual(row["block_reason"], "radar-read-only" if ordinary else "upstream-nonproduction-excluded")
+                        if not ordinary:
+                            self.assertNotIn("等待规则同步", row["block_reason_label"])
 
     def test_actions_summary_lists_scan_counts_and_gap_details(self):
         report = {

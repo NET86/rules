@@ -19,6 +19,41 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(rows[1], (rules.Rule("DOMAIN", "api.example.com"), {"@ads"}))
         self.assertEqual(rows[3][0].kind, "DOMAIN-REGEX")
 
+    def test_upstream_telemetry_change_is_excluded_from_sources_and_explicit_select(self):
+        # V2Fly changed Copilot's tracking endpoints from @ads to @telemetry.
+        # Both attributes must be excluded even when other hosts are valid.
+        data_text = (
+            "githubcopilot.com\n"
+            "full:copilot-proxy.githubusercontent.com\n"
+            "full:copilot-telemetry.githubusercontent.com @telemetry\n"
+            "full:copilot-telemetry-service.githubusercontent.com @telemetry\n"
+            "full:old-tracker.githubusercontent.com @ads\n"
+        )
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "github-copilot").write_text(data_text, encoding="utf-8")
+            for mode in ("sources", "select"):
+                vendor = {"id": "github-copilot", "group": "global"}
+                if mode == "sources":
+                    vendor["sources"] = ["github-copilot"]
+                else:
+                    vendor["select"] = {"github-copilot": [
+                        "githubcopilot.com",
+                        "copilot-proxy.githubusercontent.com",
+                        "copilot-telemetry.githubusercontent.com",
+                        "copilot-telemetry-service.githubusercontent.com",
+                        "old-tracker.githubusercontent.com",
+                    ]}
+                entries = rules.collect({"vendors": [vendor]},
+                                        {"add": [], "drop": {}}, data)
+                self.assertEqual({key[2].text for key in entries}, {
+                    "DOMAIN-SUFFIX,githubcopilot.com",
+                    "DOMAIN,copilot-proxy.githubusercontent.com",
+                }, mode)
+                self.assertTrue(rules.excluded_by_source_metadata({"@telemetry"}))
+                self.assertTrue(rules.excluded_by_source_metadata({"@ads"}))
+                self.assertFalse(rules.excluded_by_source_metadata({"@cn"}))
+
     def test_invalid_syntax_uses_the_source_failure_contract(self):
         for text in ("unknown:example.com", "regexp:[", "regexp:(?P<bad"):
             with self.subTest(text=text), self.assertRaises(ValueError):

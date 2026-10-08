@@ -37,6 +37,15 @@ DOMAIN_RE = re.compile(
     r"(?:[a-z]{2,63}|xn--[a-z0-9](?:[a-z0-9-]{0,57}[a-z0-9])?)\Z"
 )
 TYPES = {"full": "DOMAIN", "domain": "DOMAIN-SUFFIX", "regexp": "DOMAIN-REGEX", "keyword": "DOMAIN-KEYWORD"}
+# Upstream V2Fly changed Copilot tracking entries from @ads to @telemetry.
+# Treat both as non-production metadata, never as service-routing evidence.
+NON_PRODUCTION_ATTRIBUTES = frozenset({"@ads", "@telemetry"})
+
+
+def excluded_by_source_metadata(attrs):
+    return not NON_PRODUCTION_ATTRIBUTES.isdisjoint(attrs)
+
+
 FORBIDDEN_CORE = {
     "com", "net", "ai", "cn", "google.com", "googleapis.com", "gstatic.com",
     "amazonaws.com", "azure.com", "azureedge.net", "azurefd.net", "windows.net",
@@ -222,7 +231,7 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
         dropped = patches.get("drop", {}).get(vid, {})
         for source in vendor.get("sources", []):
             for rule, attrs, origin in load_source(data, source):
-                if "@ads" in attrs or rule.text in dropped:
+                if excluded_by_source_metadata(attrs) or rule.text in dropped:
                     continue
                 add(vid, "core", rule, f"v2fly:data/{origin}")
         for source, selected in vendor.get("select", {}).items():
@@ -238,7 +247,7 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
                         continue
                     raise ValueError(f"Selected upstream domain disappeared or moved behind include: {vid} {value}")
                 for rule, attrs, origin in available[value]:
-                    if "@ads" in attrs or rule.text in dropped:
+                    if excluded_by_source_metadata(attrs) or rule.text in dropped:
                         continue
                     add(vid, "core", rule, f"v2fly:data/{origin} (selected explicit rule)")
     for patch in patches["add"]:
