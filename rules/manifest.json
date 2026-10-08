@@ -19,26 +19,26 @@
     },
     "ai-core": {
       "mihomo": {
-        "count": 87,
+        "count": 92,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "d197920d58f75553b40446a22a73aaabf8f89a249f158db7186cf6430edd4a05"
+        "sha256": "945c0c0f23504f18047cfd4d243195efc7d27a611c4598a9d749f9e39286dcc8"
       },
       "surge": {
-        "count": 87,
+        "count": 92,
         "path": "rules/surge/ai-core.list",
-        "sha256": "057bd976d21c8bb1f66aa56db93909ecb1174a81697d43a2f23f2b563c229674"
+        "sha256": "934eb25ec8da080f0e908e83fe7ce9a3a76c1523aecbc54a8891518d470c8a8a"
       }
     },
     "ai-daily": {
       "mihomo": {
-        "count": 93,
+        "count": 96,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "222f9f09bb59d80744d07a2d1db68fbc8461531aee00c9b713a984b9d7ef7813"
+        "sha256": "9e1c4ec55e69233de4b97939178cd3d9d6e4a306bf454c545e7a74f73c5b9bc7"
       },
       "surge": {
-        "count": 93,
+        "count": 96,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "1d846484057b50e3b4cc22702ffd1a7c59faac65ad850d491be096b33a3c5662"
+        "sha256": "1d9ac1b6d9f116894b81b16223f4ad266ac866dacf19fa28486de2382956916b"
       }
     },
     "baidu-wenxin": {
@@ -67,14 +67,14 @@
     },
     "cursor": {
       "mihomo": {
-        "count": 7,
+        "count": 9,
         "path": "rules/mihomo/cursor.yaml",
-        "sha256": "a3a3f9fa313a1260ad7fa8e64934de4785c6a4b8d01d1a8f9097a9d01016f2be"
+        "sha256": "84c468b918a19b09c808923a1aedfc3d2eb06b0e1f32b1e5e9cd051694b606b3"
       },
       "surge": {
-        "count": 7,
+        "count": 9,
         "path": "rules/surge/cursor.list",
-        "sha256": "b8a28a25055e17181be5c10174a54e743551cd0dfac783ec2baedc6f9337e030"
+        "sha256": "401dda9a8200671370856c2a3fc4fbc0b4bc8ecfd8b3223b7ca030f2032c2654"
       }
     },
     "deepseek": {
@@ -127,14 +127,14 @@
     },
     "google-ai": {
       "mihomo": {
-        "count": 23,
+        "count": 26,
         "path": "rules/mihomo/google-ai.yaml",
-        "sha256": "4bdbbe36c7c617162201c6c0642143637a17e0b0fa23f925b748cd922e23c8cd"
+        "sha256": "bbb63df6ca4ce2376581e9e92bc33875b0c70136990187838750957f73c5cd85"
       },
       "surge": {
-        "count": 23,
+        "count": 26,
         "path": "rules/surge/google-ai.list",
-        "sha256": "0e81a7c59bbc1f71c289b1d53c1beff33ca8dec4872ccc177a0f1aabc97befd3"
+        "sha256": "3f0c6d14c1d7f52080fd27cc74cf9509a7083fd47caf4862d443871dea65ca61"
       }
     },
     "grok": {
@@ -492,6 +492,22 @@
       "vendor": "claude"
     },
     {
+      "rule": "DOMAIN,accounts.spacex.ai",
+      "sources": [
+        "https://cursor.com/docs/enterprise/network-configuration Official Cursor sign-in transition; exact login host only, not the shared spacex.ai namespace"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN,accounts.x.ai",
+      "sources": [
+        "https://cursor.com/docs/enterprise/network-configuration Official Cursor sign-in transition; exact login host only, not the shared x.ai namespace"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
       "rule": "DOMAIN,anysphere-binaries.s3.us-east-1.amazonaws.com",
       "sources": [
         "https://cursor.com/docs/enterprise/network-configuration Dedicated Cursor client and extension downloads; exact bucket host, not the regional S3 namespace"
@@ -676,6 +692,22 @@
       "vendor": "google-ai"
     },
     {
+      "rule": "DOMAIN,geminiweb-pa.clients.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN,geminiweb-pa.clients6.google.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
       "rule": "DOMAIN,generativelanguage.mtls.googleapis.com",
       "sources": [
         "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta Official Generative Language discovery document exposes a dedicated mTLS endpoint; keep exact to avoid widening googleapis.com"
@@ -773,6 +805,14 @@
     },
     {
       "rule": "DOMAIN-SUFFIX,generativelanguage.googleapis.com",
+      "sources": [
+        "v2fly:data/google-deepmind (selected explicit rule)"
+      ],
+      "tier": "core",
+      "vendor": "google-ai"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,labstailwind.pa.googleapis.com",
       "sources": [
         "v2fly:data/google-deepmind (selected explicit rule)"
       ],
@@ -1551,7 +1591,7 @@
   "schema": 2,
   "semantic_contract": {
     "path": "sources/semantic-contracts.json",
-    "sha256": "0f5d299b5af318ff0ad116d50a5e5edeeff37e545c1fe3a31c14ecccc8982c71"
+    "sha256": "6c85257d7ab217d5714865605cb44f2dbdafa1e330f3fe943086f57f54facd09"
   },
   "upstream": {
     "sha256": {
