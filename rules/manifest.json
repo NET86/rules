@@ -1604,7 +1604,7 @@
       "v2fly/deepseek": "52822c92e87fadcfdc6711133f1270ee77ef030459603a46cf6fa80f75856530",
       "v2fly/doubao": "b501f28fcaeca55a569c6193d12415ef6d62addbe6f8373799fc5c3005ad5db6",
       "v2fly/elevenlabs": "4c284a7e5947f4a40d40c9dc8fedf3e9e3091db0c7680b913b2b19db36ebd561",
-      "v2fly/github-copilot": "069a626c3c23ee63f82e26ce11a83477d8dbe9e27f81968e4b073acf496260f3",
+      "v2fly/github-copilot": "e41465e9e15430bf31d1054d21c0551e8fa3ef24431e317317f409511c64483c",
       "v2fly/google-deepmind": "6a9195976e75c2b6adb255ec5cc4af6d8b66d0dd2a877437642deed6da244874",
       "v2fly/openai": "19a100966b3c5b0dff2e7038ba66366ef10d6384781b3eda6de4d1e79712dcc6",
       "v2fly/perplexity": "570581bad658566cb493207c14ebb55110750071071e089b4c40054b00af3db0",
@@ -1612,7 +1612,7 @@
       "v2fly/xai": "1e15c6018174f58f6a2f3710c84566909eee45a8092247280d244cf8ea7cd928"
     },
     "v2fly_repository": "https://github.com/v2fly/domain-list-community",
-    "v2fly_revision": "2c892a618f4e23c549d28edd0f3f75407521b1aa",
+    "v2fly_revision": "e84921279c9142434b43cb84ec6c17f987e025df",
     "voice_url": "https://openai.com/chatgpt-voice.json"
   },
   "vendor_count": 24
