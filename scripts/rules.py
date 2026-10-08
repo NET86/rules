@@ -37,13 +37,20 @@ DOMAIN_RE = re.compile(
     r"(?:[a-z]{2,63}|xn--[a-z0-9](?:[a-z0-9-]{0,57}[a-z0-9])?)\Z"
 )
 TYPES = {"full": "DOMAIN", "domain": "DOMAIN-SUFFIX", "regexp": "DOMAIN-REGEX", "keyword": "DOMAIN-KEYWORD"}
-# Upstream V2Fly changed Copilot tracking entries from @ads to @telemetry.
-# Treat both as non-production metadata, never as service-routing evidence.
+# A V2Fly attribute is classification metadata, not automatic proxy authority.
+# @cn and the legacy @!cn indicate geography; both were explicitly reviewed.
+# New attributes require code review before their rules may enter production.
 NON_PRODUCTION_ATTRIBUTES = frozenset({"@ads", "@telemetry"})
+REVIEWED_NEUTRAL_ATTRIBUTES = frozenset({"@cn", "@!cn"})
+REVIEWED_SOURCE_ATTRIBUTES = NON_PRODUCTION_ATTRIBUTES | REVIEWED_NEUTRAL_ATTRIBUTES
+
+
+def unreviewed_source_attributes(attrs):
+    return sorted(set(attrs) - REVIEWED_SOURCE_ATTRIBUTES)
 
 
 def excluded_by_source_metadata(attrs):
-    return not NON_PRODUCTION_ATTRIBUTES.isdisjoint(attrs)
+    return bool(NON_PRODUCTION_ATTRIBUTES.intersection(attrs) or unreviewed_source_attributes(attrs))
 
 
 FORBIDDEN_CORE = {
@@ -209,9 +216,11 @@ def load_explicit_source(data: Path, name: str):
             yield rule, attrs, name
 
 
-def collect(catalog, patches, data: Path, review_mode=False, selection_issues=None):
-    """One entry per vendor/tier/rule, retaining all source evidence."""
+def collect(catalog, patches, data: Path, review_mode=False, selection_issues=None,
+            attribute_issues=None):
+    """One entry per vendor/tier/rule; quarantine unreviewed upstream attributes."""
     entries = {}
+    unknown_seen = set()
     ids = [v["id"] for v in catalog["vendors"]]
     if len(set(ids)) != len(ids) or any(not re.fullmatch(r"[a-z0-9-]+", x) for x in ids):
         raise ValueError("Invalid or duplicate vendor ID")
@@ -224,6 +233,23 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
             raise ValueError(f"Shared/broad host forbidden in core: {rule.text}")
         entries.setdefault((vendor, tier, rule), set()).add(evidence)
 
+    def source_allowed(vendor, rule, attrs, origin, entrypoint):
+        unknown = unreviewed_source_attributes(attrs)
+        if unknown:
+            if not review_mode or attribute_issues is None:
+                raise ValueError(f"Unreviewed V2Fly attributes require review reporting: {vendor} {rule.text} {unknown}")
+            key = (vendor, entrypoint, origin, rule.text, tuple(unknown))
+            if attribute_issues is not None and key not in unknown_seen:
+                unknown_seen.add(key)
+                attribute_issues.append({
+                    "vendor": vendor, "rule": rule.text,
+                    "source": f"v2fly:data/{origin}", "entrypoint": entrypoint,
+                    "attributes": unknown,
+                    "reason": "unreviewed-upstream-attribute",
+                    "action": "Rule quarantined; review upstream meaning and local attribute policy",
+                })
+        return not excluded_by_source_metadata(attrs)
+
     for vendor in catalog["vendors"]:
         vid = vendor["id"]
         if vendor["group"] not in {"global", "cn"}:
@@ -231,7 +257,7 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
         dropped = patches.get("drop", {}).get(vid, {})
         for source in vendor.get("sources", []):
             for rule, attrs, origin in load_source(data, source):
-                if excluded_by_source_metadata(attrs) or rule.text in dropped:
+                if not source_allowed(vid, rule, attrs, origin, source) or rule.text in dropped:
                     continue
                 add(vid, "core", rule, f"v2fly:data/{origin}")
         for source, selected in vendor.get("select", {}).items():
@@ -247,7 +273,7 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
                         continue
                     raise ValueError(f"Selected upstream domain disappeared or moved behind include: {vid} {value}")
                 for rule, attrs, origin in available[value]:
-                    if excluded_by_source_metadata(attrs) or rule.text in dropped:
+                    if not source_allowed(vid, rule, attrs, origin, source) or rule.text in dropped:
                         continue
                     add(vid, "core", rule, f"v2fly:data/{origin} (selected explicit rule)")
     for patch in patches["add"]:
@@ -418,8 +444,11 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
     if contracts.get("schema") != 2 or set(contracts.get("vendors", {})) != {v["id"] for v in catalog["vendors"]}:
         raise ValueError("New candidates require schema 2 contracts for every maintained vendor")
     patches = read_json(root / "sources/patches.json")
-    selection_issues = []
-    candidates = collect(catalog, patches, snapshot / "v2fly", review_mode=True, selection_issues=selection_issues)
+    selection_issues, attribute_issues = [], []
+    candidates = collect(catalog, patches, snapshot / "v2fly", review_mode=True,
+                         selection_issues=selection_issues, attribute_issues=attribute_issues)
+    if attribute_issues and automation_state is None:
+        raise ValueError("Unreviewed V2Fly attributes require a reconciled and reported sync state")
     state = automation_state if automation_state is not None else read_json(root / "sources/automation-state.json")
     entries = effective_entries(candidates, catalog, patches, state)
     for issue in selection_issues:
