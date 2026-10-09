@@ -27,7 +27,7 @@ REVIEW_REASON_LABELS = {
     "unreviewed-surge-regex-adapter": "新正则 / Surge 适配尚未审核，已隔离",
     "protected-upstream-removal": "关键规则疑似被上游删除，当前继续保留",
     "selected-upstream-domain-disappeared-or-moved": "选定上游目标消失或结构漂移，需要复核",
-    "unreviewed-upstream-attribute": "上游出现未经审核的属性标签，相关新规则隔离并冻结厂商退役观察",
+    "unreviewed-upstream-attribute": "上游出现未经审核的属性标签，相关新规则隔离并冻结对应规则的退役观察",
     "official-uncovered-domain": "官方资料发现未覆盖域名，需要复核",
     "official-patch-evidence-missing": "最近有效官方资料不再覆盖人工补丁，保留授权并等待复核",
     "official-source-unavailable-or-parser-drift": "官方来源不可用或解析结构变化",
