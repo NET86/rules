@@ -798,8 +798,21 @@ class ReleaseTests(unittest.TestCase):
     def test_concurrent_main_edit_is_never_overwritten(self):
         self.assert_main_race_rejected("candidate")
 
-    def test_main_race_during_stable_readback_cannot_report_success(self):
-        self.assert_main_race_rejected("stable")
+    def test_main_race_after_promotion_reports_the_exact_verified_older_candidate(self):
+        newer = []
+        def validate(ref, label, expected):
+            if label == "stable":
+                other = self.git("commit-tree", self.publisher.tree(self.candidate), "-p", self.candidate,
+                                 input="independent development progress\n")
+                self.git("push", "origin", f"{other}:main")
+                newer.append(other)
+        stable = self.publisher.run(self.candidate, validate, self.report, self.verified_refs)
+        self.assertEqual(self.publisher.tree(stable), self.publisher.tree(self.candidate))
+        self.assertEqual(self.report["candidate"], self.candidate)
+        self.assertEqual(self.report["main_after_publication"], newer[0])
+        self.assertTrue(self.report["main_advanced_after_publication"])
+        self.assertEqual(self.report["stable_remote_validation"], "PASS")
+        self.assertNotIn("rollback", self.report)
 
     def test_missing_lkg_fails_before_publication(self):
         self.git("push", "origin", ":last-known-good")
