@@ -26,6 +26,7 @@ from rules import (
     MAX_SOURCE_FILES,
     MAX_SOURCE_RULES,
     ROOT,
+    Rule,
     collect,
     compile_outputs,
     json_text,
@@ -224,6 +225,34 @@ def commit_stage(root: Path, snapshot: Path, files):
     publish_files(root, files)
 
 
+def affected_retirement_keys(previous_manifest, source_issues):
+    """Only suspend deletion for historical routing rules related to an anomaly.
+
+    Healthy, unrelated rules from the same vendor keep their normal automatic
+    retirement.  A verified upstream-wide outage is still handled separately.
+    """
+    affected = set()
+    reviewed = []
+    for issue in source_issues:
+        if issue.get("rule"):
+            observed = Rule.from_text(issue["rule"])
+        elif issue.get("value"):
+            observed = Rule("DOMAIN", issue["value"])
+            observed.validate()
+        else:
+            continue
+        reviewed.append((issue["vendor"], observed))
+    for row in previous_manifest.get("provenance", []):
+        if row.get("tier") != "core":
+            continue
+        prior = Rule.from_text(row["rule"])
+        if any(row["vendor"] == vendor and (
+            prior.matches(current.value) or current.matches(prior.value)
+        ) for vendor, current in reviewed):
+            affected.add((row["vendor"], "core", prior))
+    return affected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-repo", type=Path, help="Use an existing v2fly git repository")
@@ -272,8 +301,8 @@ def main():
             selection_issues, attribute_issues = [], []
             entries = collect(catalog, patches, snapshot / "v2fly", review_mode=True,
                               selection_issues=selection_issues, attribute_issues=attribute_issues)
-            unhealthy_vendors = {row["vendor"] for row in selection_issues + attribute_issues}
             previous = read_json(ROOT / "rules/manifest.json") if (ROOT / "rules/manifest.json").exists() else {}
+            unhealthy_keys = affected_retirement_keys(previous, selection_issues + attribute_issues)
             previous_state = read_json(ROOT / "sources/automation-state.json")
             state, report = reconcile(
                 entries, previous, catalog, patches, previous_state,
@@ -282,7 +311,7 @@ def main():
                 allow_removals=args.allow_reviewed_removals,
                 contracts=contracts,
                 source_observation_healthy=v2fly_fresh,
-                unhealthy_vendors=unhealthy_vendors,
+                unhealthy_keys=unhealthy_keys,
             )
             # Excluded attributes never become candidates/pending; count their
             # individually reported quarantine decisions as well.

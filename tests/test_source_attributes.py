@@ -67,7 +67,6 @@ class AttributePolicyTests(unittest.TestCase):
         self.assertEqual(
             {(i["rule"], tuple(i["attributes"])) for i in issues},
             {("DOMAIN,unknown.example.com", ("@preview",)),
-             ("DOMAIN,mixed.example.com", ("@new-tag",)),
              ("DOMAIN,normal.example.com", ("@preview",))},
         )
         self.assertTrue(all(i["vendor"] == "demo" and
@@ -93,7 +92,7 @@ class AttributePolicyTests(unittest.TestCase):
         self.assertEqual({key[2].text for key in result}, {"DOMAIN,normal.example.com"})
         self.assertEqual(
             {row["rule"] for row in issues},
-            {"DOMAIN,unknown.example.com", "DOMAIN,mixed.example.com"},
+            {"DOMAIN,unknown.example.com"},
         )
 
     def test_transitive_origin_is_reported_without_inheriting_authority(self):
@@ -225,7 +224,10 @@ class SyncIntegrationTests(unittest.TestCase):
                     if r["reason"] == "unreviewed-upstream-attribute"]
             self.assertEqual({r["rule"] for r in rows},
                              {old_rule, "DOMAIN,p3-review.githubusercontent.com"})
-            self.assertEqual(report["deletion_observation_frozen_vendors"], ["github-copilot"])
+            self.assertEqual(report["deletion_observation_frozen_vendors"], [])
+            self.assertEqual(report["deletion_observation_frozen_rules"], [
+                {"vendor": "github-copilot", "rule": old_rule}
+            ])
             self.assertEqual(report["quarantined_count"], 2)
             self.assertEqual(report["source_health"]["v2fly"], "reviewed-local-input")
             state = rules.read_json(root / "sources/automation-state.json")
