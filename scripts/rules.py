@@ -234,6 +234,10 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
         entries.setdefault((vendor, tier, rule), set()).add(evidence)
 
     def source_allowed(vendor, rule, attrs, origin, entrypoint):
+        # Already excluded advertising/telemetry cannot acquire authority via
+        # any other tag; skip it without creating pointless review work.
+        if NON_PRODUCTION_ATTRIBUTES.intersection(attrs):
+            return False
         unknown = unreviewed_source_attributes(attrs)
         if unknown:
             if not review_mode or attribute_issues is None:
@@ -257,7 +261,7 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
         dropped = patches.get("drop", {}).get(vid, {})
         for source in vendor.get("sources", []):
             for rule, attrs, origin in load_source(data, source):
-                if not source_allowed(vid, rule, attrs, origin, source) or rule.text in dropped:
+                if rule.text in dropped or not source_allowed(vid, rule, attrs, origin, source):
                     continue
                 add(vid, "core", rule, f"v2fly:data/{origin}")
         for source, selected in vendor.get("select", {}).items():
@@ -273,7 +277,7 @@ def collect(catalog, patches, data: Path, review_mode=False, selection_issues=No
                         continue
                     raise ValueError(f"Selected upstream domain disappeared or moved behind include: {vid} {value}")
                 for rule, attrs, origin in available[value]:
-                    if not source_allowed(vid, rule, attrs, origin, source) or rule.text in dropped:
+                    if rule.text in dropped or not source_allowed(vid, rule, attrs, origin, source):
                         continue
                     add(vid, "core", rule, f"v2fly:data/{origin} (selected explicit rule)")
     for patch in patches["add"]:
