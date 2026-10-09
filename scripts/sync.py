@@ -247,7 +247,7 @@ def affected_retirement_keys(previous_manifest, source_issues):
             continue
         prior = Rule.from_text(row["rule"])
         if any(row["vendor"] == vendor and (
-            prior.matches(current.value) or current.matches(prior.value)
+            prior == current or prior.matches(current.value) or current.matches(prior.value)
         ) for vendor, current in reviewed):
             affected.add((row["vendor"], "core", prior))
     return affected
