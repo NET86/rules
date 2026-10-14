@@ -15,6 +15,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urljoin, urlsplit
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -42,29 +43,100 @@ from rules import (
 VOICE_URL = "https://openai.com/chatgpt-voice.json"
 
 
-def fetch(url: str, limit=4_000_000, attempts=3) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": "NET86-rules/1.0", "Accept": "*/*"})
+def fetch_timeout(deadline, normal=45):
+    if deadline is None:
+        return normal
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError('Upstream fetch deadline exhausted')
+    return min(normal, remaining)
+
+
+def fetch(url: str, limit=4_000_000, attempts=3, *, deadline=None, diagnostics=None, allowed_hosts=None) -> bytes:
+    def trusted(target):
+        if allowed_hosts is None:
+            return
+        parsed = urlsplit(target)
+        if allowed_hosts is not None and (parsed.scheme != 'https' or parsed.hostname not in allowed_hosts
+                                         or parsed.port not in (None, 443) or parsed.username or parsed.password):
+            raise ValueError('Official redirect outside approved HTTPS hosts: '+target)
+
+    def trace(**fields):
+        if diagnostics is not None:
+            diagnostics.append(fields)
+
+    class Redirects(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            target = urljoin(req.full_url, newurl)
+            trace(url=req.full_url, status=code, location=headers.get('Location'), target=target)
+            trusted(target)
+            req.timeout = fetch_timeout(deadline)
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+        def http_error_302(self, req, fp, code, msg, headers):
+            # Metadata redirect bodies have no authority. In particular they
+            # must not drain an unbounded body before the next deadline check.
+            class NoBody:
+                def read(self, *args): return b''
+                def close(self): fp.close()
+            try:
+                return super().http_error_302(req, NoBody(), code, msg, headers)
+            finally:
+                fp.close()
+        http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
+
+    trusted(url)
     for attempt in range(attempts):
+        request = urllib.request.Request(url, headers={"User-Agent": "NET86-rules/1.0", "Accept": "*/*"})
+        timeout = fetch_timeout(deadline)
         try:
-            with urllib.request.urlopen(request, timeout=45) as response:
+            opener = (urllib.request.build_opener(Redirects()).open
+                      if allowed_hosts is not None or deadline is not None else urllib.request.urlopen)
+            with opener(request, timeout=timeout) as response:
+                final = response.geturl() if hasattr(response, 'geturl') else url
+                trusted(final)
+                trace(url=url, status=getattr(response, 'status', None), final_url=final, attempt=attempt + 1)
                 if response.headers.get("Content-Encoding", "").lower() == "gzip":
                     try:
                         with gzip.GzipFile(fileobj=response) as decoded:
-                            data = decoded.read(limit + 1)
+                            data = read_fetch_body(decoded, response, limit, deadline)
                     except (EOFError, zlib.error) as exc:
                         raise ValueError("Invalid gzip response") from exc
                 else:
-                    data = response.read(limit + 1)
+                    data = read_fetch_body(response, response, limit, deadline)
+                fetch_timeout(deadline)
             if not data or len(data) > limit:
                 raise ValueError(f"Empty or oversized upstream response: {url}")
             return data
         except (OSError, ValueError) as exc:
+            trace(url=url, status=getattr(exc, 'code', None), error_type=type(exc).__name__, error_detail=str(exc)[:300],
+                  location=getattr(exc, 'headers', {}).get('Location') if getattr(exc, 'headers', None) else None)
+            if isinstance(exc, urllib.error.HTTPError):
+                exc.close()
             if isinstance(exc, urllib.error.HTTPError) and exc.code not in {408, 429, 500, 502, 503, 504}:
                 raise
             if attempt == attempts - 1:
                 raise
-            time.sleep(0.5 * (2 ** attempt))
+            time.sleep(min(0.5 * (2 ** attempt), fetch_timeout(deadline)))
     raise ValueError("No download attempts configured")
+
+
+def read_fetch_body(reader, response, limit, deadline):
+    if deadline is None:
+        return reader.read(limit + 1)
+    chunks = bytearray()
+    read = getattr(reader, 'read1', reader.read)
+    while len(chunks) <= limit:
+        timeout = fetch_timeout(deadline)
+        sock = getattr(getattr(getattr(response, 'fp', None), 'raw', None), '_sock', None)
+        if sock is not None:
+            sock.settimeout(timeout)
+        chunk = read(min(65536, limit + 1 - len(chunks)))
+        fetch_timeout(deadline)
+        if not chunk:
+            break
+        chunks.extend(chunk)
+    return bytes(chunks)
 
 
 def voice_change_problem(before, after):

@@ -7,6 +7,8 @@ import html
 import json
 import re
 import urllib.error
+from datetime import datetime, timezone
+from urllib.parse import urljoin, urlsplit
 from html.parser import HTMLParser
 
 from rules import ROOT, Rule, read_json, json_text, sha256, parse_v2fly, excluded_by_source_metadata
@@ -135,34 +137,66 @@ def extract_document(source, payload):
     })
 
 
-def fetch_official(source, fetch):
+def fetch_official(source, fetch, *, diagnostics=None):
+    diagnostics = diagnostics if diagnostics is not None else []
+    pinned_openai = source['url'] == 'https://help.openai.com/en/articles/9247338'
     try:
+        from sync import fetch as standard_fetch
+        if fetch is standard_fetch:
+            data = fetch(source['url'], diagnostics=diagnostics,
+                         allowed_hosts={'help.openai.com'} if pinned_openai else None)
+            return data, 'standard-https'
         return fetch(source["url"]), "standard-https"
     except urllib.error.HTTPError as exc:
-        if exc.code != 403 or source["url"] != "https://help.openai.com/en/articles/9247338":
-            raise
+        diagnostics.append(dict(url=source['url'], status=exc.code, transport='standard-https',
+                                location=exc.headers.get('Location') if exc.headers else None))
         exc.close()
+        if exc.code != 403 or not pinned_openai:
+            raise
     try:
         from curl_cffi import requests
-        chunks, size = [], 0
-
-        def receive(chunk):
-            nonlocal size
-            size += len(chunk)
-            if size > 4_000_000:
-                raise ValueError("Oversized official document")
-            chunks.append(chunk)
-
-        response = requests.get(
-            source["url"], impersonate="chrome", timeout=30,
-            allow_redirects=False, content_callback=receive,
-        )
-        response.raise_for_status()
-        if response.status_code != 200 or not size:
-            raise ValueError("Unexpected official response")
-        return b"".join(chunks), "browser-compatible-https"
+        current, seen = source['url'], set()
+        for _ in range(6):
+            if current in seen:
+                raise ValueError('Official redirect loop')
+            seen.add(current)
+            parsed = urlsplit(current)
+            if (parsed.scheme != 'https' or parsed.hostname != 'help.openai.com'
+                    or parsed.port not in (None, 443) or parsed.username or parsed.password):
+                raise ValueError('Official redirect outside approved HTTPS hosts: '+current)
+            chunks, size = [], 0
+            def receive(chunk):
+                nonlocal size
+                size += len(chunk)
+                if size > 4_000_000:
+                    raise ValueError('Oversized official document')
+                chunks.append(chunk)
+            response = requests.get(current, impersonate='chrome', timeout=30,
+                                    allow_redirects=False, content_callback=receive)
+            try:
+                status = response.status_code
+                location = getattr(response, 'headers', {}).get('Location')
+                diagnostics.append(dict(url=current, status=status, location=location, transport='browser-compatible-https',
+                                        final_url=current if status == 200 else None))
+                if status in {301, 302, 303, 307, 308}:
+                    if not location:
+                        raise ValueError('Official redirect lacks Location')
+                    current = urljoin(current, location)
+                    diagnostics[-1]['target'] = current
+                    continue
+                response.raise_for_status()
+                if status != 200 or not size:
+                    raise ValueError('Unexpected official response: HTTP '+str(status))
+                return b''.join(chunks), 'browser-compatible-https'
+            finally:
+                close = getattr(response, 'close', None)
+                if close is not None:
+                    close()
+        raise ValueError('Too many official redirects')
     except Exception as exc:
-        raise OSError(f"Official HTTPS fallback failed: {type(exc).__name__}: {error_detail(exc)}") from exc
+        error = OSError(f"Official HTTPS fallback failed: {type(exc).__name__}: {error_detail(exc)}")
+        error.diagnostics = diagnostics
+        raise error from exc
 
 
 def refresh_official(root, fetch):
@@ -171,17 +205,25 @@ def refresh_official(root, fetch):
     if not isinstance(state, dict) or state.get("schema") != 1 or not isinstance(state.get("documents"), dict):
         raise ValueError("Invalid official state structure")
     updated = {"schema": 1, "documents": {}}
+    observations = dict(state.get('observations', {}))
     report = {"sources": {}, "review_required": []}
     sources = read_json(root / "sources/official.json")["sources"]
     for source in sources:
+        previous_observation = observations.get(source['id'], {})
+        if (not isinstance(previous_observation, dict) or previous_observation.get('url') != source['url']
+                or previous_observation.get('vendor') != source['vendor']):
+            observations.pop(source['id'], None)
         try:
             updated["documents"][source["id"]] = validate_document(source, state["documents"].get(source["id"]))
         except ValueError:
             pass  # A fresh response can repair it; an invalid baseline cannot be retained.
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        jobs = {pool.submit(fetch_official, source, fetch): source for source in sources}
+        jobs = {}
+        for source in sources:
+            diagnostics = []
+            jobs[pool.submit(fetch_official, source, fetch, diagnostics=diagnostics)] = (source, diagnostics)
         for job in concurrent.futures.as_completed(jobs):
-            source = jobs[job]
+            source, diagnostics = jobs[job]
             try:
                 payload, transport = job.result()
                 doc = extract_document(source, payload)
@@ -194,6 +236,8 @@ def refresh_official(root, fetch):
                 # The current document hash remains visible in this run report.
                 if facts_changed:
                     updated["documents"][source["id"]] = doc
+                stamp = datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+                observations[source['id']] = {'last_success_at': stamp, 'url': source['url'], 'vendor': source['vendor']}
                 report["sources"][source["id"]] = {
                     "status": "fresh",
                     "changed": facts_changed,
@@ -201,6 +245,8 @@ def refresh_official(root, fetch):
                     "document_sha256": doc["document_sha256"],
                     "rule_count": len(doc["rules"]),
                     "transport": transport,
+                    'last_success_at': stamp,
+                    'diagnostics': diagnostics,
                 }
             except (OSError, ValueError, KeyError) as exc:
                 detail = error_detail(exc)
@@ -208,6 +254,8 @@ def refresh_official(root, fetch):
                     "status": "retained-last-good" if source["id"] in updated["documents"] else "unavailable-no-baseline",
                     "error_type": type(exc).__name__,
                     "error_detail": detail,
+                    'last_success_at': observations.get(source['id'], {}).get('last_success_at'),
+                    'diagnostics': diagnostics,
                 }
                 report["review_required"].append({
                     "source_id": source["id"],
@@ -216,7 +264,11 @@ def refresh_official(root, fetch):
                     "status": report["sources"][source["id"]]["status"],
                     "error_type": type(exc).__name__,
                     "error_detail": detail,
+                    'last_success_at': observations.get(source['id'], {}).get('last_success_at'),
+                    'diagnostics': diagnostics,
                 })
+    if observations:
+        updated['observations'] = observations
     return updated, report
 
 
