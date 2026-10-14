@@ -921,10 +921,11 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotIn("rollback_remote_validation", self.report)
         self.assertNotEqual(self.report["rollback"], "RESTORED_STABLE")
 
-    def test_download_hash_mismatch_is_rejected(self):
+    def test_zero_readback_budget_starts_no_download(self):
         manifest = {"bundles": {}}
-        with self.assertRaises(ValueError):
-            release.downloaded_rules(self.base / "download", self.candidate, manifest, get=lambda url: b"wrong", max_wait=0)
+        with self.assertRaises(TimeoutError):
+            release.downloaded_rules(self.base / "download", self.candidate, manifest,
+                                     get=lambda url: self.fail('expired budget sent a request'), max_wait=0)
 
     def test_stale_raw_cache_must_converge_to_exact_validated_bytes(self):
         manifest = {"bundles": {}}

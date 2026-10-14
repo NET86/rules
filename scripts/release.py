@@ -474,8 +474,13 @@ def downloaded_rules(root, revision, expected, get=fetch, max_wait=420, pause=ti
         # bytes as the new release and never weaken the expected digest.
         waiting = False
         while True:
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f'Published artifact readback deadline exhausted: {path}')
             try:
-                data = get(prefix + path + "?verified=" + digest[:16])
+                url = prefix + path + '?verified=' + digest[:16]
+                data = get(url, deadline=deadline) if get is fetch else get(url)
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f'Published artifact readback deadline exhausted: {path}')
                 if sha256(data) != digest:
                     raise ValueError(f"Published artifact mismatch: {path}")
                 break
