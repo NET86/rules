@@ -95,6 +95,8 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
     contracts = contracts or {"vendors": {}}
     unhealthy_vendors = set(unhealthy_vendors)
     unhealthy_keys = set(unhealthy_keys)
+    quarantined_regexes = {rule for _, _, rule in unhealthy_keys
+                           if rule.kind == "DOMAIN-REGEX"}
     accepted = {
         key: set(value)
         for key, value in candidates.items()
@@ -164,9 +166,12 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
         if first:
             row["first_missing"] = first
 
-        remaining = {k for k in available if k != key and k[0] == vendor and k[1] == tier}
+        remaining = {k for k in available if k != key and k[0] == vendor and k[1] == tier
+                     and k[2] not in quarantined_regexes}
         critical_hosts = contracts.get("vendors", {}).get(vendor, {}).get("must_match", [])
-        protected = not remaining or (tier == "core" and any(
+        # Quarantined patterns cannot establish either lost or replacement
+        # coverage. Keep them without running their matcher.
+        protected = rule in quarantined_regexes or not remaining or (tier == "core" and any(
             rule.matches(host) and not any(k[2].matches(host) for k in remaining)
             for host in critical_hosts
         ))
@@ -176,7 +181,8 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
                 if vendor not in members:
                     continue
                 profile_hosts = contracts.get("profiles", {}).get(profile, {}).get("must_match", [])
-                profile_remaining = {k for k in available if k != key and k[0] in members and k[1] == "core"}
+                profile_remaining = {k for k in available if k != key and k[0] in members
+                                     and k[1] == "core" and k[2] not in quarantined_regexes}
                 if any(rule.matches(host) and not any(k[2].matches(host) for k in profile_remaining)
                        for host in profile_hosts):
                     protected = True

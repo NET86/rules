@@ -438,6 +438,13 @@ def subscription_index(catalog):
     return "\n".join(lines)
 
 
+def reviewed_match_entries(entries, source_issues):
+    """Keep historical routing baselines separate from current matcher authority."""
+    quarantined = {Rule.from_text(issue["rule"]) for issue in source_issues
+                   if issue.get("rule", "").startswith("DOMAIN-REGEX,")}
+    return {key: sources for key, sources in entries.items() if key[2] not in quarantined}
+
+
 def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=None):
     from automation import effective_entries, scope_problem
     snapshot = snapshot or root / "sources" / "snapshot"
@@ -455,10 +462,11 @@ def compile_outputs(root: Path, snapshot: Path | None = None, automation_state=N
         raise ValueError("Unreviewed V2Fly attributes require a reconciled and reported sync state")
     state = automation_state if automation_state is not None else read_json(root / "sources/automation-state.json")
     entries = effective_entries(candidates, catalog, patches, state)
+    matcher_entries = reviewed_match_entries(entries, attribute_issues)
     for issue in selection_issues:
         if not any(
             vendor == issue["vendor"] and tier == "core" and rule.matches(issue["value"])
-            for vendor, tier, rule in entries
+            for vendor, tier, rule in matcher_entries
         ):
             raise ValueError(
                 f"Selected upstream domain lost effective coverage: {issue['vendor']} {issue['value']}"

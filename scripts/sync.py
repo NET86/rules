@@ -33,6 +33,7 @@ from rules import (
     parse_v2fly,
     publish_files,
     read_json,
+    reviewed_match_entries,
     sha256,
     voice_rules,
     verify_snapshot,
@@ -228,8 +229,9 @@ def commit_stage(root: Path, snapshot: Path, files):
 def affected_retirement_keys(previous_manifest, source_issues):
     """Only suspend deletion for historical routing rules related to an anomaly.
 
-    Healthy, unrelated rules from the same vendor keep their normal automatic
-    retirement.  A verified upstream-wide outage is still handled separately.
+    Literal anomalies leave unrelated rules eligible for retirement. Quarantined
+    regexes are never evaluated; unknown overlap freezes same-vendor core domain
+    rules. A verified upstream-wide outage is still handled separately.
     """
     affected = set()
     reviewed = []
@@ -242,13 +244,24 @@ def affected_retirement_keys(previous_manifest, source_issues):
         else:
             continue
         reviewed.append((issue["vendor"], observed))
+    quarantined_regexes = {rule for _, rule in reviewed if rule.kind == "DOMAIN-REGEX"}
+
+    def related(prior, current):
+        if prior == current:
+            return True
+        if current.kind == "DOMAIN-REGEX" or prior in quarantined_regexes:
+            # An unreviewed pattern cannot safely establish non-overlap. This
+            # also prevents evaluating it through an identical historical Rule
+            # when a literal issue appears earlier in the issue list.
+            return prior.kind.startswith("DOMAIN") and current.kind.startswith("DOMAIN")
+        return prior.matches(current.value) or current.matches(prior.value)
+
     for row in previous_manifest.get("provenance", []):
         if row.get("tier") != "core":
             continue
         prior = Rule.from_text(row["rule"])
-        if any(row["vendor"] == vendor and (
-            prior == current or prior.matches(current.value) or current.matches(prior.value)
-        ) for vendor, current in reviewed):
+        if any(row["vendor"] == vendor and related(prior, current)
+               for vendor, current in reviewed):
             affected.add((row["vendor"], "core", prior))
     return affected
 
@@ -318,14 +331,15 @@ def main():
             report["quarantined_count"] += len(attribute_issues)
 
             effective = effective_entries(entries, catalog, patches, state)
-            official_radar = analyze_official(ROOT, official_state, effective)
+            matcher_entries = reviewed_match_entries(effective, attribute_issues)
+            official_radar = analyze_official(ROOT, official_state, matcher_entries)
             report["source_health"] = {
                 "v2fly": "reviewed-local-input" if args.source_repo else ("fresh" if v2fly_fresh else "retained-last-good"),
                 "openai_voice": voice_status,
                 "official_facts": official_fetch_report["sources"],
             }
             report["official_radar"] = official_radar
-            report["selection_radar"] = analyze_selected_sources(ROOT, snapshot / "v2fly", effective)
+            report["selection_radar"] = analyze_selected_sources(ROOT, snapshot / "v2fly", matcher_entries)
             if voice_status not in {"fresh", "reviewed-local-input"}:
                 report["review_required"].append({
                     "reason": "official-voice-suspicious-change" if voice_status == "retained-suspicious-change" else "official-voice-fetch-unavailable",

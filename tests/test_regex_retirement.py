@@ -26,15 +26,16 @@ class RegexRetirementTests(unittest.TestCase):
         self.assertFalse(self.regex.matches(self.regex.value))
         self.assertTrue(self.regex.matches('chatgpt-async-webps-prod-a-1.webpubsub.azure.com'))
         self.assertEqual(affected_retirement_keys(self.manifest, self.issues),
-                         {('openai', 'core', self.regex)})
+                         {('openai', 'core', rule) for rule in
+                          (self.regex, self.active, self.unrelated)})
 
-    def test_same_vendor_unrelated_rules_are_not_frozen(self):
+    def test_same_vendor_domain_rules_are_frozen_when_regex_overlap_is_unknown(self):
         unrelated_regex = Rule('DOMAIN-REGEX', r'^other-\d+\.example\.com$')
         manifest = {'provenance': self.rows + [row_of(('openai', 'core', unrelated_regex), self.origin)]}
         affected = affected_retirement_keys(manifest, self.issues)
-        self.assertNotIn(('openai', 'core', unrelated_regex), affected)
-        self.assertNotIn(('openai', 'core', self.unrelated), affected)
-        self.assertNotIn(('openai', 'core', self.active), affected)
+        self.assertIn(('openai', 'core', unrelated_regex), affected)
+        self.assertIn(('openai', 'core', self.unrelated), affected)
+        self.assertIn(('openai', 'core', self.active), affected)
 
     def test_identity_match_does_not_cross_vendor_or_tier_boundaries(self):
         manifest = {'provenance': [row_of(('other', 'core', self.regex), self.origin),
@@ -51,15 +52,20 @@ class RegexRetirementTests(unittest.TestCase):
                          {('openai', 'core', suffix), ('openai', 'core', specific)})
 
     def test_aged_anomalous_regex_is_retained_but_healthy_unrelated_removal_continues(self):
+        # Another vendor is provably outside this quarantined pattern's scope.
+        rows = [dict(row, vendor='other') if row['rule'] == self.unrelated.text else row
+                for row in self.rows]
         retained = [dict(row, first_missing='2026-09-01', observation_days=['2026-09-01', '2026-09-02', '2026-09-03'])
-                    for row in self.rows if row['rule'] != self.active.text]
-        catalog = {'vendors': [{'id': 'openai', 'sources': ['openai']}], 'profiles': {}}
+                    for row in rows if row['rule'] != self.active.text]
+        catalog = {'vendors': [{'id': vendor, 'sources': ['openai']}
+                               for vendor in ('openai', 'other')], 'profiles': {}}
         patches = {'add': [], 'drop': {}, 'surge_regex': {self.regex.value: {}}}
         state, report = reconcile(
-            {('openai', 'core', self.active): self.origin}, self.manifest, catalog, patches,
+            {('openai', 'core', self.active): self.origin,
+             ('other', 'core', self.active): self.origin}, {'provenance': rows}, catalog, patches,
             {'pending': [], 'retained': retained},
             {'removal_grace_days': 14, 'removal_min_observation_days': 3},
-            today=date(2026, 10, 9), unhealthy_keys=affected_retirement_keys(self.manifest, self.issues))
+            today=date(2026, 10, 9), unhealthy_keys=affected_retirement_keys({'provenance': rows}, self.issues))
         self.assertEqual([row['rule'] for row in state['retained']], [self.regex.text])
         self.assertNotIn('2026-10-09', state['retained'][0]['observation_days'])
         self.assertEqual([row['rule'] for row in report['automatically_removed']], [self.unrelated.text])
