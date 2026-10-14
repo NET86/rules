@@ -426,9 +426,9 @@ def main():
 
             files = compile_outputs(ROOT, snapshot, state)
             commit_stage(ROOT, snapshot, files)
-            # Persist the latest successfully parsed official fact baseline. This file
-            # has no run timestamp, so unchanged facts produce no commit noise. Stable
-            # promotion depends on subscription content/contracts, not radar-only state.
+            # Persist parsed official facts and separate last-success observations.
+            # Observation timestamps may change this file; stable/LKG promotion
+            # depends on subscription content/contracts, not radar-only state.
             (ROOT / "sources/official-state.json").write_text(json_text(official_state), encoding="utf-8", newline="\n")
             (ROOT / "sources/automation-state.json").write_text(json_text(state), encoding="utf-8", newline="\n")
             print(f"OK: synchronized {len(files)} artifacts after scope, schema and integrity checks")
