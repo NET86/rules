@@ -2,7 +2,7 @@
 """Read-only secondary radar: report uncovered narrow domains, never mutate production."""
 
 from automation import scope_problem, vendor_spec
-from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json, excluded_by_source_metadata
+from rules import ROOT, Rule, forbidden_core, json_text, load_explicit_source, load_source, read_json, excluded_by_source_metadata, unreviewed_source_attributes
 from sync import fetch
 
 
@@ -35,6 +35,7 @@ BLOCK_REASON_LABELS = {
     "unsupported-tier": "规则层级不受当前生产模型支持",
     "radar-read-only": "主来源已收录，等待规则同步",
     "upstream-nonproduction-excluded": "上游条目标记为广告或遥测，不会自动进入生产",
+    "unreviewed-upstream-attribute": "上游属性标签未经审核，不能成为生产授权",
     "unmapped-sukka-section": "Sukka 区段尚未对应到本地厂商",
 }
 
@@ -238,10 +239,13 @@ def enrich_pending(pending, catalog, patches, official_state, data):
             else:
                 origins = evidence_origins(candidate, vendor, catalog, upstream)
                 block = scope_problem((vendor, "core", candidate), origins, catalog, patches) or "radar-read-only"
-                if block == "source-not-authorized-by-catalog" and all(
-                    excluded_by_source_metadata(match.get("attributes", [])) for match in upstream["matches"] if match["relation"] == "exact"
+                exact = [match for match in upstream["matches"] if match["relation"] == "exact"]
+                if block == "source-not-authorized-by-catalog" and exact and all(
+                    excluded_by_source_metadata(match.get("attributes", [])) for match in exact
                 ):
-                    block = "upstream-nonproduction-excluded"
+                    block = ("unreviewed-upstream-attribute" if any(
+                        unreviewed_source_attributes(match.get("attributes", [])) for match in exact
+                    ) else "upstream-nonproduction-excluded")
             row["block_reason"] = block
         row["block_reason_label"] = BLOCK_REASON_LABELS.get(row["block_reason"], row["block_reason"])
         enriched.append(row)

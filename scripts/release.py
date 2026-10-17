@@ -16,6 +16,7 @@ from pathlib import Path
 from rules import ROOT, json_text, sha256
 from sync import fetch
 from verify_rules import verify
+from runtime_cache import RuntimeGateSession
 
 AUTO_PATHS = ["sources/snapshot", "sources/official-state.json", "sources/automation-state.json", "rules"]
 SUMMARY_LIMIT = 10
@@ -27,6 +28,7 @@ REVIEW_REASON_LABELS = {
     "unreviewed-surge-regex-adapter": "新正则 / Surge 适配尚未审核，已隔离",
     "protected-upstream-removal": "关键规则疑似被上游删除，当前继续保留",
     "selected-upstream-domain-disappeared-or-moved": "选定上游目标消失或结构漂移，需要复核",
+    "unreviewed-upstream-attribute": "上游出现未经审核的属性标签，相关新规则隔离并冻结对应规则的退役观察",
     "official-uncovered-domain": "官方资料发现未覆盖域名，需要复核",
     "official-patch-evidence-missing": "最近有效官方资料不再覆盖人工补丁，保留授权并等待复核",
     "official-source-unavailable-or-parser-drift": "官方来源不可用或解析结构变化",
@@ -80,6 +82,8 @@ def format_review_item(row):
         parts.append(str(row["tier"]))
     reason = row.get("reason", "unknown")
     text = " · ".join(parts) + " — " + REVIEW_REASON_LABELS.get(reason, reason)
+    if row.get("attributes"):
+        text += "（标签：" + ", ".join(row["attributes"]) + "）"
     if row.get("error_type"):
         text += f"（{row['error_type']}）"
     return text
@@ -100,6 +104,13 @@ def render_actions_summary(before, after, sync_report, release_report, limit=SUM
         lines.append("- stable：已更新并通过远端验证")
     else:
         lines.append("- 未确认新的稳定版本发布成功；以回读和恢复结果为准。")
+    if release_report.get("main_advanced_after_publication"):
+        lines.append("- main 已有后续开发提交；本次只确认上述候选的稳定发布，不声称包含最新 main。")
+    if release_report.get("main_observation_error"):
+        lines.append("- 发布后 main 状态暂不可读；稳定版结果仅以独立内容及 stable/LKG 回读为准。")
+    runtime = release_report.get("runtime_validation", {})
+    if runtime:
+        lines.append(f"- 本进程原生验证：执行 {runtime.get('native_executions', 0)} 组，复用 {runtime.get('reused_checks', 0)} 组；每次远端内容及引用仍独立回读。")
     stable_label = "稳定提交" if release_report.get("result") == "PASS" else "本次目标 stable"
     for key, label in (("candidate", "候选提交"), ("stable_revision", stable_label),
                        ("stable_after_failure", "失败后 stable（观测值）"),
@@ -388,7 +399,16 @@ class Publisher:
                 report["stable_noop"] = "UNCHANGED_RELEASE_CONTENT"
             report["stable_revision"] = promoted
             validate_published("stable", "stable", promoted)
-            self.require_refs({"main": candidate, "stable": promoted, "last-known-good": active_lkg})
+            # Once published, a newer development commit does not invalidate the
+            # exact stable content just verified. Never roll back a good release
+            # merely because an unrelated main update finished in the meantime.
+            try:
+                main_after = self.remote_ref("main")
+                report["main_after_publication"] = main_after
+                report["main_advanced_after_publication"] = bool(main_after and main_after != candidate)
+            except (OSError, subprocess.SubprocessError) as observation_error:
+                report["main_observation_error"] = type(observation_error).__name__
+            self.require_refs({"stable": promoted, "last-known-good": active_lkg})
             report.update(result="PASS", stable_remote_validation="PASS")
             return promoted
         except Exception as exc:
@@ -454,8 +474,13 @@ def downloaded_rules(root, revision, expected, get=fetch, max_wait=420, pause=ti
         # bytes as the new release and never weaken the expected digest.
         waiting = False
         while True:
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f'Published artifact readback deadline exhausted: {path}')
             try:
-                data = get(prefix + path + "?verified=" + digest[:16])
+                url = prefix + path + '?verified=' + digest[:16]
+                data = get(url, deadline=deadline) if get is fetch else get(url)
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f'Published artifact readback deadline exhausted: {path}')
                 if sha256(data) != digest:
                     raise ValueError(f"Published artifact mismatch: {path}")
                 break
@@ -500,6 +525,7 @@ def main():
     work.mkdir(exist_ok=True)
     report = {"result": "RECOVERY_PREFLIGHT" if args.recover_only else "PREVALIDATING"}
     publisher = Publisher(ROOT)
+    gate_session = None
     try:
         publisher.git("config", "user.name", "github-actions[bot]")
         publisher.git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
@@ -519,18 +545,19 @@ def main():
         if args.flclash_core is None:
             raise ValueError("--flclash-core is required for full publication validation")
         binaries = [("mihomo", args.mihomo.resolve()), ("flclash-core", args.flclash_core.resolve())]
+        gate_session = RuntimeGateSession(runtime_gate, ROOT)
 
         def healthcheck(ref, expected_revision):
             expected = json.loads(publisher.git("show", f"{expected_revision}:rules/manifest.json"))
             with tempfile.TemporaryDirectory(prefix="release-health-", dir=work) as td:
                 target = Path(td)
                 downloaded_rules(target, ref, expected)
-                runtime_gate(target, binaries)
+                gate_session(target, binaries)
 
         verified_refs = publisher.recover_stable(healthcheck, report)
         subprocess.run([sys.executable, "scripts/rules.py", "--check"], cwd=ROOT, check=True)
         for profile in ("ai-daily", "split", "ai-cn"):
-            runtime_gate(ROOT, binaries, profile)
+            gate_session(ROOT, binaries, profile)
         publisher.git("add", "--", *AUTO_PATHS)
         if publisher.git("diff", "--cached", "--name-only"):
             publisher.git("commit", "-m", "chore: sync verified production rules")
@@ -542,7 +569,7 @@ def main():
                 target = Path(td)
                 manifest = json.loads(publisher.git("show", f"{expected_revision}:rules/manifest.json"))
                 count = downloaded_rules(target, revision, manifest)
-                runtime_gate(target, binaries)
+                gate_session(target, binaries)
                 report[label + "_artifact_count"] = count
                 for path in (target / ".work").glob("*validation*.json"):
                     (work / f"published-{label}-{path.name}").write_bytes(path.read_bytes())
@@ -554,6 +581,8 @@ def main():
             report.update(result="PREVALIDATION_FAILED", rollback="NOT_NEEDED_NO_PUBLICATION")
         raise
     finally:
+        if gate_session is not None:
+            report["runtime_validation"] = dict(gate_session.stats)
         name = "recovery-report.json" if args.recover_only else "release-report.json"
         (work / name).write_text(json_text(report), encoding="utf-8")
         print(json_text(report))

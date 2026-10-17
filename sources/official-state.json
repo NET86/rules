@@ -169,18 +169,20 @@
       "vendor": "tencent-ai"
     },
     "openai-network": {
-      "document_sha256": "d3f66231c2d77665191f358c7aac38851298cc67cf6691486fb5525c75e621e3",
+      "document_sha256": "f2cd6617de5ec2d79b94f6c231e8f2e97c0589cdd5e43b1672a310b01415d488",
       "extractor": 1,
       "rules": [
         "DOMAIN,android.chat.openai.com",
         "DOMAIN,auth0.openai.com",
         "DOMAIN,cdn.openaimerge.com",
+        "DOMAIN,cdn.platform.openai.com",
         "DOMAIN,cdn.workos.com",
         "DOMAIN,challenges.cloudflare.com",
         "DOMAIN,chat.openai.com",
         "DOMAIN,chatgpt.com",
         "DOMAIN,desktop.chat.openai.com",
         "DOMAIN,forwarder.workos.com",
+        "DOMAIN,frontend-apps-multi-region.workos.com",
         "DOMAIN,humb.apple.com",
         "DOMAIN,images.workoscdn.com",
         "DOMAIN,ios.chat.openai.com",
@@ -213,6 +215,53 @@
       "rules": [
         "DOMAIN,spark-api-open.xf-yun.com"
       ],
+      "url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
+      "vendor": "iflytek-spark"
+    }
+  },
+  "observations": {
+    "anthropic-network": {
+      "last_success_at": "2026-10-17T16:02:36Z",
+      "url": "https://code.claude.com/docs/en/corporate-proxy",
+      "vendor": "claude"
+    },
+    "cursor-cloud-agent": {
+      "last_success_at": "2026-10-17T16:02:36Z",
+      "url": "https://cursor.com/docs/cloud-agent/self-hosted/pool",
+      "vendor": "cursor"
+    },
+    "cursor-network": {
+      "last_success_at": "2026-10-17T16:02:36Z",
+      "url": "https://cursor.com/docs/enterprise/network-configuration",
+      "vendor": "cursor"
+    },
+    "github-copilot-network": {
+      "last_success_at": "2026-10-17T16:02:37Z",
+      "url": "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference",
+      "vendor": "github-copilot"
+    },
+    "google-codeassist": {
+      "last_success_at": "2026-10-17T16:02:36Z",
+      "url": "https://docs.cloud.google.com/gemini/docs/codeassist/set-up-gemini?hl=en",
+      "vendor": "google-ai"
+    },
+    "google-generative-api": {
+      "last_success_at": "2026-10-17T16:02:36Z",
+      "url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
+      "vendor": "google-ai"
+    },
+    "hunyuan-regions": {
+      "last_success_at": "2026-10-17T16:02:37Z",
+      "url": "https://cloud.tencent.com/document/product/1729/101841",
+      "vendor": "tencent-ai"
+    },
+    "openai-network": {
+      "last_success_at": "2026-10-14T16:02:57Z",
+      "url": "https://help.openai.com/en/articles/9247338",
+      "vendor": "openai"
+    },
+    "spark-http": {
+      "last_success_at": "2026-10-17T16:02:38Z",
       "url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
       "vendor": "iflytek-spark"
     }

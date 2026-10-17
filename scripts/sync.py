@@ -15,6 +15,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urljoin, urlsplit
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -26,12 +27,14 @@ from rules import (
     MAX_SOURCE_FILES,
     MAX_SOURCE_RULES,
     ROOT,
+    Rule,
     collect,
     compile_outputs,
     json_text,
     parse_v2fly,
     publish_files,
     read_json,
+    reviewed_match_entries,
     sha256,
     voice_rules,
     verify_snapshot,
@@ -40,29 +43,100 @@ from rules import (
 VOICE_URL = "https://openai.com/chatgpt-voice.json"
 
 
-def fetch(url: str, limit=4_000_000, attempts=3) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": "NET86-rules/1.0", "Accept": "*/*"})
+def fetch_timeout(deadline, normal=45):
+    if deadline is None:
+        return normal
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError('Upstream fetch deadline exhausted')
+    return min(normal, remaining)
+
+
+def fetch(url: str, limit=4_000_000, attempts=3, *, deadline=None, diagnostics=None, allowed_hosts=None) -> bytes:
+    def trusted(target):
+        if allowed_hosts is None:
+            return
+        parsed = urlsplit(target)
+        if allowed_hosts is not None and (parsed.scheme != 'https' or parsed.hostname not in allowed_hosts
+                                         or parsed.port not in (None, 443) or parsed.username or parsed.password):
+            raise ValueError('Official redirect outside approved HTTPS hosts: '+target)
+
+    def trace(**fields):
+        if diagnostics is not None:
+            diagnostics.append(fields)
+
+    class Redirects(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            target = urljoin(req.full_url, newurl)
+            trace(url=req.full_url, status=code, location=headers.get('Location'), target=target)
+            trusted(target)
+            req.timeout = fetch_timeout(deadline)
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+        def http_error_302(self, req, fp, code, msg, headers):
+            # Metadata redirect bodies have no authority. In particular they
+            # must not drain an unbounded body before the next deadline check.
+            class NoBody:
+                def read(self, *args): return b''
+                def close(self): fp.close()
+            try:
+                return super().http_error_302(req, NoBody(), code, msg, headers)
+            finally:
+                fp.close()
+        http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
+
+    trusted(url)
     for attempt in range(attempts):
+        request = urllib.request.Request(url, headers={"User-Agent": "NET86-rules/1.0", "Accept": "*/*"})
+        timeout = fetch_timeout(deadline)
         try:
-            with urllib.request.urlopen(request, timeout=45) as response:
+            opener = (urllib.request.build_opener(Redirects()).open
+                      if allowed_hosts is not None or deadline is not None else urllib.request.urlopen)
+            with opener(request, timeout=timeout) as response:
+                final = response.geturl() if hasattr(response, 'geturl') else url
+                trusted(final)
+                trace(url=url, status=getattr(response, 'status', None), final_url=final, attempt=attempt + 1)
                 if response.headers.get("Content-Encoding", "").lower() == "gzip":
                     try:
                         with gzip.GzipFile(fileobj=response) as decoded:
-                            data = decoded.read(limit + 1)
+                            data = read_fetch_body(decoded, response, limit, deadline)
                     except (EOFError, zlib.error) as exc:
                         raise ValueError("Invalid gzip response") from exc
                 else:
-                    data = response.read(limit + 1)
+                    data = read_fetch_body(response, response, limit, deadline)
+                fetch_timeout(deadline)
             if not data or len(data) > limit:
                 raise ValueError(f"Empty or oversized upstream response: {url}")
             return data
         except (OSError, ValueError) as exc:
+            trace(url=url, status=getattr(exc, 'code', None), error_type=type(exc).__name__, error_detail=str(exc)[:300],
+                  location=getattr(exc, 'headers', {}).get('Location') if getattr(exc, 'headers', None) else None)
+            if isinstance(exc, urllib.error.HTTPError):
+                exc.close()
             if isinstance(exc, urllib.error.HTTPError) and exc.code not in {408, 429, 500, 502, 503, 504}:
                 raise
             if attempt == attempts - 1:
                 raise
-            time.sleep(0.5 * (2 ** attempt))
+            time.sleep(min(0.5 * (2 ** attempt), fetch_timeout(deadline)))
     raise ValueError("No download attempts configured")
+
+
+def read_fetch_body(reader, response, limit, deadline):
+    if deadline is None:
+        return reader.read(limit + 1)
+    chunks = bytearray()
+    read = getattr(reader, 'read1', reader.read)
+    while len(chunks) <= limit:
+        timeout = fetch_timeout(deadline)
+        sock = getattr(getattr(getattr(response, 'fp', None), 'raw', None), '_sock', None)
+        if sock is not None:
+            sock.settimeout(timeout)
+        chunk = read(min(65536, limit + 1 - len(chunks)))
+        fetch_timeout(deadline)
+        if not chunk:
+            break
+        chunks.extend(chunk)
+    return bytes(chunks)
 
 
 def voice_change_problem(before, after):
@@ -224,6 +298,46 @@ def commit_stage(root: Path, snapshot: Path, files):
     publish_files(root, files)
 
 
+def affected_retirement_keys(previous_manifest, source_issues):
+    """Only suspend deletion for historical routing rules related to an anomaly.
+
+    Literal anomalies leave unrelated rules eligible for retirement. Quarantined
+    regexes are never evaluated; unknown overlap freezes same-vendor core domain
+    rules. A verified upstream-wide outage is still handled separately.
+    """
+    affected = set()
+    reviewed = []
+    for issue in source_issues:
+        if issue.get("rule"):
+            observed = Rule.from_text(issue["rule"])
+        elif issue.get("value"):
+            observed = Rule("DOMAIN", issue["value"])
+            observed.validate()
+        else:
+            continue
+        reviewed.append((issue["vendor"], observed))
+    quarantined_regexes = {rule for _, rule in reviewed if rule.kind == "DOMAIN-REGEX"}
+
+    def related(prior, current):
+        if prior == current:
+            return True
+        if current.kind == "DOMAIN-REGEX" or prior in quarantined_regexes:
+            # An unreviewed pattern cannot safely establish non-overlap. This
+            # also prevents evaluating it through an identical historical Rule
+            # when a literal issue appears earlier in the issue list.
+            return prior.kind.startswith("DOMAIN") and current.kind.startswith("DOMAIN")
+        return prior.matches(current.value) or current.matches(prior.value)
+
+    for row in previous_manifest.get("provenance", []):
+        if row.get("tier") != "core":
+            continue
+        prior = Rule.from_text(row["rule"])
+        if any(row["vendor"] == vendor and related(prior, current)
+               for vendor, current in reviewed):
+            affected.add((row["vendor"], "core", prior))
+    return affected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-repo", type=Path, help="Use an existing v2fly git repository")
@@ -269,10 +383,11 @@ def main():
                 })
             stabilize_lock(ROOT, snapshot)
 
-            selection_issues = []
-            entries = collect(catalog, patches, snapshot / "v2fly", review_mode=True, selection_issues=selection_issues)
-            unhealthy_vendors = {row["vendor"] for row in selection_issues}
+            selection_issues, attribute_issues = [], []
+            entries = collect(catalog, patches, snapshot / "v2fly", review_mode=True,
+                              selection_issues=selection_issues, attribute_issues=attribute_issues)
             previous = read_json(ROOT / "rules/manifest.json") if (ROOT / "rules/manifest.json").exists() else {}
+            unhealthy_keys = affected_retirement_keys(previous, selection_issues + attribute_issues)
             previous_state = read_json(ROOT / "sources/automation-state.json")
             state, report = reconcile(
                 entries, previous, catalog, patches, previous_state,
@@ -281,18 +396,22 @@ def main():
                 allow_removals=args.allow_reviewed_removals,
                 contracts=contracts,
                 source_observation_healthy=v2fly_fresh,
-                unhealthy_vendors=unhealthy_vendors,
+                unhealthy_keys=unhealthy_keys,
             )
+            # Excluded attributes never become candidates/pending; count their
+            # individually reported quarantine decisions as well.
+            report["quarantined_count"] += len(attribute_issues)
 
             effective = effective_entries(entries, catalog, patches, state)
-            official_radar = analyze_official(ROOT, official_state, effective)
+            matcher_entries = reviewed_match_entries(effective, attribute_issues)
+            official_radar = analyze_official(ROOT, official_state, matcher_entries)
             report["source_health"] = {
                 "v2fly": "reviewed-local-input" if args.source_repo else ("fresh" if v2fly_fresh else "retained-last-good"),
                 "openai_voice": voice_status,
                 "official_facts": official_fetch_report["sources"],
             }
             report["official_radar"] = official_radar
-            report["selection_radar"] = analyze_selected_sources(ROOT, snapshot / "v2fly", effective)
+            report["selection_radar"] = analyze_selected_sources(ROOT, snapshot / "v2fly", matcher_entries)
             if voice_status not in {"fresh", "reviewed-local-input"}:
                 report["review_required"].append({
                     "reason": "official-voice-suspicious-change" if voice_status == "retained-suspicious-change" else "official-voice-fetch-unavailable",
@@ -300,15 +419,16 @@ def main():
                     "action": "Verified last-good IPs retained; domain updates continue; clears on a normal response or a reviewed --voice-file baseline",
                 })
             report["review_required"].extend(
-                official_fetch_report["review_required"] + v2fly_errors + selection_issues + official_radar["review_required"] + report["selection_radar"]
+                official_fetch_report["review_required"] + v2fly_errors + selection_issues + attribute_issues
+                + official_radar["review_required"] + report["selection_radar"]
             )
             (work / "sync-report.json").write_text(json_text(report), encoding="utf-8", newline="\n")
 
             files = compile_outputs(ROOT, snapshot, state)
             commit_stage(ROOT, snapshot, files)
-            # Persist the latest successfully parsed official fact baseline. This file
-            # has no run timestamp, so unchanged facts produce no commit noise. Stable
-            # promotion depends on subscription content/contracts, not radar-only state.
+            # Persist parsed official facts and separate last-success observations.
+            # Observation timestamps may change this file; stable/LKG promotion
+            # depends on subscription content/contracts, not radar-only state.
             (ROOT / "sources/official-state.json").write_text(json_text(official_state), encoding="utf-8", newline="\n")
             (ROOT / "sources/automation-state.json").write_text(json_text(state), encoding="utf-8", newline="\n")
             print(f"OK: synchronized {len(files)} artifacts after scope, schema and integrity checks")

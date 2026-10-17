@@ -88,12 +88,15 @@ def effective_entries(candidates, catalog, patches, state):
 
 def reconcile(candidates, previous_manifest, catalog, patches, previous_state, policy,
               today=None, allow_removals=False, contracts=None,
-              source_observation_healthy=True, unhealthy_vendors=()):
+              source_observation_healthy=True, unhealthy_vendors=(), unhealthy_keys=()):
     """Retire after a calendar grace period and distinct healthy observations."""
     today = today or date.today()
     day = today.isoformat()
     contracts = contracts or {"vendors": {}}
     unhealthy_vendors = set(unhealthy_vendors)
+    unhealthy_keys = set(unhealthy_keys)
+    quarantined_regexes = {rule for _, _, rule in unhealthy_keys
+                           if rule.kind == "DOMAIN-REGEX"}
     accepted = {
         key: set(value)
         for key, value in candidates.items()
@@ -119,6 +122,7 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
         if not scope_problem(key, before[key].get("sources", []), catalog, patches)
     }
     frozen_vendors = set()
+    frozen_rules = set()
 
     for key in sorted(missing):
         vendor, tier, rule = key
@@ -141,7 +145,10 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
             removed.append(dict(row_of(key, before[key]["sources"]), reason="covered-by-current-rule"))
             continue
 
-        observation_healthy = source_observation_healthy and vendor not in unhealthy_vendors
+        observation_healthy = (
+            source_observation_healthy and vendor not in unhealthy_vendors
+            and key not in unhealthy_keys
+        )
         prior = old_retained.get(key, {})
         observations = set(prior.get("observation_days", []))
         first = prior.get("first_missing")
@@ -149,7 +156,9 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
             observations.add(day)
             first = first or day
         else:
-            frozen_vendors.add(vendor)
+            if not source_observation_healthy or vendor in unhealthy_vendors:
+                frozen_vendors.add(vendor)
+            frozen_rules.add((vendor, rule.text))
         observations = sorted(observations)
         age = (today - date.fromisoformat(first)).days if first else 0
         row = row_of(key, before[key]["sources"])
@@ -157,9 +166,12 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
         if first:
             row["first_missing"] = first
 
-        remaining = {k for k in available if k != key and k[0] == vendor and k[1] == tier}
+        remaining = {k for k in available if k != key and k[0] == vendor and k[1] == tier
+                     and k[2] not in quarantined_regexes}
         critical_hosts = contracts.get("vendors", {}).get(vendor, {}).get("must_match", [])
-        protected = not remaining or (tier == "core" and any(
+        # Quarantined patterns cannot establish either lost or replacement
+        # coverage. Keep them without running their matcher.
+        protected = rule in quarantined_regexes or not remaining or (tier == "core" and any(
             rule.matches(host) and not any(k[2].matches(host) for k in remaining)
             for host in critical_hosts
         ))
@@ -169,7 +181,8 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
                 if vendor not in members:
                     continue
                 profile_hosts = contracts.get("profiles", {}).get(profile, {}).get("must_match", [])
-                profile_remaining = {k for k in available if k != key and k[0] in members and k[1] == "core"}
+                profile_remaining = {k for k in available if k != key and k[0] in members
+                                     and k[1] == "core" and k[2] not in quarantined_regexes}
                 if any(rule.matches(host) and not any(k[2].matches(host) for k in profile_remaining)
                        for host in profile_hosts):
                     protected = True
@@ -204,6 +217,10 @@ def reconcile(candidates, previous_manifest, catalog, patches, previous_state, p
         "retained_count": len(retained),
         "automatically_removed": removed,
         "deletion_observation_frozen_vendors": sorted(frozen_vendors),
+        "deletion_observation_frozen_rules": [
+            {"vendor": vendor, "rule": rule}
+            for vendor, rule in sorted(frozen_rules)
+        ],
         "action": (
             "Declared direct vendor sources update automatically; mixed/select/patch boundaries remain explicit. "
             "Calendar grace and distinct healthy observations are both required; unhealthy runs cannot retire rules."
