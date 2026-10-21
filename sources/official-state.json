@@ -1,7 +1,7 @@
 {
   "documents": {
     "anthropic-network": {
-      "document_sha256": "1ef584afea3428ef997546fd1ffcf633560191a493ed1d25808f5509829cc9ce",
+      "document_sha256": "56f56f7e69eb6462268ec9254d2ed4eb704c3a73a89a82744cc5b3031c2d1e5c",
       "extractor": 1,
       "rules": [
         "DOMAIN,api.anthropic.com",
@@ -27,6 +27,7 @@
         "DOMAIN,platform.claude.com",
         "DOMAIN,raw.githubusercontent.com",
         "DOMAIN,registry.npmjs.org",
+        "DOMAIN,sso.claude.com",
         "DOMAIN,storage.googleapis.com",
         "DOMAIN,unpkg.com",
         "DOMAIN-SUFFIX,claudemcpcontent.com",
@@ -37,12 +38,14 @@
       "vendor": "claude"
     },
     "cursor-cloud-agent": {
-      "document_sha256": "319347cdc45303789f6417600b5634659fa8080bc23c95287b3cb6c858d9f4d6",
+      "document_sha256": "928423eb540a247a43f65065d1b454a2f9325da0d99ad057fd9e8ec08bac3941",
       "extractor": 1,
       "rules": [
+        "DOMAIN,agent-stores.s3.us-east-1.amazonaws.com",
         "DOMAIN,api2.cursor.sh",
         "DOMAIN,api2direct.cursor.sh",
         "DOMAIN,cloud-agent-artifacts.s3.us-east-1.amazonaws.com",
+        "DOMAIN,cursor.blob.core.windows.net",
         "DOMAIN,downloads.cursor.com",
         "DOMAIN-SUFFIX,s3.us-east-1.amazonaws.com"
       ],
@@ -221,47 +224,47 @@
   },
   "observations": {
     "anthropic-network": {
-      "last_success_at": "2026-10-17T16:02:36Z",
+      "last_success_at": "2026-10-21T04:02:01Z",
       "url": "https://code.claude.com/docs/en/corporate-proxy",
       "vendor": "claude"
     },
     "cursor-cloud-agent": {
-      "last_success_at": "2026-10-17T16:02:36Z",
+      "last_success_at": "2026-10-21T04:02:01Z",
       "url": "https://cursor.com/docs/cloud-agent/self-hosted/pool",
       "vendor": "cursor"
     },
     "cursor-network": {
-      "last_success_at": "2026-10-17T16:02:36Z",
+      "last_success_at": "2026-10-21T04:02:01Z",
       "url": "https://cursor.com/docs/enterprise/network-configuration",
       "vendor": "cursor"
     },
     "github-copilot-network": {
-      "last_success_at": "2026-10-17T16:02:37Z",
+      "last_success_at": "2026-10-21T04:02:02Z",
       "url": "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference",
       "vendor": "github-copilot"
     },
     "google-codeassist": {
-      "last_success_at": "2026-10-17T16:02:36Z",
+      "last_success_at": "2026-10-21T04:02:02Z",
       "url": "https://docs.cloud.google.com/gemini/docs/codeassist/set-up-gemini?hl=en",
       "vendor": "google-ai"
     },
     "google-generative-api": {
-      "last_success_at": "2026-10-17T16:02:36Z",
+      "last_success_at": "2026-10-21T04:02:01Z",
       "url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
       "vendor": "google-ai"
     },
     "hunyuan-regions": {
-      "last_success_at": "2026-10-17T16:02:37Z",
+      "last_success_at": "2026-10-21T04:02:03Z",
       "url": "https://cloud.tencent.com/document/product/1729/101841",
       "vendor": "tencent-ai"
     },
     "openai-network": {
-      "last_success_at": "2026-10-14T16:02:57Z",
+      "last_success_at": "2026-10-18T04:02:03Z",
       "url": "https://help.openai.com/en/articles/9247338",
       "vendor": "openai"
     },
     "spark-http": {
-      "last_success_at": "2026-10-17T16:02:38Z",
+      "last_success_at": "2026-10-21T04:02:04Z",
       "url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
       "vendor": "iflytek-spark"
     }
