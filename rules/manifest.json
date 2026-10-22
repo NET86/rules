@@ -19,14 +19,14 @@
     },
     "ai-core": {
       "mihomo": {
-        "count": 103,
+        "count": 105,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "6c8d32944d9c7ef83ed6b97bb7edd83cc6c91c2167ccfe74202c3fda35a41236"
+        "sha256": "71890969821752d23ab2afdda0d534be753479b2e1e8bf75e44f4dc3a260d880"
       },
       "surge": {
-        "count": 103,
+        "count": 105,
         "path": "rules/surge/ai-core.list",
-        "sha256": "cada153fb26aa6a6816e01d2ca6d4d2ff24378fe7dc616b775281ff1b3319078"
+        "sha256": "46ddded2792764500b8034c49a8da5ee3750ceb56ff01d5b4984566f62323ab0"
       }
     },
     "ai-daily": {
@@ -67,14 +67,14 @@
     },
     "cursor": {
       "mihomo": {
-        "count": 9,
+        "count": 11,
         "path": "rules/mihomo/cursor.yaml",
-        "sha256": "84c468b918a19b09c808923a1aedfc3d2eb06b0e1f32b1e5e9cd051694b606b3"
+        "sha256": "d2a385ff8b5331a7df4958471a1bf1f6d2858dcf48eebf018790c22f8d38d2bd"
       },
       "surge": {
-        "count": 9,
+        "count": 11,
         "path": "rules/surge/cursor.list",
-        "sha256": "401dda9a8200671370856c2a3fc4fbc0b4bc8ecfd8b3223b7ca030f2032c2654"
+        "sha256": "83e85f44bd7b68318281b7c360840820fc62218b8249eb17083650a0b7ab5d3c"
       }
     },
     "deepseek": {
@@ -588,6 +588,14 @@
       "vendor": "cursor"
     },
     {
+      "rule": "DOMAIN,agent-stores.s3.us-east-1.amazonaws.com",
+      "sources": [
+        "https://cursor.com/docs/cloud-agent/self-hosted/pool Official primary self-hosted Cloud Agent artifact upload bucket; exact host, never regional S3 wildcard"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
       "rule": "DOMAIN,anysphere-binaries.s3.us-east-1.amazonaws.com",
       "sources": [
         "https://cursor.com/docs/enterprise/network-configuration Dedicated Cursor client and extension downloads; exact bucket host, not the regional S3 namespace"
@@ -599,6 +607,14 @@
       "rule": "DOMAIN,cloud-agent-artifacts.s3.us-east-1.amazonaws.com",
       "sources": [
         "https://cursor.com/docs/cloud-agent/self-hosted/pool Dedicated Cursor agent artifact uploads; official documentation prefers this exact host over the regional S3 wildcard"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN,cursor.blob.core.windows.net",
+      "sources": [
+        "https://cursor.com/docs/cloud-agent/self-hosted/pool Official Cursor live-workspace server download on workers started with --connect-workspace; exact Azure Blob host only"
       ],
       "tier": "core",
       "vendor": "cursor"
@@ -1680,7 +1696,7 @@
   "schema": 2,
   "semantic_contract": {
     "path": "sources/semantic-contracts.json",
-    "sha256": "6c85257d7ab217d5714865605cb44f2dbdafa1e330f3fe943086f57f54facd09"
+    "sha256": "2c9ff3f5fc97b2b4c3a36c3c6b5a72fe68fb3e4475176f2c423c3ffe04c73f48"
   },
   "upstream": {
     "sha256": {
