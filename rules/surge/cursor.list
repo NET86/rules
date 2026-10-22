@@ -5,8 +5,10 @@
 # 第三方声明：https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
 DOMAIN,accounts.spacex.ai
 DOMAIN,accounts.x.ai
+DOMAIN,agent-stores.s3.us-east-1.amazonaws.com
 DOMAIN,anysphere-binaries.s3.us-east-1.amazonaws.com
 DOMAIN,cloud-agent-artifacts.s3.us-east-1.amazonaws.com
+DOMAIN,cursor.blob.core.windows.net
 DOMAIN-SUFFIX,cursor-cdn.com
 DOMAIN-SUFFIX,cursor.com
 DOMAIN-SUFFIX,cursor.sh

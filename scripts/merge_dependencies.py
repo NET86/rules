@@ -4,6 +4,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -46,10 +47,19 @@ def eligible(pr, run, jobs, files):
 def api(path):
     if not path.startswith(f"repos/{REPO}/"):
         raise ValueError("Unexpected repository")
-    return json.loads(subprocess.check_output(
-        ["gh", "api", path],
-        text=True, encoding="utf-8", timeout=45
-    ))
+    # Only repeat idempotent GETs on clearly transient GitHub API responses.
+    for attempt in range(3):
+        try:
+            response = subprocess.check_output(
+                ["gh", "api", path], text=True, encoding="utf-8",
+                stderr=subprocess.PIPE, timeout=45,
+            )
+            return json.loads(response)
+        except subprocess.CalledProcessError as exc:
+            transient = re.search(r"\bHTTP (?:429|500|502|503|504)\b", str(exc.stderr or ""), re.I)
+            if not transient or attempt == 2:
+                raise
+            time.sleep(1 << attempt)
 
 
 def git(*args):

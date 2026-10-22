@@ -150,6 +150,49 @@ class DependencyMergeTests(unittest.TestCase):
                 publish.assert_called_once_with("abc")
 
 
+class DependencyApiTests(unittest.TestCase):
+    def test_502_is_retried_for_bounded_read_only_api_requests(self):
+        unavailable = subprocess.CalledProcessError(
+            1, ["gh", "api"], stderr="gh: Server Error (HTTP 502)",
+        )
+        with patch.object(merge_dependencies.subprocess, "check_output",
+                          side_effect=[unavailable, '{"jobs": []}']) as read, \
+                patch.object(merge_dependencies.time, "sleep") as sleep:
+            self.assertEqual(merge_dependencies.api("repos/NET86/rules/actions/runs/3/jobs"), {"jobs": []})
+        self.assertEqual(read.call_count, 2)
+        sleep.assert_called_once_with(1)
+
+    def test_non_transient_api_failure_is_not_retried(self):
+        forbidden = subprocess.CalledProcessError(
+            1, ["gh", "api"], stderr="gh: HTTP 403 Forbidden",
+        )
+        with patch.object(merge_dependencies.subprocess, "check_output",
+                          side_effect=forbidden) as read, \
+                patch.object(merge_dependencies.time, "sleep") as sleep:
+            with self.assertRaises(subprocess.CalledProcessError):
+                merge_dependencies.api("repos/NET86/rules/pulls/1")
+        read.assert_called_once()
+        sleep.assert_not_called()
+
+    def test_502_is_never_retried_indefinitely(self):
+        unavailable = subprocess.CalledProcessError(
+            1, ["gh", "api"], stderr="gh: Server Error (HTTP 502)",
+        )
+        with patch.object(merge_dependencies.subprocess, "check_output",
+                          side_effect=unavailable) as read, \
+                patch.object(merge_dependencies.time, "sleep") as sleep:
+            with self.assertRaises(subprocess.CalledProcessError):
+                merge_dependencies.api("repos/NET86/rules/actions/runs/3/jobs")
+        self.assertEqual(read.call_count, 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [1, 2])
+
+    def test_other_repositories_rejected_before_api_read(self):
+        with patch.object(merge_dependencies.subprocess, "check_output") as read:
+            with self.assertRaisesRegex(ValueError, "Unexpected repository"):
+                merge_dependencies.api("repos/other/rules/pulls/1")
+        read.assert_not_called()
+
+
 class DependencyGitTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()

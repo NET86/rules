@@ -22,8 +22,8 @@
       "must_not_match": ["www.google.com", "storage.googleapis.com", "cloudaicompanion.googleapis.com", "antigravity.google.com", "clients.google.com", "clients6.google.com", "other.clients6.google.com", "child.geminiweb-pa.clients6.google.com", "googleapis.com"]
     },
     "cursor": {
-      "must_match": ["api2.cursor.sh", "vm.cursorvm.com", "anysphere-binaries.s3.us-east-1.amazonaws.com", "cloud-agent-artifacts.s3.us-east-1.amazonaws.com", "accounts.spacex.ai", "accounts.x.ai"],
-      "must_not_match": ["s3.us-east-1.amazonaws.com", "unrelated.s3.us-east-1.amazonaws.com", "child.anysphere-binaries.s3.us-east-1.amazonaws.com", "child.cloud-agent-artifacts.s3.us-east-1.amazonaws.com", "spacex.ai", "x.ai", "child.accounts.spacex.ai", "child.accounts.x.ai"]
+      "must_match": ["api2.cursor.sh", "vm.cursorvm.com", "anysphere-binaries.s3.us-east-1.amazonaws.com", "cloud-agent-artifacts.s3.us-east-1.amazonaws.com", "agent-stores.s3.us-east-1.amazonaws.com", "cursor.blob.core.windows.net", "accounts.spacex.ai", "accounts.x.ai"],
+      "must_not_match": ["s3.us-east-1.amazonaws.com", "unrelated.s3.us-east-1.amazonaws.com", "child.anysphere-binaries.s3.us-east-1.amazonaws.com", "child.cloud-agent-artifacts.s3.us-east-1.amazonaws.com", "child.agent-stores.s3.us-east-1.amazonaws.com", "blob.core.windows.net", "unrelated.blob.core.windows.net", "child.cursor.blob.core.windows.net", "spacex.ai", "x.ai", "child.accounts.spacex.ai", "child.accounts.x.ai"]
     },
     "microsoft-copilot": {
       "must_match": ["copilot.microsoft.com", "copilot.cloud.microsoft", "copilot.ai"],
