@@ -4,7 +4,7 @@
     "openai-voice.json": "89e961ec1ad6b0f1d457002a48b1bd81df8cb2144754ad6e1811c934bb97686a",
     "v2fly/anthropic": "48597d05d9206b7c841be6872c7ca954685a416d7e61c9316c017ed5f28c7053",
     "v2fly/category-ai-!cn": "68c652a6ec62fc8d8316c255fb32f94389b084a1b886def6f9e8e631314a11bf",
-    "v2fly/category-ai-cn": "164e139ce729b2e35d54967251a51ca319611a97327ddd646b4fe99657184bf0",
+    "v2fly/category-ai-cn": "f2b69a46b984cc4fb6239bcf3f8f9ca3ecb81db67569ccdf1c37b7e4fe8f42f9",
     "v2fly/cursor": "eb7315056ebfb599a7dccedddcb5aa7f7723665aa800e2783fff798c1fa3724e",
     "v2fly/deepseek": "52822c92e87fadcfdc6711133f1270ee77ef030459603a46cf6fa80f75856530",
     "v2fly/doubao": "b501f28fcaeca55a569c6193d12415ef6d62addbe6f8373799fc5c3005ad5db6",
@@ -17,6 +17,6 @@
     "v2fly/xai": "1e15c6018174f58f6a2f3710c84566909eee45a8092247280d244cf8ea7cd928"
   },
   "v2fly_repository": "https://github.com/v2fly/domain-list-community",
-  "v2fly_revision": "1b81d3cd34096e5d8cac6bca5935e80f30e990f0",
+  "v2fly_revision": "1daade8c4bb957d21d1f5c09c2b050d699e8e96c",
   "voice_url": "https://openai.com/chatgpt-voice.json"
 }
