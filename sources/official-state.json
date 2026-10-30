@@ -226,37 +226,37 @@
   },
   "observations": {
     "anthropic-network": {
-      "last_success_at": "2026-10-29T22:02:39Z",
+      "last_success_at": "2026-10-30T04:02:36Z",
       "url": "https://code.claude.com/docs/en/corporate-proxy",
       "vendor": "claude"
     },
     "cursor-cloud-agent": {
-      "last_success_at": "2026-10-29T22:02:39Z",
+      "last_success_at": "2026-10-30T04:02:36Z",
       "url": "https://cursor.com/docs/cloud-agent/self-hosted/pool",
       "vendor": "cursor"
     },
     "cursor-network": {
-      "last_success_at": "2026-10-29T22:02:39Z",
+      "last_success_at": "2026-10-30T04:02:36Z",
       "url": "https://cursor.com/docs/enterprise/network-configuration",
       "vendor": "cursor"
     },
     "github-copilot-network": {
-      "last_success_at": "2026-10-29T22:02:40Z",
+      "last_success_at": "2026-10-30T04:02:37Z",
       "url": "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference",
       "vendor": "github-copilot"
     },
     "google-codeassist": {
-      "last_success_at": "2026-10-29T22:02:40Z",
+      "last_success_at": "2026-10-30T04:02:37Z",
       "url": "https://docs.cloud.google.com/gemini/docs/codeassist/set-up-gemini?hl=en",
       "vendor": "google-ai"
     },
     "google-generative-api": {
-      "last_success_at": "2026-10-29T22:02:40Z",
+      "last_success_at": "2026-10-30T04:02:37Z",
       "url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
       "vendor": "google-ai"
     },
     "hunyuan-regions": {
-      "last_success_at": "2026-10-29T22:02:41Z",
+      "last_success_at": "2026-10-30T04:02:38Z",
       "url": "https://cloud.tencent.com/document/product/1729/101841",
       "vendor": "tencent-ai"
     },
@@ -266,7 +266,7 @@
       "vendor": "openai"
     },
     "spark-http": {
-      "last_success_at": "2026-10-29T22:02:41Z",
+      "last_success_at": "2026-10-30T04:02:38Z",
       "url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
       "vendor": "iflytek-spark"
     }
