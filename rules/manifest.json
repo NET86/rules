@@ -19,26 +19,26 @@
     },
     "ai-core": {
       "mihomo": {
-        "count": 105,
+        "count": 107,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "71890969821752d23ab2afdda0d534be753479b2e1e8bf75e44f4dc3a260d880"
+        "sha256": "37494d1cec2f6adbb4eaaa93bc73ebd4a7bc67fde89ada9cf41a82a0bd8ad290"
       },
       "surge": {
-        "count": 105,
+        "count": 107,
         "path": "rules/surge/ai-core.list",
-        "sha256": "46ddded2792764500b8034c49a8da5ee3750ceb56ff01d5b4984566f62323ab0"
+        "sha256": "daf542ec301d6ba02e7a4cef8cc0ba0b87cd48b5b15a08198cbeea2811e3b4b0"
       }
     },
     "ai-daily": {
       "mihomo": {
-        "count": 107,
+        "count": 109,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "587b66f3994b588f135953aea1f9dadb5124c66cdc0326cd6e3aa747c9ffdcef"
+        "sha256": "cf994c95642b5df00af49e1b162452cdfd173ab05dfcc98b52375c10d66d12f9"
       },
       "surge": {
-        "count": 107,
+        "count": 109,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "51df80fb3fffa97c041ce137314e44ea2da835a1cdc909fd3e2bc631ddf9eb2e"
+        "sha256": "47088ab80c6bc93a1c1db2c53c5a6aa8521f25d4f1da69e46747d0727c67c88d"
       }
     },
     "baidu-wenxin": {
@@ -115,14 +115,14 @@
     },
     "github-copilot": {
       "mihomo": {
-        "count": 5,
+        "count": 6,
         "path": "rules/mihomo/github-copilot.yaml",
-        "sha256": "83a246e68b25596292ce0be9694c6a5be26f63f8b40a788c7c1fa140968fe3ff"
+        "sha256": "4b258c7ea22e1a428111c9a9283a733eea26338137f1d106acb56f78d9fc2be6"
       },
       "surge": {
-        "count": 5,
+        "count": 6,
         "path": "rules/surge/github-copilot.list",
-        "sha256": "b80ebced636e87f09feab1cdc1b9b0e290179a40fee6ba88609dfabef439fc01"
+        "sha256": "6c3116b57c802fa723ed3dbd620e7d4136c65f17f08663d8ceffab76413a3698"
       }
     },
     "google-ai": {
@@ -139,14 +139,14 @@
     },
     "grok": {
       "mihomo": {
-        "count": 4,
+        "count": 5,
         "path": "rules/mihomo/grok.yaml",
-        "sha256": "c5b851ed3ef15db2849669962ce697cd62b74a6a6ad5e8ebab268c73cab2c3ae"
+        "sha256": "c084f47d03d9812c160e7910b9b3494385a4338d6441380af79aba2665806ec2"
       },
       "surge": {
-        "count": 4,
+        "count": 5,
         "path": "rules/surge/grok.list",
-        "sha256": "5e3d4dbcdbd849d35d83bf53f6400051ca6d5f7497a06d12493286ecd8581c00"
+        "sha256": "4d296aa48523135ceb783030565f66a25beff0686957da9ff40ec9bdda9e9b3c"
       }
     },
     "iflytek-spark": {
@@ -757,6 +757,14 @@
       "vendor": "github-copilot"
     },
     {
+      "rule": "DOMAIN,production-copilot-host-westus.webpubsub.azure.com",
+      "sources": [
+        "v2fly:data/github-copilot"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
       "rule": "DOMAIN-SUFFIX,githubcopilot.com",
       "sources": [
         "v2fly:data/github-copilot"
@@ -982,6 +990,14 @@
     },
     {
       "rule": "DOMAIN-SUFFIX,grok.x.com",
+      "sources": [
+        "v2fly:data/xai"
+      ],
+      "tier": "core",
+      "vendor": "grok"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,grokbot.com",
       "sources": [
         "v2fly:data/xai"
       ],
@@ -1709,15 +1725,15 @@
       "v2fly/deepseek": "52822c92e87fadcfdc6711133f1270ee77ef030459603a46cf6fa80f75856530",
       "v2fly/doubao": "bab9cb2a638608c857314a1830e01f800e82015d9dae86ef2f938b796699a5bd",
       "v2fly/elevenlabs": "4c284a7e5947f4a40d40c9dc8fedf3e9e3091db0c7680b913b2b19db36ebd561",
-      "v2fly/github-copilot": "e41465e9e15430bf31d1054d21c0551e8fa3ef24431e317317f409511c64483c",
+      "v2fly/github-copilot": "bd8f1a7a846f1111710c31b13b45262f35220a00e8dfaf4c5830dc618ec51748",
       "v2fly/google-deepmind": "6f768291aa81a8d88fa48fc20613f55be646674cfa24a3b3c152a97e859c33a8",
       "v2fly/openai": "25d53e9af3e04d926210d6436bd791594ef4b86f2dc3c108510ac8059d76d969",
       "v2fly/perplexity": "570581bad658566cb493207c14ebb55110750071071e089b4c40054b00af3db0",
       "v2fly/poe": "e689a8d337b64bcf760e5d8dfe03e3d29d8558063db93acba2d1d6eb9c11003a",
-      "v2fly/xai": "1e15c6018174f58f6a2f3710c84566909eee45a8092247280d244cf8ea7cd928"
+      "v2fly/xai": "4c95fc6465d5f135f5d27935e9b44f6fcc82cfaa0eb6bb4e3232c44c5c581628"
     },
     "v2fly_repository": "https://github.com/v2fly/domain-list-community",
-    "v2fly_revision": "6766d09f4a951f4f11d822891a9736606cd910ac",
+    "v2fly_revision": "1d1049b54971c86c9a3a5467d238a6a2ad7baf46",
     "voice_url": "https://openai.com/chatgpt-voice.json"
   },
   "vendor_count": 24

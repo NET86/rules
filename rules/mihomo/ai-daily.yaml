@@ -51,6 +51,7 @@ payload:
   # xAI / Grok
   - "DOMAIN-SUFFIX,grok.com"
   - "DOMAIN-SUFFIX,grok.x.com"
+  - "DOMAIN-SUFFIX,grokbot.com"
   - "DOMAIN-SUFFIX,grokipedia.com"
   - "DOMAIN-SUFFIX,x.ai"
 
@@ -101,6 +102,7 @@ payload:
   - "DOMAIN,copilot-workspace.githubnext.com"
   - "DOMAIN,copilotprodattachments.blob.core.windows.net"
   - "DOMAIN,origin-tracker.githubusercontent.com"
+  - "DOMAIN,production-copilot-host-westus.webpubsub.azure.com"
   - "DOMAIN-SUFFIX,githubcopilot.com"
 
   # OpenAI / ChatGPT / Sora / Prism 语音

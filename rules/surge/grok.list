@@ -5,5 +5,6 @@
 # 第三方声明：https://github.com/NET86/rules/blob/main/THIRD_PARTY_NOTICES.md
 DOMAIN-SUFFIX,grok.com
 DOMAIN-SUFFIX,grok.x.com
+DOMAIN-SUFFIX,grokbot.com
 DOMAIN-SUFFIX,grokipedia.com
 DOMAIN-SUFFIX,x.ai
