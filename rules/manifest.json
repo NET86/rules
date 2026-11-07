@@ -1702,7 +1702,7 @@
     "sha256": {
       "V2FLY-LICENSE": "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c84011479244bf7d2",
       "openai-voice.json": "89e961ec1ad6b0f1d457002a48b1bd81df8cb2144754ad6e1811c934bb97686a",
-      "v2fly/anthropic": "48597d05d9206b7c841be6872c7ca954685a416d7e61c9316c017ed5f28c7053",
+      "v2fly/anthropic": "59ad6a25a6d9759995777fe98f2cf30675199fad00546a0ffe027b95ec0776f0",
       "v2fly/category-ai-!cn": "68c652a6ec62fc8d8316c255fb32f94389b084a1b886def6f9e8e631314a11bf",
       "v2fly/category-ai-cn": "5df7dad12b27907bf491463de101d66913a9502d12b792ca4903ecba80e0e87b",
       "v2fly/cursor": "eb7315056ebfb599a7dccedddcb5aa7f7723665aa800e2783fff798c1fa3724e",
@@ -1717,7 +1717,7 @@
       "v2fly/xai": "1e15c6018174f58f6a2f3710c84566909eee45a8092247280d244cf8ea7cd928"
     },
     "v2fly_repository": "https://github.com/v2fly/domain-list-community",
-    "v2fly_revision": "16fd8005d390470e8523745c9fa631c9e767cc61",
+    "v2fly_revision": "6766d09f4a951f4f11d822891a9736606cd910ac",
     "voice_url": "https://openai.com/chatgpt-voice.json"
   },
   "vendor_count": 24
