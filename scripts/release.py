@@ -294,9 +294,9 @@ class Publisher:
     def __init__(self, root, remote="origin"):
         self.root, self.remote = Path(root), remote
 
-    def git(self, *args, input=None, env=None):
+    def git(self, *args, input=None, env=None, stderr=None):
         return subprocess.check_output(["git", "-C", str(self.root), *args], input=input,
-                                       text=True, encoding="utf-8", timeout=120, env=env).strip()
+                                       text=True, encoding="utf-8", timeout=120, env=env, stderr=stderr).strip()
 
     def remote_ref(self, branch):
         rows = self.git("ls-remote", "--heads", self.remote, f"refs/heads/{branch}")
@@ -327,6 +327,38 @@ class Publisher:
         for branch, revision in expected.items():
             if self.remote_ref(branch) != revision:
                 raise RuntimeError(f"Concurrent {branch} update; refusing to overwrite it")
+
+    def push_main(self, candidate, old_main, verified_refs):
+        if not old_main:
+            raise RuntimeError("Missing main branch")
+        # The lease pins the exact old ref across the read/push race. Only
+        # allow it after independently proving the update is a fast-forward.
+        self.git("merge-base", "--is-ancestor", old_main, candidate)
+        for delay in (5, 15, None):
+            try:
+                self.git("push", f"--force-with-lease=refs/heads/main:{old_main}", self.remote,
+                         f"{candidate}:refs/heads/main", stderr=subprocess.PIPE)
+                return
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+                if isinstance(exc, subprocess.CalledProcessError):
+                    stderr = exc.stderr or ""
+                    if stderr:
+                        print(stderr.rstrip(), file=sys.stderr)
+                    if not any(line.rstrip() == "remote: fatal error in commit_refs"
+                               for line in stderr.splitlines()):
+                        raise
+                if delay is not None:
+                    print(f"Checking main again in {delay}s before retrying the candidate push", file=sys.stderr)
+                    time.sleep(delay)
+                current_main = self.remote_ref("main")
+                if current_main == candidate:
+                    print("Candidate push reported an error, but main already points to the candidate")
+                    return
+                if current_main != old_main:
+                    raise RuntimeError("Concurrent main update; refusing to overwrite it") from exc
+                if delay is None:
+                    raise
+                self.require_refs(verified_refs)
 
     def recover_stable(self, validate, report):
         """Next-run repair if a runner/network died before completing rollback."""
@@ -376,11 +408,11 @@ class Publisher:
         promoted = old_stable
         active_lkg = old_lkg
         try:
-            self.require_refs({"main": old_main, "stable": old_stable, "last-known-good": old_lkg})
+            self.require_refs({"main": old_main, **verified_refs})
             # Main is intentionally the development/candidate branch. It remains
             # diagnostic state even if stable promotion later fails.
             if old_main != candidate:
-                self.git("push", self.remote, f"{candidate}:refs/heads/main")
+                self.push_main(candidate, old_main, verified_refs)
             validate_published(candidate, "candidate", candidate)
             report["candidate_remote_validation"] = "PASS"
             self.require_refs({"main": candidate, "stable": old_stable, "last-known-good": old_lkg})
