@@ -32,6 +32,12 @@ jobs:
       - run: python scripts/rules.py --check
       - run: python scripts/verify_rules.py
       - run: node --test infra/scheduler/worker.test.mjs
+      - name: 恢复 Mihomo 归档缓存
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        continue-on-error: true
+        with:
+          path: .work/mihomo-download
+          key: mihomo-archive-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/download_mihomo.py') }}
       - run: python scripts/download_mihomo.py
       - run: python scripts/verify_mihomo.py
       - run: python scripts/verify_mihomo.py --profile split

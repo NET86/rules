@@ -60,6 +60,12 @@ jobs:
       - name: 安装锁定的官方文档 HTTPS 依赖
         continue-on-error: true
         run: 'python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt'
+      - name: 恢复 Mihomo 归档缓存
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        continue-on-error: true
+        with:
+          path: .work/mihomo-download
+          key: mihomo-archive-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/download_mihomo.py') }}
       - run: python scripts/download_mihomo.py
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
