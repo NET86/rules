@@ -31,7 +31,6 @@ class MihomoDownloadTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "executable count"):
             download_mihomo.extracted_binary("mihomo.zip", payload.getvalue())
 
-
     def test_primary_504_uses_official_asset_and_checks_digest(self):
         binary = b"pinned Mihomo test executable"
         archive = gzip.compress(binary)
@@ -39,6 +38,9 @@ class MihomoDownloadTests(unittest.TestCase):
             with self.subTest(valid=payload == archive), tempfile.TemporaryDirectory() as td:
                 root = Path(td)
                 requests = []
+                cache = root / ".work/mihomo-download/test.gz"
+                cache.parent.mkdir(parents=True)
+                cache.write_bytes(b"corrupted cache")
 
                 def open_request(opener, request, **kwargs):
                     requests.append(request)
@@ -60,10 +62,15 @@ class MihomoDownloadTests(unittest.TestCase):
                         download_mihomo.main()
                         installed = list((root / ".work/bin").iterdir())
                         self.assertEqual([path.read_bytes() for path in installed], [binary])
+                        self.assertEqual(cache.read_bytes(), archive)
+                        installed[0].unlink()
+                        download_mihomo.main()
+                        self.assertEqual(installed[0].read_bytes(), binary)
                     else:
                         with self.assertRaisesRegex(SystemExit, "SHA-256 mismatch"):
                             download_mihomo.main()
                         self.assertFalse((root / ".work/bin").exists())
+                        self.assertEqual(cache.read_bytes(), b"corrupted cache")
 
                 self.assertEqual([request.host for request in requests],
                                  ["github.com"] * 3 + ["api.github.com"])
