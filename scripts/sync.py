@@ -41,6 +41,7 @@ from rules import (
 )
 
 VOICE_URL = "https://openai.com/chatgpt-voice.json"
+RETRYABLE_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
 
 
 def fetch_timeout(deadline, normal=45):
@@ -52,7 +53,8 @@ def fetch_timeout(deadline, normal=45):
     return min(normal, remaining)
 
 
-def fetch(url: str, limit=4_000_000, attempts=3, *, deadline=None, diagnostics=None, allowed_hosts=None) -> bytes:
+def fetch(url: str, limit=4_000_000, attempts=3, *, deadline=None, diagnostics=None, allowed_hosts=None,
+          accept="*/*") -> bytes:
     def trusted(target):
         if allowed_hosts is None:
             return
@@ -87,7 +89,7 @@ def fetch(url: str, limit=4_000_000, attempts=3, *, deadline=None, diagnostics=N
 
     trusted(url)
     for attempt in range(attempts):
-        request = urllib.request.Request(url, headers={"User-Agent": "NET86-rules/1.0", "Accept": "*/*"})
+        request = urllib.request.Request(url, headers={"User-Agent": "NET86-rules/1.0", "Accept": accept})
         timeout = fetch_timeout(deadline)
         try:
             opener = (urllib.request.build_opener(Redirects()).open
@@ -113,7 +115,7 @@ def fetch(url: str, limit=4_000_000, attempts=3, *, deadline=None, diagnostics=N
                   location=getattr(exc, 'headers', {}).get('Location') if getattr(exc, 'headers', None) else None)
             if isinstance(exc, urllib.error.HTTPError):
                 exc.close()
-            if isinstance(exc, urllib.error.HTTPError) and exc.code not in {408, 429, 500, 502, 503, 504}:
+            if isinstance(exc, urllib.error.HTTPError) and exc.code not in RETRYABLE_HTTP_STATUSES:
                 raise
             if attempt == attempts - 1:
                 raise

@@ -1,12 +1,16 @@
 import gzip
 import io
 import sys
+import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
+from urllib.error import HTTPError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import download_mihomo
+from rules import sha256
 
 
 class MihomoDownloadTests(unittest.TestCase):
@@ -26,6 +30,46 @@ class MihomoDownloadTests(unittest.TestCase):
             archive.writestr("two.exe", b"two")
         with self.assertRaisesRegex(ValueError, "executable count"):
             download_mihomo.extracted_binary("mihomo.zip", payload.getvalue())
+
+
+    def test_primary_504_uses_official_asset_and_checks_digest(self):
+        binary = b"pinned Mihomo test executable"
+        archive = gzip.compress(binary)
+        for payload in (archive, b"unexpected asset"):
+            with self.subTest(valid=payload == archive), tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                requests = []
+
+                def open_request(opener, request, **kwargs):
+                    requests.append(request)
+                    if request.host == "github.com":
+                        raise HTTPError(request.full_url, 504, "Gateway Time-out", None, None)
+                    response = io.BytesIO(payload)
+                    response.headers = {}
+                    return response
+
+                with (
+                    patch.object(download_mihomo, "ROOT", root),
+                    patch.object(download_mihomo.platform, "system", return_value="Linux"),
+                    patch.object(download_mihomo.platform, "machine", return_value="x86_64"),
+                    patch.dict(download_mihomo.ASSETS, {"Linux": ("test.gz", sha256(archive), 123)}),
+                    patch("urllib.request.OpenerDirector.open", autospec=True, side_effect=open_request),
+                    patch("sync.time.sleep"),
+                ):
+                    if payload == archive:
+                        download_mihomo.main()
+                        installed = list((root / ".work/bin").iterdir())
+                        self.assertEqual([path.read_bytes() for path in installed], [binary])
+                    else:
+                        with self.assertRaisesRegex(SystemExit, "SHA-256 mismatch"):
+                            download_mihomo.main()
+                        self.assertFalse((root / ".work/bin").exists())
+
+                self.assertEqual([request.host for request in requests],
+                                 ["github.com"] * 3 + ["api.github.com"])
+                self.assertEqual(requests[-1].full_url,
+                                 "https://api.github.com/repos/MetaCubeX/mihomo/releases/assets/123")
+                self.assertEqual(requests[-1].get_header("Accept"), "application/octet-stream")
 
 
 class EmbeddedCoreIntegrityTests(unittest.TestCase):
