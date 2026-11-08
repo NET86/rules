@@ -1,6 +1,8 @@
 name: OpenAI source probe
 on:
   workflow_dispatch:
+  push:
+    branches: [diag/openai-sources-20261108]
 permissions:
   contents: read
 jobs:
