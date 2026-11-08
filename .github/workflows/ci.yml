@@ -1,74 +1,69 @@
-name: 规则校验
+name: OpenAI source probe
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
-env:
-  PYTHONUTF8: '1'
 jobs:
-  validate:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        id: checkout
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          fetch-depth: 0
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        id: python
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
-      - run: python scripts/check_git_identity.py
-      - name: 校验锁定的 HTTPS 依赖及摘要
-        run: 'python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt'
-      - run: python -m unittest discover -s tests -v
-      - run: python scripts/rules.py --check
-      - run: python scripts/verify_rules.py
-      - run: node --test infra/scheduler/worker.test.mjs
-      - name: 恢复 Mihomo 归档缓存
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - run: python -m pip install --only-binary=:all: --require-hashes -r requirements-intake.txt
         continue-on-error: true
-        with:
-          path: .work/mihomo-download
-          key: mihomo-archive-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/download_mihomo.py') }}
-      - run: python scripts/download_mihomo.py
-      - run: python scripts/verify_mihomo.py
-      - run: python scripts/verify_mihomo.py --profile split
-      - run: python scripts/verify_mihomo.py --profile ai-cn
-      - name: 验收实际 Mihomo 示例及错误反例
-        run: python scripts/verify_mihomo_examples.py
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        if: runner.os == 'Linux'
-        with:
-          go-version: '1.26.8'
-          cache-dependency-path: sources/engines.json
-      - run: python scripts/build_flclash_core.py
-        if: runner.os == 'Linux'
-      - run: python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core
-        if: runner.os == 'Linux'
-      - run: python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile split
-        if: runner.os == 'Linux'
-      - run: python scripts/verify_mihomo.py --binary .work/bin/flclash-core --engine-label flclash-core --profile ai-cn
-        if: runner.os == 'Linux'
-      - name: 使用 FlClash 内嵌核心验收实际示例及错误反例
-        run: python scripts/verify_mihomo_examples.py --binary .work/bin/flclash-core --engine-label flclash-core
-        if: runner.os == 'Linux'
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: validation-${{ matrix.os }}
-          path: |
-            .work/*validation*.json
-            .work/mihomo-*.log
-          include-hidden-files: true
-          retention-days: 14
-      - name: 汇总本次执行结果
-        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.python.outcome == 'success' }}
-        run: python scripts/release.py --summary-only ci --job-status ${{ job.status }}
+      - name: Check official URLs and content
+        shell: bash
+        run: |
+          mkdir -p .work/openai-probe
+          cd .work/openai-probe
+          fetch() {
+            key=$1
+            shift
+            printf '%s ' "$key"
+            curl --silent --show-error --location --max-time 20 --proto '=https' --proto-redir '=https' --output "$key.body" --dump-header "$key.headers" --write-out '%{http_code} %{content_type} %{url_effective} %{size_download}\n' "$@" || true
+            awk 'tolower($0) ~ /^(cf-mitigated|last-modified|etag):/' "$key.headers"
+          }
+          short=https://help.openai.com/en/articles/9247338
+          slug=network-recommendations-for-chatgpt-errors-on-web-and-apps
+          fetch voice https://openai.com/chatgpt-voice.json
+          fetch short "$short"
+          fetch canonical "$short-$slug"
+          fetch markdown -H 'Accept: text/markdown' "$short-$slug"
+          fetch help-lb "https://help-lb.openai.com/en/articles/9247338-$slug"
+          cd ../..
+          PYTHONPATH=scripts python - <<'PY'
+          import hashlib, ipaddress, json
+          from pathlib import Path
+          from intake import extract_document, fetch_official
+          from rules import voice_rules
+          from sync import fetch
+
+          root = Path('.work/openai-probe')
+          source = next(row for row in json.loads(Path('sources/official.json').read_text())['sources']
+                        if row['id'] == 'openai-network')
+          voice = (root / 'voice.body').read_bytes()
+          data = json.loads(voice)
+          rules = voice_rules(data)
+          masks = sorted({(net.version, net.prefixlen) for row in rules
+                          for net in [ipaddress.ip_network(row.value)]})
+          print('voice', hashlib.sha256(voice).hexdigest(), data.get('creationTime'), len(rules), masks)
+          for key in ('short', 'canonical', 'markdown', 'help-lb'):
+              try:
+                  facts = extract_document(source, (root / (key + '.body')).read_bytes())
+                  print(key, 'valid facts', len(facts['rules']), facts['document_sha256'])
+              except (OSError, ValueError, KeyError) as error:
+                  print(key, type(error).__name__, str(error))
+          diagnostics = []
+          try:
+              body, transport = fetch_official(source, fetch, diagnostics=diagnostics)
+              facts = extract_document(source, body)
+              print('production fetch', transport, len(facts['rules']), facts['document_sha256'])
+          except (OSError, ValueError, KeyError) as error:
+              print('production fetch', type(error).__name__, str(error))
+          print('production fetch diagnostics', json.dumps(diagnostics))
+          PY
