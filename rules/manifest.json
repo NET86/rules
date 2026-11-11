@@ -31,14 +31,14 @@
     },
     "ai-daily": {
       "mihomo": {
-        "count": 488,
+        "count": 509,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "b2c98dc0d9c715d383983c5a808fa9e5445e5e289bbbf8e9ae26f978fbd88d7a"
+        "sha256": "73a31982fd700d39686e3e7f71877c680eb04f2e6205a8fa827ee5e538c21217"
       },
       "surge": {
-        "count": 488,
+        "count": 509,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "8dc899d2f143a9cb1fd03c1f710299b209e518d86a187ad3c9892e96378cedef"
+        "sha256": "9c71d9cdcb4fb783320ba57482b43ecb3c736d4d58a017396dd593c90eb00b52"
       }
     },
     "baidu-wenxin": {
@@ -247,14 +247,14 @@
     },
     "openai-voice-ip": {
       "mihomo": {
-        "count": 402,
+        "count": 423,
         "path": "rules/mihomo/openai-voice-ip.yaml",
-        "sha256": "bb919ad5bc2fc7d23051d2c606583e140ec25403d082ef101f27192230e43412"
+        "sha256": "eca92bf352ef6368945df6fcc7f097d8ba01925585e7a5b14c2374ad0981e541"
       },
       "surge": {
-        "count": 402,
+        "count": 423,
         "path": "rules/surge/openai-voice-ip.list",
-        "sha256": "f6ab3fea2be111b45a5d2604d4da1f10618d0d0cd58c5f260e66b105e779c897"
+        "sha256": "9128f81d37d97e91bed20627b7af74240f57f9d03e7bd6f133914fec022198eb"
       }
     },
     "perplexity": {
@@ -1717,10 +1717,10 @@
   "upstream": {
     "sha256": {
       "V2FLY-LICENSE": "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c84011479244bf7d2",
-      "openai-voice.json": "685e474f5adfdca364ec6afb6e3898161a1eca4795edcf54f3beaa6417a10c0f",
+      "openai-voice.json": "be87f08809316d7b9fda7da3d4f3a0edc34b67489c98854b789e723ce08e08d8",
       "v2fly/anthropic": "59ad6a25a6d9759995777fe98f2cf30675199fad00546a0ffe027b95ec0776f0",
       "v2fly/category-ai-!cn": "68c652a6ec62fc8d8316c255fb32f94389b084a1b886def6f9e8e631314a11bf",
-      "v2fly/category-ai-cn": "5df7dad12b27907bf491463de101d66913a9502d12b792ca4903ecba80e0e87b",
+      "v2fly/category-ai-cn": "622379eead4d1e742304f3a1ebbf51727d93c7b7e8376f544199aefa164064a2",
       "v2fly/cursor": "eb7315056ebfb599a7dccedddcb5aa7f7723665aa800e2783fff798c1fa3724e",
       "v2fly/deepseek": "52822c92e87fadcfdc6711133f1270ee77ef030459603a46cf6fa80f75856530",
       "v2fly/doubao": "bab9cb2a638608c857314a1830e01f800e82015d9dae86ef2f938b796699a5bd",
@@ -1733,7 +1733,7 @@
       "v2fly/xai": "4c95fc6465d5f135f5d27935e9b44f6fcc82cfaa0eb6bb4e3232c44c5c581628"
     },
     "v2fly_repository": "https://github.com/v2fly/domain-list-community",
-    "v2fly_revision": "1d1049b54971c86c9a3a5467d238a6a2ad7baf46",
+    "v2fly_revision": "2b7ae3222f79e58e323a6b1c30c6618821068963",
     "voice_url": "https://openai.com/chatgpt-voice.json"
   },
   "vendor_count": 24

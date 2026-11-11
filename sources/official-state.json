@@ -38,12 +38,13 @@
       "vendor": "claude"
     },
     "cursor-cloud-agent": {
-      "document_sha256": "928423eb540a247a43f65065d1b454a2f9325da0d99ad057fd9e8ec08bac3941",
+      "document_sha256": "a852d875620bb844fe838e0ee2f9096fc1ef4e18487d0b4a72d31f4a09dc81d2",
       "extractor": 1,
       "rules": [
         "DOMAIN,agent-stores.s3.us-east-1.amazonaws.com",
         "DOMAIN,api2.cursor.sh",
         "DOMAIN,api2direct.cursor.sh",
+        "DOMAIN,api3.cursor.sh",
         "DOMAIN,cloud-agent-artifacts.s3.us-east-1.amazonaws.com",
         "DOMAIN,cursor.blob.core.windows.net",
         "DOMAIN,downloads.cursor.com",
@@ -93,7 +94,7 @@
       "vendor": "cursor"
     },
     "github-copilot-network": {
-      "document_sha256": "56edc0b38695a6cbf802cce890c2b527ae5f54fff12d7700c5668ed245605305",
+      "document_sha256": "cc28888924005e70e78a83099dd496dcc493f0b9f4aa894e1e5a604b65d061c8",
       "extractor": 1,
       "rules": [
         "DOMAIN,api.github.com",
@@ -106,6 +107,13 @@
         "DOMAIN,github.com",
         "DOMAIN,github.githubassets.com",
         "DOMAIN,origin-tracker.githubusercontent.com",
+        "DOMAIN,production-copilot-host-austriaeast.webpubsub.azure.com",
+        "DOMAIN,production-copilot-host-centralus-02.webpubsub.azure.com",
+        "DOMAIN,production-copilot-host-centralus.webpubsub.azure.com",
+        "DOMAIN,production-copilot-host-eastasia.webpubsub.azure.com",
+        "DOMAIN,production-copilot-host-westus.webpubsub.azure.com",
+        "DOMAIN,production-copilot-host-westus3.webpubsub.azure.com",
+        "DOMAIN,production-copilot-host.webpubsub.azure.com",
         "DOMAIN-SUFFIX,business.githubcopilot.com",
         "DOMAIN-SUFFIX,enterprise.githubcopilot.com",
         "DOMAIN-SUFFIX,github.com",
@@ -226,47 +234,47 @@
   },
   "observations": {
     "anthropic-network": {
-      "last_success_at": "2026-11-08T12:31:51Z",
+      "last_success_at": "2026-11-11T04:02:10Z",
       "url": "https://code.claude.com/docs/en/corporate-proxy",
       "vendor": "claude"
     },
     "cursor-cloud-agent": {
-      "last_success_at": "2026-11-08T12:31:51Z",
+      "last_success_at": "2026-11-11T04:02:10Z",
       "url": "https://cursor.com/docs/cloud-agent/self-hosted/pool",
       "vendor": "cursor"
     },
     "cursor-network": {
-      "last_success_at": "2026-11-08T12:31:51Z",
+      "last_success_at": "2026-11-11T04:02:10Z",
       "url": "https://cursor.com/docs/enterprise/network-configuration",
       "vendor": "cursor"
     },
     "github-copilot-network": {
-      "last_success_at": "2026-11-08T12:31:51Z",
+      "last_success_at": "2026-11-11T04:02:11Z",
       "url": "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference",
       "vendor": "github-copilot"
     },
     "google-codeassist": {
-      "last_success_at": "2026-11-08T12:31:51Z",
+      "last_success_at": "2026-11-11T04:02:10Z",
       "url": "https://docs.cloud.google.com/gemini/docs/codeassist/set-up-gemini?hl=en",
       "vendor": "google-ai"
     },
     "google-generative-api": {
-      "last_success_at": "2026-11-08T12:31:51Z",
+      "last_success_at": "2026-11-11T04:02:10Z",
       "url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
       "vendor": "google-ai"
     },
     "hunyuan-regions": {
-      "last_success_at": "2026-11-08T12:31:52Z",
+      "last_success_at": "2026-11-11T04:02:11Z",
       "url": "https://cloud.tencent.com/document/product/1729/101841",
       "vendor": "tencent-ai"
     },
     "openai-network": {
-      "last_success_at": "2026-11-07T04:02:12Z",
+      "last_success_at": "2026-11-10T22:02:03Z",
       "url": "https://help.openai.com/en/articles/9247338",
       "vendor": "openai"
     },
     "spark-http": {
-      "last_success_at": "2026-11-08T12:31:54Z",
+      "last_success_at": "2026-11-11T04:02:13Z",
       "url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
       "vendor": "iflytek-spark"
     }
