@@ -54,12 +54,14 @@
       "vendor": "cursor"
     },
     "cursor-network": {
-      "document_sha256": "31a7318883cafd69bd4e6b621df128a411448bcc2c0615a99e9d8cb5680227a5",
+      "document_sha256": "2a95e14cccb6ef1810a91a8f76eb9fe5c9c2dd8c95a6e9c23f815f6eb6c75de1",
       "extractor": 1,
       "rules": [
         "DOMAIN,accounts.spacex.ai",
         "DOMAIN,accounts.x.ai",
         "DOMAIN,adminportal42.cursor.sh",
+        "DOMAIN,agent-stores.s3.amazonaws.com",
+        "DOMAIN,agent-stores.s3.us-east-1.amazonaws.com",
         "DOMAIN,agent.api5.cursor.sh",
         "DOMAIN,agent.global.api5.cursor.sh",
         "DOMAIN,agent.us.api5.cursor.sh",
@@ -75,11 +77,13 @@
         "DOMAIN,authentication.cursor.sh",
         "DOMAIN,authenticator.cursor.sh",
         "DOMAIN,cursor-cdn.com",
+        "DOMAIN,cursor.blob.core.windows.net",
         "DOMAIN,cursor.com",
         "DOMAIN,cursorvm.com",
         "DOMAIN,downloads.cursor.com",
         "DOMAIN,marketplace.cursorapi.com",
         "DOMAIN,prod.authentication.cursor.sh",
+        "DOMAIN,remote.ssh.localserverdownload",
         "DOMAIN,repo42.cursor.sh",
         "DOMAIN,us-asia.gcpp.cursor.sh",
         "DOMAIN,us-eu.gcpp.cursor.sh",
@@ -234,47 +238,47 @@
   },
   "observations": {
     "anthropic-network": {
-      "last_success_at": "2026-11-12T04:01:38Z",
+      "last_success_at": "2026-11-12T10:01:44Z",
       "url": "https://code.claude.com/docs/en/corporate-proxy",
       "vendor": "claude"
     },
     "cursor-cloud-agent": {
-      "last_success_at": "2026-11-12T04:01:37Z",
+      "last_success_at": "2026-11-12T10:01:44Z",
       "url": "https://cursor.com/docs/cloud-agent/self-hosted/pool",
       "vendor": "cursor"
     },
     "cursor-network": {
-      "last_success_at": "2026-11-12T04:01:37Z",
+      "last_success_at": "2026-11-12T10:01:44Z",
       "url": "https://cursor.com/docs/enterprise/network-configuration",
       "vendor": "cursor"
     },
     "github-copilot-network": {
-      "last_success_at": "2026-11-12T04:01:39Z",
+      "last_success_at": "2026-11-12T10:01:45Z",
       "url": "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference",
       "vendor": "github-copilot"
     },
     "google-codeassist": {
-      "last_success_at": "2026-11-12T04:01:38Z",
+      "last_success_at": "2026-11-12T10:01:45Z",
       "url": "https://docs.cloud.google.com/gemini/docs/codeassist/set-up-gemini?hl=en",
       "vendor": "google-ai"
     },
     "google-generative-api": {
-      "last_success_at": "2026-11-12T04:01:37Z",
+      "last_success_at": "2026-11-12T10:01:44Z",
       "url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
       "vendor": "google-ai"
     },
     "hunyuan-regions": {
-      "last_success_at": "2026-11-12T04:01:39Z",
+      "last_success_at": "2026-11-12T10:01:45Z",
       "url": "https://cloud.tencent.com/document/product/1729/101841",
       "vendor": "tencent-ai"
     },
     "openai-network": {
-      "last_success_at": "2026-11-11T22:01:37Z",
+      "last_success_at": "2026-11-12T10:01:45Z",
       "url": "https://help.openai.com/en/articles/9247338",
       "vendor": "openai"
     },
     "spark-http": {
-      "last_success_at": "2026-11-12T04:01:40Z",
+      "last_success_at": "2026-11-12T10:01:46Z",
       "url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
       "vendor": "iflytek-spark"
     }
