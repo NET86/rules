@@ -19,14 +19,14 @@
     },
     "ai-core": {
       "mihomo": {
-        "count": 107,
+        "count": 108,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "37494d1cec2f6adbb4eaaa93bc73ebd4a7bc67fde89ada9cf41a82a0bd8ad290"
+        "sha256": "12cce7cd5db9ffbbb319faff4800ec3bc821b1e5bcb16d6551b86408e2c6fd18"
       },
       "surge": {
-        "count": 107,
+        "count": 108,
         "path": "rules/surge/ai-core.list",
-        "sha256": "daf542ec301d6ba02e7a4cef8cc0ba0b87cd48b5b15a08198cbeea2811e3b4b0"
+        "sha256": "096050baa075c5c0302b7ff1f9df196ea6f5dbd3167b2a681b51bc47f220a0af"
       }
     },
     "ai-daily": {
@@ -103,14 +103,14 @@
     },
     "elevenlabs": {
       "mihomo": {
-        "count": 2,
+        "count": 3,
         "path": "rules/mihomo/elevenlabs.yaml",
-        "sha256": "09547d8176710157359c025fcff14e6fcf50be66c1b38138664d2246df8ac0de"
+        "sha256": "7f77d2c5689addd579934d4b893e3669336d251db9d6bfca0d4fc84aa3129034"
       },
       "surge": {
-        "count": 2,
+        "count": 3,
         "path": "rules/surge/elevenlabs.list",
-        "sha256": "9c3c1b5a5fad5a453ff83a3a9ff3890a3288f78d694d1ae915c75d420716e7c5"
+        "sha256": "cd15a2925a3bdea5753ce02c47ea65c57d0724e815e6cf5070bc233e3ad6258a"
       }
     },
     "github-copilot": {
@@ -718,6 +718,14 @@
     },
     {
       "rule": "DOMAIN-SUFFIX,elevenlabs.io",
+      "sources": [
+        "v2fly:data/elevenlabs"
+      ],
+      "tier": "core",
+      "vendor": "elevenlabs"
+    },
+    {
+      "rule": "DOMAIN-SUFFIX,elevenlabsusercontent.com",
       "sources": [
         "v2fly:data/elevenlabs"
       ],
@@ -1724,7 +1732,7 @@
       "v2fly/cursor": "eb7315056ebfb599a7dccedddcb5aa7f7723665aa800e2783fff798c1fa3724e",
       "v2fly/deepseek": "52822c92e87fadcfdc6711133f1270ee77ef030459603a46cf6fa80f75856530",
       "v2fly/doubao": "bab9cb2a638608c857314a1830e01f800e82015d9dae86ef2f938b796699a5bd",
-      "v2fly/elevenlabs": "4c284a7e5947f4a40d40c9dc8fedf3e9e3091db0c7680b913b2b19db36ebd561",
+      "v2fly/elevenlabs": "88f3412837a17af32533013ab039b988a6c26a519d73846f728b84a19e26487f",
       "v2fly/github-copilot": "bd8f1a7a846f1111710c31b13b45262f35220a00e8dfaf4c5830dc618ec51748",
       "v2fly/google-deepmind": "6f768291aa81a8d88fa48fc20613f55be646674cfa24a3b3c152a97e859c33a8",
       "v2fly/openai": "25d53e9af3e04d926210d6436bd791594ef4b86f2dc3c108510ac8059d76d969",
@@ -1733,7 +1741,7 @@
       "v2fly/xai": "4c95fc6465d5f135f5d27935e9b44f6fcc82cfaa0eb6bb4e3232c44c5c581628"
     },
     "v2fly_repository": "https://github.com/v2fly/domain-list-community",
-    "v2fly_revision": "2b7ae3222f79e58e323a6b1c30c6618821068963",
+    "v2fly_revision": "178b9452b28a254a97d24e56c84babbe3e3e3dda",
     "voice_url": "https://openai.com/chatgpt-voice.json"
   },
   "vendor_count": 24
