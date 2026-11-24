@@ -169,36 +169,54 @@ class IntakeTests(unittest.TestCase):
                     self.assertEqual(report["sources"][source["id"]]["status"], "retained-last-good")
                     self.assertEqual(report["review_required"][0]["source_id"], source["id"])
 
-    def test_official_analysis_never_mutates_production_entries(self):
+    def test_official_gap_is_evidence_only(self):
+        source = {
+            "id": "fixture", "url": "https://official.test/network", "vendor": "demo",
+            "format": "html", "sections": ["Network"],
+            "required_hosts": ["api.example.com"], "min_hosts": 2,
+        }
+        reviewed_rule = "DOMAIN,old.example.net"
+        candidate_rule = "DOMAIN,new.example.net"
         production = {
             ("demo", "core", rules.Rule("DOMAIN-SUFFIX", "example.com")): {"v2fly"},
+            ("demo", "core", rules.Rule.from_text(reviewed_rule)): {source["url"]},
         }
-        state = {
-            "documents": {
-                "fixture": {
-                    "url": "https://official.test",
-                    "vendor": "demo",
-                    "rules": ["DOMAIN,api.example.com", "DOMAIN,new.example.net"],
-                }
-            }
-        }
-        config = {
-            "schema": 1,
-            "sources": [{"id": "fixture", "url": "https://official.test", "vendor": "demo"}],
+        before = copy.deepcopy(production)
+        baseline = intake.extract_document(
+            source, b"<h2>Network</h2><p>api.example.com old.example.net</p>",
+        )
+        inputs = {
+            "official.json": {"sources": [source]},
+            "official-state.json": {"schema": 1, "documents": {source["id"]: baseline}},
+            "intake-policy.json": {
+                "official_exclude_suffixes": {}, "official_shared_suffixes": {}, "official_exclude_exact": {},
+            },
+            "patches.json": {
+                "add": [{"vendor": "demo", "tier": "core", "rule": reviewed_rule, "source": source["url"]}],
+            },
         }
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             (root / "sources").mkdir()
-            (root / "sources/intake-policy.json").write_text(json.dumps({
-                "official_exclude_suffixes": {}, "official_shared_suffixes": {}, "official_exclude_exact": {}
-            }))
-            (root / "sources/official.json").write_text(json.dumps(config))
-            (root / "sources/patches.json").write_text(json.dumps({"drop": {}}))
-            before = copy.deepcopy(production)
+            for filename, payload in inputs.items():
+                (root / "sources" / filename).write_text(json.dumps(payload), encoding="utf-8")
+            state, refresh = intake.refresh_official(
+                root, lambda url: b"<h2>Network</h2><p>api.example.com new.example.net</p>",
+            )
             report = intake.analyze_official(root, state, production)
+
+        self.assertEqual(refresh["review_required"], [])
+        self.assertEqual(refresh["sources"][source["id"]]["status"], "fresh")
+        self.assertCountEqual(
+            [(row["rule"], row["reason"]) for row in report["review_required"]],
+            [(reviewed_rule, "official-patch-evidence-missing"),
+             (candidate_rule, "official-uncovered-domain")],
+        )
+        self.assertEqual(
+            [(row["rule"], row["action"]) for row in report["decisions"]],
+            [("DOMAIN,api.example.com", "already-covered")],
+        )
         self.assertEqual(production, before)
-        self.assertEqual(report["decisions"][0]["action"], "already-covered")
-        self.assertEqual(report["review_required"][0]["reason"], "official-uncovered-domain")
 
     def test_only_valid_current_source_documents_can_be_last_good(self):
         source = {"id": "fixture", "url": "https://official.test/network", "vendor": "demo",
@@ -369,19 +387,14 @@ class IntakeTests(unittest.TestCase):
             policy, rules.Rule("DOMAIN", "assets.unpkg.com")
         ))
 
-    def test_official_gap_is_evidence_only(self):
-        manifest = json.loads(rules.compile_outputs(rules.ROOT)["rules/manifest.json"])
-        production = {
-            (row["vendor"], row["tier"], rules.Rule.from_text(row["rule"])): set(row["sources"])
-            for row in manifest["provenance"]
-        }
-        state = rules.read_json(rules.ROOT / "sources/official-state.json")
-        report = intake.analyze_official(rules.ROOT, state, production)
-        self.assertTrue(all(row["reason"] == "official-uncovered-domain" for row in report["review_required"]))
-        self.assertEqual(set(production), {
-            (row["vendor"], row["tier"], rules.Rule.from_text(row["rule"]))
-            for row in manifest["provenance"]
-        })
+    def test_cursor_ssh_setting_is_excluded_from_official_evidence(self):
+        policy = rules.read_json(rules.ROOT / "sources/intake-policy.json")
+        self.assertIsNotNone(intake.official_policy_reason(
+            policy, rules.Rule("DOMAIN", "remote.ssh.localserverdownload")
+        ))
+        self.assertIsNone(intake.official_policy_reason(
+            policy, rules.Rule("DOMAIN", "cursor.blob.core.windows.net")
+        ))
 
     def test_malformed_yaml_is_rejected_by_strict_gate(self):
         for data in (b"payload: [unterminated\n", b"payload:\n  - bad\n", b"payload:\n"):

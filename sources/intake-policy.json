@@ -22,6 +22,7 @@
     "apple.com": "Apple platform services"
   },
   "official_exclude_exact": {
+    "remote.ssh.localserverdownload": "Cursor Remote SSH configuration key shown in prose",
     "s3.us-east-1.amazonaws.com": "Shared regional S3 namespace; exact tenant hosts remain eligible for review",
     "cdn.jsdelivr.net": "Shared JavaScript CDN for arbitrary projects",
     "cdn.tailwindcss.com": "Shared CSS tooling CDN",
