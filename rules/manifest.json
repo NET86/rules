@@ -31,14 +31,14 @@
     },
     "ai-daily": {
       "mihomo": {
-        "count": 497,
+        "count": 530,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "3a4cf1c68c2aee3b6892cee3185512c622fd2a1bb5b479f0274fb7339299a19d"
+        "sha256": "6c276281d0687f798f8bb68f4e1eae1d6b6d711999389295ce7bb0d358fdfce6"
       },
       "surge": {
-        "count": 497,
+        "count": 530,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "021216834d13cbbc1a0bbeabdc81793a22179cb6ae7f3a5e94137a8a0cb7654b"
+        "sha256": "699c5e80b3de34cf79dac16ce9e043d77059314b064c95678d82382127d964a8"
       }
     },
     "baidu-wenxin": {
@@ -247,14 +247,14 @@
     },
     "openai-voice-ip": {
       "mihomo": {
-        "count": 411,
+        "count": 444,
         "path": "rules/mihomo/openai-voice-ip.yaml",
-        "sha256": "e751b301ebc9332161206b8648359173662e45d91eaea95831a9c83545f2098c"
+        "sha256": "6e90016c49c35d15720bb6c1cfbcaf4fd9ce610bc40beb760b28f635be557152"
       },
       "surge": {
-        "count": 411,
+        "count": 444,
         "path": "rules/surge/openai-voice-ip.list",
-        "sha256": "59ce1dcc86a4da8039fee26e7c96c57f60e33fd31d8f6e1c4896efddf260ce48"
+        "sha256": "1c677c659dac7ef645b6e43814267b32c742e37965c391fe02bef4d754808e95"
       }
     },
     "perplexity": {
@@ -1725,7 +1725,7 @@
   "upstream": {
     "sha256": {
       "V2FLY-LICENSE": "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c84011479244bf7d2",
-      "openai-voice.json": "9797a5b60b3e97e73ec09839d7f52075be78619274ebd65ca1c6545fd57c98b6",
+      "openai-voice.json": "c8aba767cc50623184dc4868004dbf6cc5cdd28d7b488a2660c04b6891bb97b3",
       "v2fly/anthropic": "59ad6a25a6d9759995777fe98f2cf30675199fad00546a0ffe027b95ec0776f0",
       "v2fly/category-ai-!cn": "68c652a6ec62fc8d8316c255fb32f94389b084a1b886def6f9e8e631314a11bf",
       "v2fly/category-ai-cn": "622379eead4d1e742304f3a1ebbf51727d93c7b7e8376f544199aefa164064a2",
