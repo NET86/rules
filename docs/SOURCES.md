@@ -16,9 +16,11 @@
 
 Source Radar 使用本地快照：`confirmed` 表示证据覆盖候选范围，不表示本次抓取成功或获准生产。exact 不能证明更宽 suffix；更宽证据也不自动授权新的规则表达。读取失败不能推断为 absent。
 
-Google 范围为 Gemini、AI Studio、NotebookLM。GitHub Copilot 只解析 `Specific required domains`；共享平台、遥测、实验和报表排除，精确专用端点仍可待审。不解析 GHE、编辑器、语音和云代理的其他访问清单。
+Google 范围为 Gemini、AI Studio、NotebookLM。GitHub Copilot 解析官方白名单的 `Specific required domains` 区段，排除共享平台、遥测、实验和报表。GitHub.com 浏览器云会话使用官方列出的七个精确 WebSocket 主机，其中 West US 继续由 V2Fly 提供。GHE、编辑器、语音和云代理环境各自的访问清单在当前解析范围之外。[GitHub Copilot 白名单](https://docs.github.com/en/copilot/reference/copilot-allowlist-reference#specific-required-domains)
 
-经复核，Cursor 新登录端点只加入官方明确列出的两个精确主机，不扩大 `x.ai` / `spacex.ai`；Google 混合来源只选 AI Studio、NotebookLM 区段的三条具体规则，保留上游 `full:` 与后缀匹配差异，不扩大公共 Google 域名。OpenAI 官方资料若暂时不可验证，仍保留可信旧数据和待审异常。
+Cursor 登录使用 `accounts.spacexsi.com` 和登录指南列出的三个认证主机，均按精确域名匹配。网络文档仍列出过渡用的 `accounts.x.ai`，规则已撤销此前的 `accounts.spacex.ai`。桌面端同步技能和代理文件使用官方列出的两个精确 S3 桶地址。[Cursor 登录指南](https://cursor.com/help/troubleshooting/sign-in-domains#minimum-hosts) · [Cursor 网络配置](https://cursor.com/docs/enterprise/network-configuration)
+
+Google 混合来源只选 AI Studio、NotebookLM 区段的三条具体规则，保留上游 `full:` 与后缀匹配差异。OpenAI 官方资料若暂时不可验证，仍保留可信旧数据和待审异常。
 
 官方提取仅接受完整主机名及前导 `*.` / `.`；局部通配符不能截成父域。
 
