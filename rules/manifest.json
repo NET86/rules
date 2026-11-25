@@ -19,26 +19,26 @@
     },
     "ai-core": {
       "mihomo": {
-        "count": 108,
+        "count": 118,
         "path": "rules/mihomo/ai-core.yaml",
-        "sha256": "12cce7cd5db9ffbbb319faff4800ec3bc821b1e5bcb16d6551b86408e2c6fd18"
+        "sha256": "8e146c6c2f1447d976db1c37cb3a0a2073b75043866fa088fd10141daa754fa8"
       },
       "surge": {
-        "count": 108,
+        "count": 118,
         "path": "rules/surge/ai-core.list",
-        "sha256": "096050baa075c5c0302b7ff1f9df196ea6f5dbd3167b2a681b51bc47f220a0af"
+        "sha256": "9d3d50f9e299488916ef2eba85d486e2f7272dc3d0ba44389b724d613c46d197"
       }
     },
     "ai-daily": {
       "mihomo": {
-        "count": 530,
+        "count": 536,
         "path": "rules/mihomo/ai-daily.yaml",
-        "sha256": "6c276281d0687f798f8bb68f4e1eae1d6b6d711999389295ce7bb0d358fdfce6"
+        "sha256": "527371e9863edbc22a97f64f94fe4b6a16b7816c31ae43ccffa1105777e5b17c"
       },
       "surge": {
-        "count": 530,
+        "count": 536,
         "path": "rules/surge/ai-daily.list",
-        "sha256": "699c5e80b3de34cf79dac16ce9e043d77059314b064c95678d82382127d964a8"
+        "sha256": "a35f63475a78138fa9263d2e64c2f9e67e972f8bb11dadb4e4b0785b97f0545d"
       }
     },
     "baidu-wenxin": {
@@ -67,14 +67,14 @@
     },
     "cursor": {
       "mihomo": {
-        "count": 11,
+        "count": 15,
         "path": "rules/mihomo/cursor.yaml",
-        "sha256": "d2a385ff8b5331a7df4958471a1bf1f6d2858dcf48eebf018790c22f8d38d2bd"
+        "sha256": "6778a28c7d4bc696f68ea579a8776fad7bc706056dde12de9d4a1e3cf515c42d"
       },
       "surge": {
-        "count": 11,
+        "count": 15,
         "path": "rules/surge/cursor.list",
-        "sha256": "83e85f44bd7b68318281b7c360840820fc62218b8249eb17083650a0b7ab5d3c"
+        "sha256": "86426dacfac596adf77a648e33d771431870a754760e2b83248092e240465731"
       }
     },
     "deepseek": {
@@ -115,14 +115,14 @@
     },
     "github-copilot": {
       "mihomo": {
-        "count": 6,
+        "count": 12,
         "path": "rules/mihomo/github-copilot.yaml",
-        "sha256": "4b258c7ea22e1a428111c9a9283a733eea26338137f1d106acb56f78d9fc2be6"
+        "sha256": "ec501a52467cb327636c473c8f01a5bca0f93459c8ef57bdf0deaa7f3e0b55ec"
       },
       "surge": {
-        "count": 6,
+        "count": 12,
         "path": "rules/surge/github-copilot.list",
-        "sha256": "6c3116b57c802fa723ed3dbd620e7d4136c65f17f08663d8ceffab76413a3698"
+        "sha256": "adcf06801219a289396700a71a6186fea6d4ea6f6762669eadc801d08c567232"
       }
     },
     "google-ai": {
@@ -572,9 +572,9 @@
       "vendor": "claude"
     },
     {
-      "rule": "DOMAIN,accounts.spacex.ai",
+      "rule": "DOMAIN,accounts.spacexsi.com",
       "sources": [
-        "https://cursor.com/docs/enterprise/network-configuration Official Cursor sign-in transition; exact login host only, not the shared spacex.ai namespace"
+        "https://cursor.com/docs/enterprise/network-configuration Current Cursor sign-in page, confirmed by the official sign-in guide"
       ],
       "tier": "core",
       "vendor": "cursor"
@@ -583,6 +583,14 @@
       "rule": "DOMAIN,accounts.x.ai",
       "sources": [
         "https://cursor.com/docs/enterprise/network-configuration Official Cursor sign-in transition; exact login host only, not the shared x.ai namespace"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN,agent-stores.s3.amazonaws.com",
+      "sources": [
+        "https://cursor.com/docs/enterprise/network-configuration Exact Cursor desktop bucket endpoint for skills and agent file synchronization"
       ],
       "tier": "core",
       "vendor": "cursor"
@@ -599,6 +607,30 @@
       "rule": "DOMAIN,anysphere-binaries.s3.us-east-1.amazonaws.com",
       "sources": [
         "https://cursor.com/docs/enterprise/network-configuration Dedicated Cursor client and extension downloads; exact bucket host, not the regional S3 namespace"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN,auth.grok.com",
+      "sources": [
+        "https://cursor.com/help/troubleshooting/sign-in-domains Exact authentication dependency in the official Cursor minimum sign-in host list"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN,auth.grokipedia.com",
+      "sources": [
+        "https://cursor.com/help/troubleshooting/sign-in-domains Exact authentication dependency in the official Cursor minimum sign-in host list"
+      ],
+      "tier": "core",
+      "vendor": "cursor"
+    },
+    {
+      "rule": "DOMAIN,auth.grokusercontent.com",
+      "sources": [
+        "https://cursor.com/help/troubleshooting/sign-in-domains Exact authentication dependency in the official Cursor minimum sign-in host list"
       ],
       "tier": "core",
       "vendor": "cursor"
@@ -765,9 +797,57 @@
       "vendor": "github-copilot"
     },
     {
+      "rule": "DOMAIN,production-copilot-host-austriaeast.webpubsub.azure.com",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference Exact Austria East WebSocket endpoint for GitHub.com Copilot cloud sessions"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,production-copilot-host-centralus-02.webpubsub.azure.com",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference Exact Central US 02 WebSocket endpoint for GitHub.com Copilot cloud sessions"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,production-copilot-host-centralus.webpubsub.azure.com",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference Exact Central US WebSocket endpoint for GitHub.com Copilot cloud sessions"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,production-copilot-host-eastasia.webpubsub.azure.com",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference Exact East Asia WebSocket endpoint for GitHub.com Copilot cloud sessions"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
       "rule": "DOMAIN,production-copilot-host-westus.webpubsub.azure.com",
       "sources": [
         "v2fly:data/github-copilot"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,production-copilot-host-westus3.webpubsub.azure.com",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference Exact West US 3 WebSocket endpoint for GitHub.com Copilot cloud sessions"
+      ],
+      "tier": "core",
+      "vendor": "github-copilot"
+    },
+    {
+      "rule": "DOMAIN,production-copilot-host.webpubsub.azure.com",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference Exact unqualified WebSocket endpoint for GitHub.com Copilot cloud sessions"
       ],
       "tier": "core",
       "vendor": "github-copilot"
@@ -1720,7 +1800,7 @@
   "schema": 2,
   "semantic_contract": {
     "path": "sources/semantic-contracts.json",
-    "sha256": "2c9ff3f5fc97b2b4c3a36c3c6b5a72fe68fb3e4475176f2c423c3ffe04c73f48"
+    "sha256": "2ae2a775ab3cc1a9924f7d53a409a0246ce5cadcedc47838932d42e55369de65"
   },
   "upstream": {
     "sha256": {

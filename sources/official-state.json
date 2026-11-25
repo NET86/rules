@@ -97,6 +97,18 @@
       "url": "https://cursor.com/docs/enterprise/network-configuration",
       "vendor": "cursor"
     },
+    "cursor-sign-in": {
+      "document_sha256": "58845ef3601ba29984d46ca877fe93a89082a04a4995f86e19b82ff2580df4f7",
+      "extractor": 1,
+      "rules": [
+        "DOMAIN,accounts.spacexsi.com",
+        "DOMAIN,auth.grok.com",
+        "DOMAIN,auth.grokipedia.com",
+        "DOMAIN,auth.grokusercontent.com"
+      ],
+      "url": "https://cursor.com/help/troubleshooting/sign-in-domains",
+      "vendor": "cursor"
+    },
     "github-copilot-network": {
       "document_sha256": "cc28888924005e70e78a83099dd496dcc493f0b9f4aa894e1e5a604b65d061c8",
       "extractor": 1,
@@ -238,47 +250,52 @@
   },
   "observations": {
     "anthropic-network": {
-      "last_success_at": "2026-11-24T22:02:22Z",
+      "last_success_at": "2026-11-25T01:03:06Z",
       "url": "https://code.claude.com/docs/en/corporate-proxy",
       "vendor": "claude"
     },
     "cursor-cloud-agent": {
-      "last_success_at": "2026-11-24T22:02:21Z",
+      "last_success_at": "2026-11-25T01:03:06Z",
       "url": "https://cursor.com/docs/cloud-agent/self-hosted/pool",
       "vendor": "cursor"
     },
     "cursor-network": {
-      "last_success_at": "2026-11-24T22:02:21Z",
+      "last_success_at": "2026-11-25T01:03:06Z",
       "url": "https://cursor.com/docs/enterprise/network-configuration",
       "vendor": "cursor"
     },
+    "cursor-sign-in": {
+      "last_success_at": "2026-11-25T01:03:06Z",
+      "url": "https://cursor.com/help/troubleshooting/sign-in-domains",
+      "vendor": "cursor"
+    },
     "github-copilot-network": {
-      "last_success_at": "2026-11-24T22:02:22Z",
+      "last_success_at": "2026-11-25T01:03:07Z",
       "url": "https://docs.github.com/en/copilot/reference/copilot-allowlist-reference",
       "vendor": "github-copilot"
     },
     "google-codeassist": {
-      "last_success_at": "2026-11-24T22:02:22Z",
+      "last_success_at": "2026-11-25T01:03:07Z",
       "url": "https://docs.cloud.google.com/gemini/docs/codeassist/set-up-gemini?hl=en",
       "vendor": "google-ai"
     },
     "google-generative-api": {
-      "last_success_at": "2026-11-24T22:02:21Z",
+      "last_success_at": "2026-11-25T01:03:07Z",
       "url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
       "vendor": "google-ai"
     },
     "hunyuan-regions": {
-      "last_success_at": "2026-11-24T22:02:23Z",
+      "last_success_at": "2026-11-25T01:03:08Z",
       "url": "https://cloud.tencent.com/document/product/1729/101841",
       "vendor": "tencent-ai"
     },
     "openai-network": {
-      "last_success_at": "2026-11-24T22:02:21Z",
+      "last_success_at": "2026-11-25T01:03:07Z",
       "url": "https://help.openai.com/en/articles/9247338",
       "vendor": "openai"
     },
     "spark-http": {
-      "last_success_at": "2026-11-24T22:02:23Z",
+      "last_success_at": "2026-11-25T01:03:09Z",
       "url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
       "vendor": "iflytek-spark"
     }
