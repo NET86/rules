@@ -5,7 +5,11 @@
     {"vendor":"cursor","rule":"DOMAIN,cloud-agent-artifacts.s3.us-east-1.amazonaws.com","tier":"core","source":"https://cursor.com/docs/cloud-agent/self-hosted/pool","reason":"Dedicated Cursor agent artifact uploads; official documentation prefers this exact host over the regional S3 wildcard"},
     {"vendor":"cursor","rule":"DOMAIN,agent-stores.s3.us-east-1.amazonaws.com","tier":"core","source":"https://cursor.com/docs/cloud-agent/self-hosted/pool","reason":"Official primary self-hosted Cloud Agent artifact upload bucket; exact host, never regional S3 wildcard"},
     {"vendor":"cursor","rule":"DOMAIN,cursor.blob.core.windows.net","tier":"core","source":"https://cursor.com/docs/cloud-agent/self-hosted/pool","reason":"Official Cursor live-workspace server download on workers started with --connect-workspace; exact Azure Blob host only"},
-    {"vendor":"cursor","rule":"DOMAIN,accounts.spacex.ai","tier":"core","source":"https://cursor.com/docs/enterprise/network-configuration","reason":"Official Cursor sign-in transition; exact login host only, not the shared spacex.ai namespace"},
+    {"vendor":"cursor","rule":"DOMAIN,agent-stores.s3.amazonaws.com","tier":"core","source":"https://cursor.com/docs/enterprise/network-configuration","reason":"Exact Cursor desktop bucket endpoint for skills and agent file synchronization"},
+    {"vendor":"cursor","rule":"DOMAIN,accounts.spacexsi.com","tier":"core","source":"https://cursor.com/docs/enterprise/network-configuration","reason":"Current Cursor sign-in page, confirmed by the official sign-in guide"},
+    {"vendor":"cursor","rule":"DOMAIN,auth.grok.com","tier":"core","source":"https://cursor.com/help/troubleshooting/sign-in-domains","reason":"Exact authentication dependency in the official Cursor minimum sign-in host list"},
+    {"vendor":"cursor","rule":"DOMAIN,auth.grokipedia.com","tier":"core","source":"https://cursor.com/help/troubleshooting/sign-in-domains","reason":"Exact authentication dependency in the official Cursor minimum sign-in host list"},
+    {"vendor":"cursor","rule":"DOMAIN,auth.grokusercontent.com","tier":"core","source":"https://cursor.com/help/troubleshooting/sign-in-domains","reason":"Exact authentication dependency in the official Cursor minimum sign-in host list"},
     {"vendor":"cursor","rule":"DOMAIN,accounts.x.ai","tier":"core","source":"https://cursor.com/docs/enterprise/network-configuration","reason":"Official Cursor sign-in transition; exact login host only, not the shared x.ai namespace"},
     {"vendor":"microsoft-copilot","rule":"DOMAIN,copilot.ai","tier":"core","source":"https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/termsofuse","reason":"Official consumer Copilot application entry; exact host only"},
     {"vendor":"iflytek-spark","rule":"DOMAIN,spark-api-open.xf-yun.com","tier":"core","source":"https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html","reason":"Official Spark HTTP API; does not include unrelated services on xf-yun.com"},
@@ -31,6 +35,12 @@
     {"vendor":"tencent-ai","rule":"DOMAIN,hunyuan.ap-shanghai-fsi.tencentcloudapi.com","tier":"core","source":"https://cloud.tencent.com/document/product/1729/101841","reason":"Official Hunyuan financial-region API endpoint; exact host, routing does not grant region access"},
     {"vendor":"tencent-ai","rule":"DOMAIN,hunyuan.ap-shenzhen-fsi.tencentcloudapi.com","tier":"core","source":"https://cloud.tencent.com/document/product/1729/101841","reason":"Official Hunyuan financial-region API endpoint; exact host, routing does not grant region access"},
     {"vendor":"github-copilot","rule":"DOMAIN,origin-tracker.githubusercontent.com","tier":"core","source":"https://docs.github.com/en/copilot/reference/copilot-allowlist-reference","reason":"Official Copilot endpoint for public-code matching and code references, checked 2026-09-21; exact host only, not the shared githubusercontent.com namespace"},
+    {"vendor":"github-copilot","rule":"DOMAIN,production-copilot-host-austriaeast.webpubsub.azure.com","tier":"core","source":"https://docs.github.com/en/copilot/reference/copilot-allowlist-reference","reason":"Exact Austria East WebSocket endpoint for GitHub.com Copilot cloud sessions"},
+    {"vendor":"github-copilot","rule":"DOMAIN,production-copilot-host-centralus-02.webpubsub.azure.com","tier":"core","source":"https://docs.github.com/en/copilot/reference/copilot-allowlist-reference","reason":"Exact Central US 02 WebSocket endpoint for GitHub.com Copilot cloud sessions"},
+    {"vendor":"github-copilot","rule":"DOMAIN,production-copilot-host-centralus.webpubsub.azure.com","tier":"core","source":"https://docs.github.com/en/copilot/reference/copilot-allowlist-reference","reason":"Exact Central US WebSocket endpoint for GitHub.com Copilot cloud sessions"},
+    {"vendor":"github-copilot","rule":"DOMAIN,production-copilot-host-eastasia.webpubsub.azure.com","tier":"core","source":"https://docs.github.com/en/copilot/reference/copilot-allowlist-reference","reason":"Exact East Asia WebSocket endpoint for GitHub.com Copilot cloud sessions"},
+    {"vendor":"github-copilot","rule":"DOMAIN,production-copilot-host-westus3.webpubsub.azure.com","tier":"core","source":"https://docs.github.com/en/copilot/reference/copilot-allowlist-reference","reason":"Exact West US 3 WebSocket endpoint for GitHub.com Copilot cloud sessions"},
+    {"vendor":"github-copilot","rule":"DOMAIN,production-copilot-host.webpubsub.azure.com","tier":"core","source":"https://docs.github.com/en/copilot/reference/copilot-allowlist-reference","reason":"Exact unqualified WebSocket endpoint for GitHub.com Copilot cloud sessions"},
     {"vendor":"openai","rule":"DOMAIN,cdn.openaimerge.com","tier":"core","source":"https://help.openai.com/en/articles/9247338","reason":"Exact CDN hostname in the official OpenAI network allowlist, checked 2026-09-15; do not widen to all openaimerge.com"},
     {"vendor":"cursor","rule":"DOMAIN-SUFFIX,cursorvm.com","tier":"core","source":"https://cursor.com/docs/enterprise/network-configuration","reason":"Cursor virtual-machine hosts; not the entire cloud provider"},
     {"vendor":"google-ai","rule":"DOMAIN,generativelanguage.mtls.googleapis.com","tier":"core","source":"https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta","reason":"Official Generative Language discovery document exposes a dedicated mTLS endpoint; keep exact to avoid widening googleapis.com"},
@@ -40,6 +50,9 @@
     {"vendor":"suno","rule":"DOMAIN-SUFFIX,suno.ai","tier":"core","source":"https://suno.ai/","reason":"Official legacy domain, redirects to suno.com"}
   ],
   "drop": {
+    "cursor": {
+      "DOMAIN,accounts.spacex.ai": "Superseded by accounts.spacexsi.com in the current Cursor network and sign-in documentation (reviewed 2026-11-25)"
+    },
     "openai": {
       "DOMAIN-SUFFIX,host.livekit.cloud": "Shared LiveKit namespace; ChatGPT-specific LiveKit remains covered separately",
       "DOMAIN-SUFFIX,turn.livekit.cloud": "Shared TURN namespace; do not route unrelated LiveKit tenants through the AI profile"

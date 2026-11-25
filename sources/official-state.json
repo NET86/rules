@@ -97,6 +97,18 @@
       "url": "https://cursor.com/docs/enterprise/network-configuration",
       "vendor": "cursor"
     },
+    "cursor-sign-in": {
+      "document_sha256": "58845ef3601ba29984d46ca877fe93a89082a04a4995f86e19b82ff2580df4f7",
+      "extractor": 1,
+      "rules": [
+        "DOMAIN,accounts.spacexsi.com",
+        "DOMAIN,auth.grok.com",
+        "DOMAIN,auth.grokipedia.com",
+        "DOMAIN,auth.grokusercontent.com"
+      ],
+      "url": "https://cursor.com/help/troubleshooting/sign-in-domains",
+      "vendor": "cursor"
+    },
     "github-copilot-network": {
       "document_sha256": "cc28888924005e70e78a83099dd496dcc493f0b9f4aa894e1e5a604b65d061c8",
       "extractor": 1,
@@ -250,6 +262,11 @@
     "cursor-network": {
       "last_success_at": "2026-11-24T22:02:21Z",
       "url": "https://cursor.com/docs/enterprise/network-configuration",
+      "vendor": "cursor"
+    },
+    "cursor-sign-in": {
+      "last_success_at": "2026-11-25T00:57:30Z",
+      "url": "https://cursor.com/help/troubleshooting/sign-in-domains",
       "vendor": "cursor"
     },
     "github-copilot-network": {
