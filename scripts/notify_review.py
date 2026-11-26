@@ -3,7 +3,10 @@
 import argparse
 import json
 import os
+import re
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 from rules import read_json, sha256
@@ -11,6 +14,7 @@ from rules import read_json, sha256
 REPOSITORY = "NET86/rules"
 # gh JSON and older CLI versions use these two names for the same Actions bot.
 TRUSTED_ISSUE_AUTHORS = {"app/github-actions", "github-actions[bot]"}
+RETRYABLE_ISSUE_COMMANDS = {"list", "edit", "reopen", "close"}
 
 
 def issue_body(channel, report):
@@ -56,7 +60,26 @@ def load_report(path, failed=False):
 
 
 def gh(*args, body=None):
-    return subprocess.check_output(["gh", *args], input=body, text=True, encoding="utf-8", timeout=45)
+    # A lost response to creation can already have created an issue.
+    retryable = args[0] == "issue" and args[1] in RETRYABLE_ISSUE_COMMANDS
+    for delay in (1, 2, None):
+        try:
+            return subprocess.check_output(
+                ["gh", *args], input=body, text=True, encoding="utf-8",
+                stderr=subprocess.PIPE, timeout=45,
+            )
+        except subprocess.CalledProcessError as exc:
+            stderr = exc.stderr or ""
+            if stderr:
+                print(stderr.rstrip(), file=sys.stderr)
+            transient = (
+                "GraphQL: Something went wrong while executing your query" in stderr
+                or re.search(r"\bHTTP (?:500|502|503|504)\b", stderr)
+            )
+            if not retryable or not transient or delay is None:
+                raise
+            print(f"Retrying GitHub issue {args[1]} in {delay}s", file=sys.stderr)
+            time.sleep(delay)
 
 
 def notify(channel, report, call=gh):

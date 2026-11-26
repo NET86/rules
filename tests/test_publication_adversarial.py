@@ -22,16 +22,23 @@ class PublicationAdversarialTests(unittest.TestCase):
         return newer
 
     def test_commit_refs_failure_retries_and_validates_the_original_candidate(self):
-        self.check_main_push_after_commit_refs_error()
+        self.check_main_push_after_transient_error()
+
+    def test_internal_server_error_retries_and_validates_the_original_candidate(self):
+        self.check_main_push_after_transient_error(
+            stderr="remote: Internal Server Error        \n"
+                   f" ! [remote rejected] {self.candidate} -> main (Internal Server Error)\n",
+        )
 
     def test_commit_refs_failure_with_acknowledgement_lost_reads_main_back(self):
-        self.check_main_push_after_commit_refs_error(accepted=True)
+        self.check_main_push_after_transient_error(accepted=True)
 
     def test_commit_refs_failure_does_not_overwrite_concurrent_main(self):
-        self.check_main_push_after_commit_refs_error(concurrent=True)
+        self.check_main_push_after_transient_error(concurrent=True)
 
-    def test_main_push_stops_after_three_commit_refs_errors_or_one_policy_rejection(self):
+    def test_main_push_bounds_transient_retries_and_stops_on_policy_rejection(self):
         for stderr, attempts in (("remote: fatal error in commit_refs", 3),
+                                 ("remote: Internal Server Error", 3),
                                  ("remote: GH006: Protected branch update failed", 1)):
             with self.subTest(stderr=stderr):
                 def reject(*args, **kwargs):
@@ -47,7 +54,8 @@ class PublicationAdversarialTests(unittest.TestCase):
                 self.assertEqual(self.publisher.remote_ref("main"), self.old)
                 self.assertEqual(self.publisher.remote_ref("stable"), self.old)
 
-    def check_main_push_after_commit_refs_error(self, *, accepted=False, concurrent=False):
+    def check_main_push_after_transient_error(
+            self, *, accepted=False, concurrent=False, stderr="remote: fatal error in commit_refs        \n"):
         pushes, validations = [], []
         other = self.git("commit-tree", self.publisher.tree(self.old), "-p", self.old,
                          input="independent main update\n")
@@ -60,7 +68,7 @@ class PublicationAdversarialTests(unittest.TestCase):
                         self.git(*args, **kwargs)
                     if concurrent:
                         self.git("push", "origin", f"{other}:main")
-                    raise subprocess.CalledProcessError(1, args, stderr="remote: fatal error in commit_refs        \n")
+                    raise subprocess.CalledProcessError(1, args, stderr=stderr)
             return self.git(*args, **kwargs)
 
         def validate(ref, label, expected):
