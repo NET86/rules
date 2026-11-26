@@ -541,6 +541,40 @@ class NotificationTests(unittest.TestCase):
                 "body": "<!-- rules-automation:sync -->\nold findings",
                 "author": {"login": login, "is_bot": login.endswith("[bot]") or login.startswith("app/")}}
 
+    @patch("time.sleep")
+    @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
+    def test_transient_issue_edit_retries_the_same_body_before_reopening(self, sleep):
+        existing = dict(self.automation_issue(1, "github-actions[bot]"), state="CLOSED")
+        failure = subprocess.CalledProcessError(
+            1, ["gh", "issue", "edit"], stderr=(
+                "failed to update https://github.com/NET86/rules/issues/1: GraphQL: "
+                "Something went wrong while executing your query on 2026-11-25T16:03:25Z."
+            ),
+        )
+        with patch.object(notify_review.subprocess, "check_output",
+                          side_effect=[json.dumps([existing]), failure, "", ""]) as command:
+            notify_review.notify("sync", self.report)
+        calls = command.call_args_list
+        self.assertEqual([call.args[0][2] for call in calls], ["list", "edit", "edit", "reopen"])
+        self.assertEqual(calls[1], calls[2])
+        self.assertEqual(calls[1].kwargs["input"], notify_review.issue_body("sync", self.report))
+        sleep.assert_called_once()
+
+    @patch("time.sleep")
+    def test_issue_retries_are_bounded_and_skip_create_and_permission_errors(self, sleep):
+        for action, stderr, attempts in (
+            ("list", "gh: Server Error (HTTP 503)", 3),
+            ("create", "gh: Server Error (HTTP 503)", 1),
+            ("edit", "gh: Resource not accessible by integration (HTTP 403)", 1),
+        ):
+            with self.subTest(action=action, stderr=stderr):
+                failure = subprocess.CalledProcessError(1, ["gh", "issue", action], stderr=stderr)
+                with patch.object(notify_review.subprocess, "check_output", side_effect=failure) as command:
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        notify_review.gh("issue", action, "--repo", "NET86/rules")
+                self.assertEqual(command.call_count, attempts)
+        self.assertEqual(sleep.call_count, 2)
+
     @patch.dict(os.environ, {"GITHUB_REPOSITORY": "NET86/rules"})
     def test_forged_issues_cannot_block_a_real_bot_issue(self):
         rows = [self.automation_issue(2, "outside-user"), self.automation_issue(3, "another-user"),

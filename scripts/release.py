@@ -20,6 +20,7 @@ from runtime_cache import RuntimeGateSession
 
 AUTO_PATHS = ["sources/snapshot", "sources/official-state.json", "sources/automation-state.json", "rules"]
 SUMMARY_LIMIT = 10
+TRANSIENT_PUSH_MESSAGES = {"remote: fatal error in commit_refs", "remote: Internal Server Error"}
 REVIEW_REASON_LABELS = {
     "source-not-authorized-by-catalog": "来源未被 catalog 授权，已隔离",
     "unsupported-tier": "规则层级不受当前生产模型支持，已隔离",
@@ -344,8 +345,10 @@ class Publisher:
                     stderr = exc.stderr or ""
                     if stderr:
                         print(stderr.rstrip(), file=sys.stderr)
-                    if not any(line.rstrip() == "remote: fatal error in commit_refs"
-                               for line in stderr.splitlines()):
+                    server_error = not TRANSIENT_PUSH_MESSAGES.isdisjoint(
+                        line.rstrip() for line in stderr.splitlines()
+                    )
+                    if not server_error:
                         raise
                 if delay is not None:
                     print(f"Checking main again in {delay}s before retrying the candidate push", file=sys.stderr)
